@@ -23,6 +23,10 @@
     "fast-apply",
     "code-editing"
   ],
-  "author": "",
+  "author": "JRedeker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JRedeker/opencode-morph-fast-apply.git"
+  },
   "license": "MIT"
 }
