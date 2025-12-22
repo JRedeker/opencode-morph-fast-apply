@@ -14,8 +14,8 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/JRedeker/opencode-morph-fast-apply.git ~/.config/opencode/plugin/morph-fast-apply
-cd ~/.config/opencode/plugin/morph-fast-apply
+git clone https://github.com/JRedeker/opencode-morph-fast-apply.git ~/dev/oc-plugins/morph-fast-apply
+cd ~/dev/oc-plugins/morph-fast-apply
 npm install
 ```
 
@@ -27,25 +27,35 @@ Get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-ke
 export MORPH_API_KEY="sk-your-key-here"
 ```
 
-### 3. Link the plugin
+### 3. Add the plugin to your OpenCode config
 
-```bash
-ln -s ~/.config/opencode/plugin/morph-fast-apply/index.ts ~/.config/opencode/plugin/morph-fast-apply.ts
-```
-
-### 4. Add instructions (recommended)
-
-Add the tool selection guide to your OpenCode config:
+Add to your global config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
+  "plugin": [
+    "/path/to/morph-fast-apply"
+  ],
   "instructions": [
-    "~/.config/opencode/plugin/morph-fast-apply/MORPH_INSTRUCTIONS.md"
+    "/path/to/morph-fast-apply/MORPH_INSTRUCTIONS.md"
   ]
 }
 ```
 
-### 5. Restart OpenCode
+Or in a project-local `.opencode/config.json`:
+
+```json
+{
+  "plugin": [
+    "~/dev/oc-plugins/morph-fast-apply"
+  ],
+  "instructions": [
+    "~/dev/oc-plugins/morph-fast-apply/MORPH_INSTRUCTIONS.md"
+  ]
+}
+```
+
+### 4. Restart OpenCode
 
 The `morph_edit` tool will now be available.
 
