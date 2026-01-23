@@ -17,7 +17,7 @@ const MORPH_MODEL = process.env.MORPH_MODEL || "morph-v3-fast"
 const MORPH_TIMEOUT = parseInt(process.env.MORPH_TIMEOUT || "30000", 10)
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.1.0"
+const PLUGIN_VERSION = "1.2.0"
 
 /**
  * Generate a unified diff with context for display
@@ -169,51 +169,37 @@ export const MorphFastApply: Plugin = async ({ directory }) => {
        * Uses "// ... existing code ..." markers to represent unchanged sections.
        */
       morph_edit: tool({
-        description: `Fast code editing using Morph AI (10,500+ tokens/sec).
+        description: `Use this tool to edit existing files by showing only the changed lines.
 
-Use this tool for efficient partial file edits. It handles lazy edit markers
-so you don't need to provide the full file content.
+Use "// ... existing code ..." to represent unchanged code blocks. Include just enough surrounding context to locate each edit precisely.
 
-FORMAT:
-Use "// ... existing code ..." to represent unchanged code blocks.
-Include just enough surrounding context to locate each edit precisely.
-
-EXAMPLE:
+Example format:
 // ... existing code ...
-function updatedFunction() {
-  // New implementation with changes
-  return "modified";
-}
+FIRST_EDIT
+// ... existing code ...
+SECOND_EDIT
 // ... existing code ...
 
-RULES:
-- ALWAYS use "// ... existing code ..." for unchanged sections
-- Include minimal context around edits for disambiguation
+Rules:
+- ALWAYS use "// ... existing code ..." for unchanged sections (omitting this marker will cause deletions)
+- Include minimal context ONLY when needed around edits for disambiguation
 - Preserve exact indentation
-- For deletions: show context before and after, omit deleted lines
-- Batch multiple edits to the same file in one call
-
-WHEN TO USE:
-- Large files (500+ lines)
-- Multiple scattered changes
-- Complex refactoring
-- When exact string matching is fragile
-
-FALLBACK: If Morph API fails, will automatically fall back to native 'edit' tool.`,
+- For deletions: show context before and after, omit the deleted lines
+- Batch multiple edits to the same file in one call`,
 
         args: {
           target_filepath: tool.schema
             .string()
-            .describe("Path of the file to modify (relative to project root)"),
+            .describe("Path of the file to modify"),
           instructions: tool.schema
             .string()
             .describe(
-              "Brief first-person description of what you're changing (helps disambiguate)"
+              "Brief first-person description of what you're changing. Used to disambiguate uncertainty in the edit."
             ),
           code_edit: tool.schema
             .string()
             .describe(
-              'The code changes with "// ... existing code ..." markers for unchanged sections'
+              'Only the changed lines with "// ... existing code ..." markers for unchanged sections'
             ),
         },
 
@@ -255,6 +241,13 @@ For new files, provide the complete content without "// ... existing code ..." m
           } catch (err) {
             const error = err as Error
             return `Error reading file ${target_filepath}: ${error.message}`
+          }
+
+          // Warn if code_edit doesn't contain markers (potential deletion risk)
+          if (!code_edit.includes("// ... existing code ...")) {
+            console.warn(
+              `[morph-fast-apply] Warning: code_edit for ${target_filepath} contains no "// ... existing code ..." markers. This may cause unintended deletions.`
+            )
           }
 
           // Call Morph API to merge the edit

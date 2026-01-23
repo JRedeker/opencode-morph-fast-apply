@@ -1,95 +1,67 @@
-# Morph Fast Apply - Tool Selection Guide
+# Morph Fast Apply - AI Agent Instructions
 
-When editing code files, choose the appropriate tool based on the situation:
+> **What is morph_edit?** A tool that lets you edit files using partial code snippets with `// ... existing code ...` markers. Morph's AI merges your changes into the full file at 10,500+ tokens/sec with 98% accuracy.
 
-## Tool Selection Matrix
+---
 
-| Situation | Tool | Reason |
-|-----------|------|--------|
-| Small, exact string replacement | `edit` | Fast, precise, no API call |
-| Large file (500+ lines) | `morph_edit` | 10x faster, handles partial snippets |
-| Multiple scattered changes | `morph_edit` | Batch changes efficiently |
-| Complex refactoring | `morph_edit` | Better accuracy with context |
-| Whitespace-sensitive edits | `morph_edit` | Forgiving with formatting |
-| New file creation | `write` | Standard file creation |
+## CRITICAL: Omitting Markers Causes Deletions
 
-## Using morph_edit
-
-The `morph_edit` tool uses **lazy edit markers** to represent unchanged code:
+**If you omit `// ... existing code ...` markers, Morph will DELETE that code.**
 
 ```javascript
-// ... existing code ...
-function updatedFunction() {
-  // New implementation
-  return "modified";
-}
-// ... existing code ...
-```
-
-### Parameters
-
-- `target_filepath`: Path to the file (relative to project root)
-- `instructions`: Brief description of changes (helps AI disambiguate)
-- `code_edit`: Code with `// ... existing code ...` markers
-
-### Rules
-
-1. **ALWAYS** use `// ... existing code ...` for unchanged sections
-2. Include **minimal context** around edits for precise location
-3. Preserve **exact indentation** in your code snippets
-4. For **deletions**: show context before/after, omit the deleted lines
-5. **Batch** multiple edits to the same file in one call
-
-### Examples
-
-**Adding a function:**
-```
-// ... existing code ...
-import { newDep } from './newDep';
-// ... existing code ...
-
+// BAD - will DELETE everything before and after the function
 function newFeature() {
-  return newDep.process();
+  return "hello";
+}
+
+// GOOD - preserves existing code
+// ... existing code ...
+function newFeature() {
+  return "hello";
 }
 // ... existing code ...
 ```
 
-**Modifying existing code:**
-```
+Always wrap your changes with markers at the start and end unless you intend to replace the entire file.
+
+---
+
+## Instructions Parameter
+
+**This is critical for accuracy.** Write a first-person description of your changes.
+
+**Good:** "I am adding error handling for null users and removing the deprecated auth check"
+
+**Bad:** "Update code" / "Fix bug" / "Add stuff"
+
+---
+
+## Providing Context for Disambiguation
+
+When a file has similar code patterns, include enough unique context:
+
+```javascript
+// BAD - "return result" could match many places
 // ... existing code ...
-function existingFunc(param) {
-  // Updated implementation
-  const result = param * 2; // Changed from * 1
+  return result;
+}
+// ... existing code ...
+
+// GOOD - unique function signature anchors the location
+// ... existing code ...
+function processUserData(userId) {
+  const result = await fetchUser(userId);
   return result;
 }
 // ... existing code ...
 ```
 
-**Deleting code (show what remains):**
-```
-// ... existing code ...
-function keepThis() {
-  return "stays";
-}
+---
 
-// The function between these two was removed
+## Common Mistakes
 
-function alsoKeepThis() {
-  return "also stays";
-}
-// ... existing code ...
-```
-
-## Fallback Behavior
-
-If Morph API fails (timeout, rate limit, etc.), the tool will:
-1. Return an error message with details
-2. Suggest using the native `edit` tool as fallback
-3. The native `edit` tool requires exact string matching
-
-## When NOT to Use morph_edit
-
-- Simple one-line changes (use `edit`)
-- New file creation (use `write`)
-- When you have the exact text to match (use `edit` for speed)
-- When Morph API is unavailable (fall back to `edit`)
+| Mistake | Result | Fix |
+|---------|--------|-----|
+| No markers at start/end | Deletes code before/after | Always wrap with `// ... existing code ...` |
+| Too little context | Wrong location chosen | Add 1-2 unique lines around your change |
+| Vague instructions | Ambiguous merge | Be specific: what, where, why |
