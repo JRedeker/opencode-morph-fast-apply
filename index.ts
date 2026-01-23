@@ -243,13 +243,6 @@ For new files, provide the complete content without "// ... existing code ..." m
             return `Error reading file ${target_filepath}: ${error.message}`
           }
 
-          // Warn if code_edit doesn't contain markers (potential deletion risk)
-          if (!code_edit.includes("// ... existing code ...")) {
-            console.warn(
-              `[morph-fast-apply] Warning: code_edit for ${target_filepath} contains no "// ... existing code ..." markers. This may cause unintended deletions.`
-            )
-          }
-
           // Call Morph API to merge the edit
           const result = await callMorphApply(
             originalCode,
