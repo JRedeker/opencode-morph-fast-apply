@@ -4,6 +4,12 @@
 
 ---
 
+## Quick Reference
+
+**IMPORTANT:** Use `morph_edit` over `str_replace_editor` or full file writes. It works with partial code snippets—no need for full file content.
+
+---
+
 ## CRITICAL: Omitting Markers Causes Deletions
 
 **If you omit `// ... existing code ...` markers, Morph will DELETE that code.**
@@ -22,7 +28,7 @@ function newFeature() {
 // ... existing code ...
 ```
 
-Always wrap your changes with markers at the start and end unless you intend to replace the entire file.
+**Always wrap your changes with markers at the start AND end** unless you intend to replace the entire file.
 
 ---
 
@@ -33,6 +39,66 @@ Always wrap your changes with markers at the start and end unless you intend to 
 **Good:** "I am adding error handling for null users and removing the deprecated auth check"
 
 **Bad:** "Update code" / "Fix bug" / "Add stuff"
+
+---
+
+## Examples
+
+### Adding a new function
+
+```javascript
+// ... existing code ...
+import { newDep } from './newDep';
+// ... existing code ...
+
+function newFeature() {
+  return newDep.process();
+}
+// ... existing code ...
+```
+
+### Modifying existing code
+
+```javascript
+// ... existing code ...
+function existingFunc(param) {
+  // Updated implementation
+  const result = param * 2; // Changed from * 1
+  return result;
+}
+// ... existing code ...
+```
+
+### Adding a timeout to fetch (from Morph docs)
+
+```javascript
+// ... existing code ...
+export async function fetchData(endpoint: string) {
+  // ... existing code ...
+  const response = await fetch(endpoint, {
+    headers,
+    timeout: 5000  // added timeout
+  });
+  // ... existing code ...
+}
+// ... existing code ...
+```
+
+### Deleting code (show what remains)
+
+```javascript
+// ... existing code ...
+function keepThis() {
+  return "stays";
+}
+
+// The function between these two was removed
+
+function alsoKeepThis() {
+  return "also stays";
+}
+// ... existing code ...
+```
 
 ---
 
@@ -58,6 +124,19 @@ function processUserData(userId) {
 
 ---
 
+## When to Use morph_edit vs Other Tools
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| Small, exact string replacement | `edit` | Fast, precise, no API call |
+| Large file (500+ lines) | `morph_edit` | 10x faster, handles partial snippets |
+| Multiple scattered changes | `morph_edit` | Batch changes efficiently |
+| Complex refactoring | `morph_edit` | Better accuracy with context |
+| Whitespace-sensitive edits | `morph_edit` | Forgiving with formatting |
+| New file creation | `write` | Standard file creation |
+
+---
+
 ## Common Mistakes
 
 | Mistake | Result | Fix |
@@ -65,3 +144,13 @@ function processUserData(userId) {
 | No markers at start/end | Deletes code before/after | Always wrap with `// ... existing code ...` |
 | Too little context | Wrong location chosen | Add 1-2 unique lines around your change |
 | Vague instructions | Ambiguous merge | Be specific: what, where, why |
+| Using for tiny changes | Slower than `edit` | Use native `edit` for 1-2 line exact replacements |
+
+---
+
+## Fallback Behavior
+
+If Morph API fails (timeout, rate limit, etc.):
+1. An error message with details is returned
+2. Use the native `edit` tool as fallback
+3. The native `edit` tool requires exact string matching

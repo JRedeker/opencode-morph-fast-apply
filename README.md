@@ -7,8 +7,11 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 - **10,500+ tokens/sec** code editing via Morph's Fast Apply API
 - **Lazy edit markers** (`// ... existing code ...`) - no exact string matching needed
 - **98% accuracy** with intelligent code merging
+- **Pre-flight validation** - prevents accidental file deletions when markers are missing
 - **Unified diff output** with context for easy review
 - **Graceful fallback** - suggests native `edit` tool on API failure
+
+> **Note:** This is an OpenCode plugin that wraps Morph's Fast Apply API. For the official Morph MCP server (which includes WarpGrep search), see [@morphllm/morphmcp](https://www.npmjs.com/package/@morphllm/morphmcp). This plugin uses `morph_edit` as the tool name to avoid conflicts if you have both installed.
 
 ## Installation
 
@@ -143,6 +146,15 @@ If code is being deleted unexpectedly, ensure your `code_edit` includes `// ... 
 If edits are applied to the wrong location, add more unique context around your changes and make your `instructions` more specific about which function/section you're modifying.
 
 ## Changelog
+
+### v1.3.0
+
+- **Pre-flight validation prevents accidental deletions** - Tool now returns an error if `code_edit` is missing markers for files >10 lines, preventing catastrophic code loss
+- **Improved code_edit parameter description** - Changed from "Only the changed lines" to "The code changes wrapped with markers" to emphasize wrapping
+- **Added explicit wrapping rule** - Tool description now includes "ALWAYS wrap your changes with markers at the start AND end"
+- **Restored comprehensive examples** - `MORPH_INSTRUCTIONS.md` now includes all key examples (adding functions, modifying code, deletions)
+- **Added Quick Reference** - Aligned with Morph's official agent instructions format
+- **Added fetch timeout example** - From official Morph documentation
 
 ### v1.2.0
 

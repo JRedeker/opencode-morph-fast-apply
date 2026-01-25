@@ -17,7 +17,7 @@ const MORPH_MODEL = process.env.MORPH_MODEL || "morph-v3-fast"
 const MORPH_TIMEOUT = parseInt(process.env.MORPH_TIMEOUT || "30000", 10)
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.2.0"
+const PLUGIN_VERSION = "1.3.0"
 
 /**
  * Generate a unified diff with context for display
@@ -182,7 +182,8 @@ SECOND_EDIT
 
 Rules:
 - ALWAYS use "// ... existing code ..." for unchanged sections (omitting this marker will cause deletions)
-- Include minimal context ONLY when needed around edits for disambiguation
+- ALWAYS wrap your changes with markers at the start AND end to preserve surrounding code
+- Include minimal context around edits for disambiguation
 - Preserve exact indentation
 - For deletions: show context before and after, omit the deleted lines
 - Batch multiple edits to the same file in one call`,
@@ -199,7 +200,7 @@ Rules:
           code_edit: tool.schema
             .string()
             .describe(
-              'Only the changed lines with "// ... existing code ..." markers for unchanged sections'
+              'The code changes wrapped with "// ... existing code ..." markers for unchanged sections'
             ),
         },
 
@@ -241,6 +242,33 @@ For new files, provide the complete content without "// ... existing code ..." m
           } catch (err) {
             const error = err as Error
             return `Error reading file ${target_filepath}: ${error.message}`
+          }
+
+          // Pre-flight validation: check for markers to prevent accidental deletions
+          const hasMarkers = code_edit.includes("// ... existing code ...")
+          const originalLineCount = originalCode.split("\n").length
+
+          // If file has significant content and no markers, this is likely an error
+          if (!hasMarkers && originalLineCount > 10) {
+            return `Error: Missing "// ... existing code ..." markers.
+
+Your code_edit would replace the entire file (${originalLineCount} lines) because it contains no markers.
+This is almost certainly unintended and would cause code loss.
+
+To fix, wrap your changes with markers:
+// ... existing code ...
+YOUR_CHANGES_HERE
+// ... existing code ...
+
+If you truly want to replace the entire file, use the 'write' tool instead.`
+          }
+
+          // Warn for smaller files but still proceed (might be intentional full replacement)
+          if (!hasMarkers && originalLineCount > 3) {
+            // Log warning but continue - small files might be intentional replacements
+            console.warn(
+              `[morph-fast-apply] Warning: No markers in code_edit for ${target_filepath} (${originalLineCount} lines). Proceeding with full replacement.`
+            )
           }
 
           // Call Morph API to merge the edit
