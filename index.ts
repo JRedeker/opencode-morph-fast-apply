@@ -25,7 +25,7 @@ const ALLOW_READONLY_AGENTS =
   process.env.MORPH_ALLOW_READONLY_AGENTS === "true"
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.4.0"
+const PLUGIN_VERSION = "1.5.0"
 
 /**
  * Generate a unified diff with context for display
@@ -320,12 +320,14 @@ If you truly want to replace the entire file, use the 'write' tool instead.`
             )
           }
 
-          // Call Morph API to merge the edit
+          // Call Morph API to merge the edit (with timing)
+          const startTime = Date.now()
           const result = await callMorphApply(
             originalCode,
             code_edit,
             instructions
           )
+          const apiDuration = Date.now() - startTime
 
           if (!result.success || !result.content) {
             // Return error with suggestion to use native edit
@@ -359,13 +361,57 @@ The edit tool requires matching the exact text in the file.`
 
           return `Applied edit to ${target_filepath}
 
-+${added} -${removed} lines | ${originalLines} -> ${mergedLines} total
++${added} -${removed} lines | ${originalLines} -> ${mergedLines} total | ${apiDuration}ms
 
 \`\`\`diff
 ${diff.slice(0, 3000)}${diff.length > 3000 ? "\n... (truncated)" : ""}
 \`\`\``
         },
       }),
+    },
+
+    /**
+     * Customize tool output display in TUI
+     */
+    "tool.execute.after": async (input, output) => {
+      if (input.tool === "morph_edit") {
+        // Parse output to build a branded title
+        const fileMatch = output.output.match(/Applied edit to (.+?)\n/)
+        const statsMatch = output.output.match(/\+(\d+) -(\d+) lines/)
+        const timingMatch = output.output.match(/\| (\d+)ms/)
+        const createdMatch = output.output.match(/Created new file: (.+?)\n/)
+        const linesMatch = output.output.match(/Lines: (\d+)/)
+        const errorMatch = output.output.match(/^Error:/)
+        const blockedMatch = output.output.match(/not available in (.+?) mode/)
+        const apiFailMatch = output.output.match(/^Morph API failed:/)
+
+        if (createdMatch) {
+          // New file created
+          const lines = linesMatch?.[1] || "?"
+          output.title = `Morph: ${createdMatch[1]} (new, ${lines} lines)`
+        } else if (fileMatch && statsMatch) {
+          // Successful edit
+          const timing = timingMatch ? ` (${timingMatch[1]}ms)` : ""
+          output.title = `Morph: ${fileMatch[1]} +${statsMatch[1]}/-${statsMatch[2]}${timing}`
+        } else if (blockedMatch) {
+          // Blocked by readonly agent
+          output.title = `Morph: blocked (${blockedMatch[1]} mode)`
+        } else if (apiFailMatch) {
+          // API failure
+          output.title = `Morph: API failed`
+        } else if (errorMatch) {
+          // Other error
+          output.title = `Morph: failed`
+        }
+
+        // Add structured metadata for potential future TUI enhancements
+        output.metadata = {
+          ...output.metadata,
+          provider: "morph",
+          version: PLUGIN_VERSION,
+          model: MORPH_MODEL,
+        }
+      }
     },
   }
 }

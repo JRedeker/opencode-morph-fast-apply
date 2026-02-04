@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-02-04
+
+### Added
+
+- **Custom TUI display**: Uses `tool.execute.after` hook to show branded titles like `Morph: src/file.ts +15/-3 (450ms)`
+- **API timing**: Tracks and displays Morph API response time in output
+- **Structured metadata**: Adds provider, version, and model info to tool metadata for future TUI enhancements
+
+### Changed
+
+- **Output format**: Now includes API timing in milliseconds for performance visibility
+
 ## [1.4.0] - 2026-02-04
 
 ### Added
