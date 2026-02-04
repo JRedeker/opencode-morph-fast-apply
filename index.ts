@@ -16,8 +16,16 @@ const MORPH_API_URL = process.env.MORPH_API_URL || "https://api.morphllm.com"
 const MORPH_MODEL = process.env.MORPH_MODEL || "morph-v3-fast"
 const MORPH_TIMEOUT = parseInt(process.env.MORPH_TIMEOUT || "30000", 10)
 
+/**
+ * Agents that are blocked from using morph_edit by default.
+ * Users can override by setting MORPH_ALLOW_READONLY_AGENTS=true
+ */
+const READONLY_AGENTS = ["plan", "explore"]
+const ALLOW_READONLY_AGENTS =
+  process.env.MORPH_ALLOW_READONLY_AGENTS === "true"
+
 /** Plugin version */
-const PLUGIN_VERSION = "1.3.0"
+const PLUGIN_VERSION = "1.4.0"
 
 /**
  * Generate a unified diff with context for display
@@ -146,16 +154,36 @@ async function callMorphApply(
   }
 }
 
-export const MorphFastApply: Plugin = async ({ directory }) => {
+export const MorphFastApply: Plugin = async ({ directory, client }) => {
+  /**
+   * Helper for structured logging with stderr fallback
+   */
+  const log = async (
+    level: "debug" | "info" | "warn" | "error",
+    message: string
+  ) => {
+    try {
+      await client.app.log({
+        body: {
+          service: "morph-fast-apply",
+          level,
+          message,
+        },
+      })
+    } catch {
+      // Fallback to stderr if SDK logging fails
+      process.stderr.write(`[morph-fast-apply] ${message}\n`)
+    }
+  }
+
   // Log plugin initialization status
   if (!MORPH_API_KEY) {
-    console.warn(
-      "[morph-fast-apply] MORPH_API_KEY not set - morph_edit tool will be disabled"
+    await log(
+      "warn",
+      "MORPH_API_KEY not set - morph_edit tool will be disabled"
     )
   } else {
-    console.log(
-      `[morph-fast-apply] Plugin loaded with model: ${MORPH_MODEL}`
-    )
+    await log("info", `Plugin loaded with model: ${MORPH_MODEL}`)
   }
 
   return {
@@ -170,6 +198,10 @@ export const MorphFastApply: Plugin = async ({ directory }) => {
        */
       morph_edit: tool({
         description: `Use this tool to edit existing files by showing only the changed lines.
+
+USAGE GUIDELINES:
+- Use 'morph_edit' for: multi-hunk edits, large files (300+ lines), complex refactoring, or when exact string matching is difficult.
+- Use native 'edit' for: simple single-string replacements, small files (<50 lines), or creating new files.
 
 Use "// ... existing code ..." to represent unchanged code blocks. Include just enough surrounding context to locate each edit precisely.
 
@@ -204,8 +236,24 @@ Rules:
             ),
         },
 
-        async execute(args) {
+        async execute(args, context) {
           const { target_filepath, instructions, code_edit } = args
+
+          // Block usage in readonly agents (plan, explore) unless overridden
+          if (!ALLOW_READONLY_AGENTS && READONLY_AGENTS.includes(context.agent)) {
+            await log(
+              "debug",
+              `Blocked morph_edit in readonly agent: ${context.agent}`
+            )
+            return `Error: morph_edit is not available in ${context.agent} mode.
+
+The ${context.agent} agent is read-only and cannot modify files.
+
+Options:
+1. Switch to 'build' mode (Tab key) to make changes
+2. Use the native 'edit' tool if permitted by your agent config
+3. Set MORPH_ALLOW_READONLY_AGENTS=true to override this restriction`
+          }
 
           // Resolve file path relative to project directory
           const filepath = target_filepath.startsWith("/")
@@ -266,8 +314,9 @@ If you truly want to replace the entire file, use the 'write' tool instead.`
           // Warn for smaller files but still proceed (might be intentional full replacement)
           if (!hasMarkers && originalLineCount > 3) {
             // Log warning but continue - small files might be intentional replacements
-            console.warn(
-              `[morph-fast-apply] Warning: No markers in code_edit for ${target_filepath} (${originalLineCount} lines). Proceeding with full replacement.`
+            await log(
+              "warn",
+              `No markers in code_edit for ${target_filepath} (${originalLineCount} lines). Proceeding with full replacement.`
             )
           }
 

@@ -4,6 +4,24 @@
 
 ---
 
+## Choosing the Right Tool
+
+| Situation | Tool | Reason |
+|-----------|------|--------|
+| **Small, exact string replacement** | `edit` | **FASTEST.** No API call, immediate execution. |
+| **Simple variable/function rename** | `edit` | Precise, no AI needed. |
+| **Large file (300+ lines)** | `morph_edit` | 10x faster, handles partial snippets without reading whole file. |
+| **Multiple scattered changes** | `morph_edit` | Batch changes efficiently in one pass. |
+| **Complex refactoring** | `morph_edit` | AI understands context better than strict string matching. |
+| **Whitespace-sensitive edits** | `morph_edit` | Forgiving with formatting differences. |
+
+### ❌ Anti-Patterns (When NOT to use morph_edit)
+- **Do NOT** use for single-line changes (e.g., changing a port number). Use `edit`.
+- **Do NOT** use for simple typo fixes. Use `edit`.
+- **Do NOT** use for creating new files. Use `write`.
+
+---
+
 ## Quick Reference
 
 **IMPORTANT:** Use `morph_edit` over `str_replace_editor` or full file writes. It works with partial code snippets—no need for full file content.
@@ -121,19 +139,6 @@ function processUserData(userId) {
 }
 // ... existing code ...
 ```
-
----
-
-## When to Use morph_edit vs Other Tools
-
-| Situation | Tool | Reason |
-|-----------|------|--------|
-| Small, exact string replacement | `edit` | Fast, precise, no API call |
-| Large file (500+ lines) | `morph_edit` | 10x faster, handles partial snippets |
-| Multiple scattered changes | `morph_edit` | Batch changes efficiently |
-| Complex refactoring | `morph_edit` | Better accuracy with context |
-| Whitespace-sensitive edits | `morph_edit` | Forgiving with formatting |
-| New file creation | `write` | Standard file creation |
 
 ---
 
