@@ -9,18 +9,49 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 - **98% accuracy** with intelligent code merging
 - **Pre-flight validation** - prevents accidental file deletions when markers are missing
 - **Unified diff output** with context for easy review
+- **Custom TUI display** - branded titles like `Morph: src/file.ts +15/-3 (450ms)`
 - **Graceful fallback** - suggests native `edit` tool on API failure
 
 > **Note:** This is an OpenCode plugin that wraps Morph's Fast Apply API. For the official Morph MCP server (which includes WarpGrep search), see [@morphllm/morphmcp](https://www.npmjs.com/package/@morphllm/morphmcp). This plugin uses `morph_edit` as the tool name to avoid conflicts if you have both installed.
 
 ## Installation
 
-### 1. Clone the repository
+### 1. Add the plugin to your OpenCode config
 
-```bash
-git clone https://github.com/JRedeker/opencode-morph-fast-apply.git ~/dev/oc-plugins/morph-fast-apply
-cd ~/dev/oc-plugins/morph-fast-apply
-npm install
+Add to your global config (`~/.config/opencode/opencode.json`):
+
+```json
+{
+  "plugin": [
+    "github:JRedeker/opencode-morph-fast-apply"
+  ],
+  "instructions": [
+    "~/.config/opencode/node_modules/opencode-morph-fast-apply/MORPH_INSTRUCTIONS.md"
+  ]
+}
+```
+
+Or pin to a specific version:
+
+```json
+{
+  "plugin": [
+    "github:JRedeker/opencode-morph-fast-apply#v1.5.0"
+  ]
+}
+```
+
+For project-local config (`.opencode/opencode.json`):
+
+```json
+{
+  "plugin": [
+    "github:JRedeker/opencode-morph-fast-apply"
+  ],
+  "instructions": [
+    ".opencode/node_modules/opencode-morph-fast-apply/MORPH_INSTRUCTIONS.md"
+  ]
+}
 ```
 
 ### 2. Set your Morph API key
@@ -31,35 +62,7 @@ Get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-ke
 export MORPH_API_KEY="sk-your-key-here"
 ```
 
-### 3. Add the plugin to your Claude Code config
-
-Add to your global config (`~/.config/Claude/Claude.json`):
-
-```json
-{
-  "plugin": [
-    "/path/to/morph-fast-apply"
-  ],
-  "instructions": [
-    "/path/to/morph-fast-apply/MORPH_INSTRUCTIONS.md"
-  ]
-}
-```
-
-Or in a project-local `.claude/config.json`:
-
-```json
-{
-  "plugin": [
-    "~/dev/oc-plugins/morph-fast-apply"
-  ],
-  "instructions": [
-    "~/dev/oc-plugins/morph-fast-apply/MORPH_INSTRUCTIONS.md"
-  ]
-}
-```
-
-### 4. Restart Claude Code
+### 3. Restart OpenCode
 
 The `morph_edit` tool will now be available.
 
@@ -145,7 +148,23 @@ If code is being deleted unexpectedly, ensure your `code_edit` includes `// ... 
 
 If edits are applied to the wrong location, add more unique context around your changes and make your `instructions` more specific about which function/section you're modifying.
 
+### Tool blocked in plan/explore mode
+
+The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
+
 ## Changelog
+
+### v1.5.0
+
+- **Custom TUI display** - Tool output shows branded titles like `Morph: src/file.ts +15/-3 (450ms)`
+- **API timing** - Response time tracked and displayed in tool title
+- **Structured metadata** - Provider, version, model info included for future TUI enhancements
+
+### v1.4.0
+
+- **Fixed stdout pollution** - Replaced `console.log`/`console.warn` with `client.app.log()` SDK method
+- **Readonly agent protection** - Blocks `morph_edit` in `plan` and `explore` modes to prevent accidental edits
+- **Stderr fallback** - Graceful logging if SDK method unavailable
 
 ### v1.3.0
 
