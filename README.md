@@ -2,10 +2,6 @@
 
 OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code editing with lazy edit markers.
 
-## Why Use This?
-
-The native `edit` tool requires exact string matching—one whitespace difference and it fails. For large files or complex refactors, this gets tedious fast. `morph_edit` uses lazy markers (`// ... existing code ...`) so you only specify what changes, and Morph's AI merges it intelligently at 10,500+ tokens/sec.
-
 ## Features
 
 - **10,500+ tokens/sec** code editing via Morph's Fast Apply API
@@ -60,7 +56,7 @@ For project-local config (`.opencode/opencode.json`):
 
 ### 2. Set your Morph API key
 
-[Create a free Morph account](https://www.morphllm.com/sign-up), then get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-keys) and add to your shell profile:
+Get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-keys), then add to your shell profile:
 
 ```bash
 export MORPH_API_KEY="sk-your-key-here"
@@ -69,10 +65,6 @@ export MORPH_API_KEY="sk-your-key-here"
 ### 3. Restart OpenCode
 
 The `morph_edit` tool will now be available.
-
-### 4. Verify installation
-
-In OpenCode, type `/tools` and confirm `morph_edit` appears in the list.
 
 ## Usage
 
