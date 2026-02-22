@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Input normalization**: `normalizeCodeEditInput()` strips markdown fences from LLM-wrapped code blocks to prevent Morph API confusion
+- **Marker leakage guard**: Post-merge validation detects when Morph treats `// ... existing code ...` markers as literal text instead of expanding them
+- **Catastrophic truncation guard**: Dual-metric validation (>60% char loss AND >50% line loss) prevents data loss from failed merges
+- **Structured error recovery**: Guard failures include specific metrics, explanations, and 3+ actionable recovery options
+
+### Changed
+
+- **`EXISTING_CODE_MARKER` constant**: Extracted to module-level export for consistency and testability
+- **Guard logging**: Both post-merge guards emit diagnostic logs at warn level before returning errors
+
+### Fixed
+
+- Markdown fence stripping no longer requires exact whitespace — uses line-based parsing for robustness
+
 ## [1.5.0] - 2026-02-04
 
 ### Added
