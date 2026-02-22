@@ -144,6 +144,19 @@ export MORPH_TIMEOUT=60000  # 60 seconds
 
 If code is being deleted unexpectedly, ensure your `code_edit` includes `// ... existing code ...` markers at the start and end. Omitting these markers tells Morph to replace the entire file.
 
+### Safety guards
+
+The plugin now blocks unsafe Morph responses before writing files:
+
+- **Marker leakage guard**: If merged output contains `// ... existing code ...` but the original file did not, the write is aborted.
+- **Catastrophic truncation guard**: If merged output loses more than 60% of characters **and** more than 50% of lines (for marker-based edits), the write is aborted.
+
+In both cases, `morph_edit` returns a detailed error with recovery options (retry with tighter anchors, use native `edit`, or split into smaller edits).
+
+### Markdown-fenced `code_edit` input
+
+If an AI agent wraps `code_edit` in markdown fences (for example, ```` ```typescript ... ``` ````), `morph_edit` strips the outer fence before sending content to Morph.
+
 ### Wrong edit location
 
 If edits are applied to the wrong location, add more unique context around your changes and make your `instructions` more specific about which function/section you're modifying.

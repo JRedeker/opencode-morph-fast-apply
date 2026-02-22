@@ -73,6 +73,35 @@ function countChanges(diff: string): { added: number; removed: number } {
   return { added, removed }
 }
 
+/** Canonical marker string used for lazy edit placeholders */
+export const EXISTING_CODE_MARKER = "// ... existing code ..."
+
+/**
+ * Normalize code_edit input from LLM tool calls.
+ *
+ * Agents frequently wrap tool arguments in markdown fences (```lang ... ```).
+ * When this is nested inside Morph's <update> XML tag, it confuses the merge
+ * model. This function strips a single outer fence pair using line-based parsing.
+ *
+ * @param codeEdit - Raw code_edit string from the tool call
+ * @returns The code content with outer markdown fences removed, if present
+ */
+export function normalizeCodeEditInput(codeEdit: string): string {
+  const trimmed = codeEdit.trim()
+  const lines = trimmed.split("\n")
+
+  if (lines.length < 3) return codeEdit
+
+  const firstLine = lines[0]
+  const lastLine = lines[lines.length - 1]
+
+  if (/^```[\w-]*$/.test(firstLine) && /^```$/.test(lastLine)) {
+    return lines.slice(1, -1).join("\n")
+  }
+
+  return codeEdit
+}
+
 /**
  * Call Morph's Apply API to merge code edits
  */
@@ -238,6 +267,7 @@ Rules:
 
         async execute(args, context) {
           const { target_filepath, instructions, code_edit } = args
+          const normalizedCodeEdit = normalizeCodeEditInput(code_edit)
 
           // Block usage in readonly agents (plan, explore) unless overridden
           if (!ALLOW_READONLY_AGENTS && READONLY_AGENTS.includes(context.agent)) {
@@ -276,15 +306,15 @@ Alternatively, use the native 'edit' tool for this change.`
             const file = Bun.file(filepath)
             if (!(await file.exists())) {
               // New file - check if this is a creation
-              if (!code_edit.includes("// ... existing code ...")) {
+              if (!normalizedCodeEdit.includes(EXISTING_CODE_MARKER)) {
                 // Simple file creation
-                await Bun.write(filepath, code_edit)
-                return `Created new file: ${target_filepath}\n\nLines: ${code_edit.split("\n").length}`
+                await Bun.write(filepath, normalizedCodeEdit)
+                return `Created new file: ${target_filepath}\n\nLines: ${normalizedCodeEdit.split("\n").length}`
               }
               return `Error: File not found: ${target_filepath}
 
 The file doesn't exist and the code_edit contains lazy markers.
-For new files, provide the complete content without "// ... existing code ..." markers.`
+For new files, provide the complete content without "${EXISTING_CODE_MARKER}" markers.`
             }
             originalCode = await file.text()
           } catch (err) {
@@ -293,20 +323,20 @@ For new files, provide the complete content without "// ... existing code ..." m
           }
 
           // Pre-flight validation: check for markers to prevent accidental deletions
-          const hasMarkers = code_edit.includes("// ... existing code ...")
+          const hasMarkers = normalizedCodeEdit.includes(EXISTING_CODE_MARKER)
           const originalLineCount = originalCode.split("\n").length
 
           // If file has significant content and no markers, this is likely an error
           if (!hasMarkers && originalLineCount > 10) {
-            return `Error: Missing "// ... existing code ..." markers.
+            return `Error: Missing "${EXISTING_CODE_MARKER}" markers.
 
 Your code_edit would replace the entire file (${originalLineCount} lines) because it contains no markers.
 This is almost certainly unintended and would cause code loss.
 
 To fix, wrap your changes with markers:
-// ... existing code ...
+${EXISTING_CODE_MARKER}
 YOUR_CHANGES_HERE
-// ... existing code ...
+${EXISTING_CODE_MARKER}
 
 If you truly want to replace the entire file, use the 'write' tool instead.`
           }
@@ -324,7 +354,7 @@ If you truly want to replace the entire file, use the 'write' tool instead.`
           const startTime = Date.now()
           const result = await callMorphApply(
             originalCode,
-            code_edit,
+            normalizedCodeEdit,
             instructions
           )
           const apiDuration = Date.now() - startTime
@@ -338,6 +368,64 @@ The edit tool requires matching the exact text in the file.`
           }
 
           const mergedCode = result.content
+
+          // Post-merge guard: marker leakage detection
+          // If the merged output contains the placeholder marker but the original
+          // file did not, the model treated markers as literal code instead of
+          // expanding them. Skip check for self-referential files (docs, tests
+          // for this plugin) that legitimately contain the marker string.
+          const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER)
+          if (
+            hasMarkers &&
+            !originalHadMarker &&
+            mergedCode.includes(EXISTING_CODE_MARKER)
+          ) {
+            await log(
+              "warn",
+              `Marker leakage detected in merged output for ${target_filepath}`
+            )
+            return `Morph API produced unsafe output for ${target_filepath}.
+
+Detected placeholder marker text ("${EXISTING_CODE_MARKER}") in merged output.
+This means the merge model treated markers as literal code instead of expanding them.
+
+No file changes were written.
+
+Options:
+1. Retry with more concrete surrounding context in code_edit
+2. Use the native 'edit' tool for exact string replacement
+3. Break the change into smaller, more targeted edits`
+          }
+
+          // Post-merge guard: catastrophic truncation detection
+          // If the merged output loses >60% of characters AND >50% of lines,
+          // the model likely failed to expand markers. Uses dual-metric to
+          // reduce false positives from legitimate formatting changes.
+          const mergedLineCount = mergedCode.split("\n").length
+          const charLoss =
+            (originalCode.length - mergedCode.length) / originalCode.length
+          const lineLoss =
+            (originalLineCount - mergedLineCount) / originalLineCount
+
+          if (hasMarkers && charLoss > 0.6 && lineLoss > 0.5) {
+            await log(
+              "warn",
+              `Catastrophic truncation detected for ${target_filepath}: ${Math.round(charLoss * 100)}% char loss, ${Math.round(lineLoss * 100)}% line loss`
+            )
+            return `Morph API produced a potentially destructive merge for ${target_filepath}.
+
+Original: ${originalLineCount} lines (${originalCode.length} chars)
+Merged:   ${mergedLineCount} lines (${mergedCode.length} chars)
+Loss:     ${Math.round(charLoss * 100)}% characters, ${Math.round(lineLoss * 100)}% lines
+
+Because markers were provided, this large shrink is likely unintended.
+No file changes were written.
+
+Options:
+1. Retry with more precise anchors in code_edit
+2. Use the native 'edit' tool for exact string replacement
+3. Break the change into smaller edits`
+          }
 
           // Write the merged result
           try {
