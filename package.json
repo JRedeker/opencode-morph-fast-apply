@@ -5,7 +5,9 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "ci": "bun test && tsc --noEmit"
   },
   "dependencies": {
     "@opencode-ai/plugin": "latest",

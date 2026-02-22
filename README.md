@@ -1,5 +1,10 @@
 # opencode-morph-fast-apply
 
+[![CI](https://github.com/JRedeker/opencode-morph-fast-apply/actions/workflows/ci.yml/badge.svg)](https://github.com/JRedeker/opencode-morph-fast-apply/actions/workflows/ci.yml)
+[![Release](https://github.com/JRedeker/opencode-morph-fast-apply/actions/workflows/release.yml/badge.svg)](https://github.com/JRedeker/opencode-morph-fast-apply/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/JRedeker/opencode-morph-fast-apply)](https://github.com/JRedeker/opencode-morph-fast-apply/releases/latest)
+
 OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code editing with lazy edit markers.
 
 ## Features
