@@ -58,13 +58,40 @@ describe("normalizeCodeEditInput", () => {
     const input = "  \n```typescript\nfunction foo() {}\n```\n  "
     expect(normalizeCodeEditInput(input)).toBe("function foo() {}")
   })
+
+  test("returns empty string unchanged", () => {
+    expect(normalizeCodeEditInput("")).toBe("")
+  })
+
+  test("handles fence with only whitespace content", () => {
+    const input = "```\n  \n```"
+    expect(normalizeCodeEditInput(input)).toBe("  ")
+  })
+
+  test("handles javascript language tag", () => {
+    const input = "```javascript\nconst x = 1;\n```"
+    expect(normalizeCodeEditInput(input)).toBe("const x = 1;")
+  })
+
+  test("handles python language tag", () => {
+    const input = "```python\ndef foo():\n    pass\n```"
+    expect(normalizeCodeEditInput(input)).toBe("def foo():\n    pass")
+  })
+
+  test("does not strip if closing fence has language", () => {
+    // Invalid markdown: closing fence should not have a language
+    const input = "```typescript\nfoo()\n```typescript"
+    expect(normalizeCodeEditInput(input)).toBe(input)
+  })
+
+  test("preserves content with backticks inside fences", () => {
+    const input = "```typescript\nconst x = `hello ${world}`;\n```"
+    expect(normalizeCodeEditInput(input)).toBe("const x = `hello ${world}`;")
+  })
 })
 
 describe("marker leakage detection logic", () => {
-  // These test the guard logic inline — we can't import it directly since
-  // it's embedded in execute(), but we verify the conditions here.
-
-  test("marker leakage: detected when original lacks marker", () => {
+  test("detected when original lacks marker", () => {
     const originalCode = "function foo() { return 1 }"
     const mergedCode = `function foo() { return 1 }\n${EXISTING_CODE_MARKER}\nfunction bar() {}`
     const hasMarkers = true
@@ -75,7 +102,7 @@ describe("marker leakage detection logic", () => {
     expect(wouldTrigger).toBe(true)
   })
 
-  test("marker leakage: skipped when original already contains marker", () => {
+  test("skipped when original already contains marker", () => {
     const originalCode = `// Use "${EXISTING_CODE_MARKER}" to represent unchanged code`
     const mergedCode = `// Use "${EXISTING_CODE_MARKER}" to represent unchanged code\n// Added line`
     const hasMarkers = true
@@ -86,74 +113,163 @@ describe("marker leakage detection logic", () => {
     expect(wouldTrigger).toBe(false)
   })
 
-  test("marker leakage: not triggered when no markers in input", () => {
+  test("not triggered when no markers in input", () => {
     const originalCode = "function foo() { return 1 }"
     const mergedCode = `function foo() { return 1 }\n${EXISTING_CODE_MARKER}`
-    const hasMarkers = false // no markers in code_edit
+    const hasMarkers = false
 
     const wouldTrigger =
       hasMarkers && mergedCode.includes(EXISTING_CODE_MARKER)
     expect(wouldTrigger).toBe(false)
   })
-})
 
-describe("truncation detection logic", () => {
-  test("triggers when both char and line loss exceed thresholds", () => {
-    const originalCode = "x".repeat(1000) + "\n".repeat(100)
-    const mergedCode = "x".repeat(300) + "\n".repeat(40)
+  test("detected when marker appears at start of merged output", () => {
+    const originalCode = "const x = 1;\nconst y = 2;"
+    const mergedCode = `${EXISTING_CODE_MARKER}\nconst x = 1;\nconst y = 2;`
     const hasMarkers = true
+    const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER)
 
-    const originalLineCount = originalCode.split("\n").length
-    const mergedLineCount = mergedCode.split("\n").length
-    const charLoss = (originalCode.length - mergedCode.length) / originalCode.length
-    const lineLoss = (originalLineCount - mergedLineCount) / originalLineCount
-
-    const wouldTrigger = hasMarkers && charLoss > 0.6 && lineLoss > 0.5
+    const wouldTrigger =
+      hasMarkers && !originalHadMarker && mergedCode.includes(EXISTING_CODE_MARKER)
     expect(wouldTrigger).toBe(true)
   })
 
-  test("does not trigger when only char loss exceeds threshold", () => {
-    // Lots of char loss but lines stay similar (e.g., whitespace removal)
-    const originalCode = "x    ".repeat(200) + "\n".repeat(50)
-    const mergedCode = "x".repeat(200) + "\n".repeat(50)
+  test("detected when marker appears at end of merged output", () => {
+    const originalCode = "const x = 1;\nconst y = 2;"
+    const mergedCode = `const x = 1;\nconst y = 2;\n${EXISTING_CODE_MARKER}`
     const hasMarkers = true
+    const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER)
 
+    const wouldTrigger =
+      hasMarkers && !originalHadMarker && mergedCode.includes(EXISTING_CODE_MARKER)
+    expect(wouldTrigger).toBe(true)
+  })
+
+  test("not triggered on clean merge (no markers in output)", () => {
+    const originalCode = "function foo() { return 1 }"
+    const mergedCode = "function foo() { return 2 }"
+    const hasMarkers = true
+    const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER)
+
+    const wouldTrigger =
+      hasMarkers && !originalHadMarker && mergedCode.includes(EXISTING_CODE_MARKER)
+    expect(wouldTrigger).toBe(false)
+  })
+})
+
+describe("truncation detection logic", () => {
+  // Helper to simulate the guard condition
+  function wouldTriggerTruncation(
+    originalCode: string,
+    mergedCode: string,
+    hasMarkers: boolean
+  ): { triggered: boolean; charLoss: number; lineLoss: number } {
     const originalLineCount = originalCode.split("\n").length
     const mergedLineCount = mergedCode.split("\n").length
-    const charLoss = (originalCode.length - mergedCode.length) / originalCode.length
-    const lineLoss = (originalLineCount - mergedLineCount) / originalLineCount
+    const charLoss =
+      (originalCode.length - mergedCode.length) / originalCode.length
+    const lineLoss =
+      (originalLineCount - mergedLineCount) / originalLineCount
+    return {
+      triggered: hasMarkers && charLoss > 0.6 && lineLoss > 0.5,
+      charLoss,
+      lineLoss,
+    }
+  }
 
-    const wouldTrigger = hasMarkers && charLoss > 0.6 && lineLoss > 0.5
-    expect(wouldTrigger).toBe(false)
+  test("triggers when both char and line loss exceed thresholds", () => {
+    const originalCode = "x".repeat(1000) + "\n".repeat(100)
+    const mergedCode = "x".repeat(300) + "\n".repeat(40)
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    expect(result.triggered).toBe(true)
+  })
+
+  test("does not trigger when only char loss exceeds threshold", () => {
+    // Lots of char loss but lines stay similar (whitespace removal)
+    const originalCode = "x    ".repeat(200) + "\n".repeat(50)
+    const mergedCode = "x".repeat(200) + "\n".repeat(50)
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    expect(result.triggered).toBe(false)
+    expect(result.lineLoss).toBeLessThanOrEqual(0.5)
   })
 
   test("does not trigger when only line loss exceeds threshold", () => {
-    // Lines shrunk but chars stayed similar (e.g., joined multi-line to single-line)
+    // Lines shrunk but chars stayed similar (joined multi-line to single-line)
     const lines = Array.from({ length: 100 }, () => "ab").join("\n")
     const joined = Array.from({ length: 40 }, () => "ab".repeat(3)).join("\n")
-    const hasMarkers = true
 
-    const originalLineCount = lines.split("\n").length
-    const mergedLineCount = joined.split("\n").length
-    const charLoss = (lines.length - joined.length) / lines.length
-    const lineLoss = (originalLineCount - mergedLineCount) / originalLineCount
-
-    // charLoss should be low/negative (joined has more chars per line)
-    const wouldTrigger = hasMarkers && charLoss > 0.6 && lineLoss > 0.5
-    expect(wouldTrigger).toBe(false)
+    const result = wouldTriggerTruncation(lines, joined, true)
+    expect(result.triggered).toBe(false)
+    expect(result.charLoss).toBeLessThanOrEqual(0.6)
   })
 
   test("does not trigger when no markers in input", () => {
     const originalCode = "x".repeat(1000) + "\n".repeat(100)
     const mergedCode = "x".repeat(100)
-    const hasMarkers = false
 
+    const result = wouldTriggerTruncation(originalCode, mergedCode, false)
+    expect(result.triggered).toBe(false)
+  })
+
+  test("does not trigger when file grows (negative loss)", () => {
+    const originalCode = "short\nfile\n"
+    const mergedCode = "short\nfile\nwith\nmany\nnew\nlines\nadded\nhere\n"
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    expect(result.triggered).toBe(false)
+    expect(result.charLoss).toBeLessThan(0)
+    expect(result.lineLoss).toBeLessThan(0)
+  })
+
+  test("does not trigger on empty original file", () => {
+    const originalCode = ""
+    const mergedCode = "new content"
+
+    // Edge: division by zero for charLoss/lineLoss produces NaN/Infinity
     const originalLineCount = originalCode.split("\n").length
     const mergedLineCount = mergedCode.split("\n").length
-    const charLoss = (originalCode.length - mergedCode.length) / originalCode.length
-    const lineLoss = (originalLineCount - mergedLineCount) / originalLineCount
+    const charLoss =
+      (originalCode.length - mergedCode.length) / originalCode.length
+    const lineLoss =
+      (originalLineCount - mergedLineCount) / originalLineCount
 
-    const wouldTrigger = hasMarkers && charLoss > 0.6 && lineLoss > 0.5
-    expect(wouldTrigger).toBe(false)
+    // NaN > 0.6 is false, so this should NOT trigger
+    const triggered = true && charLoss > 0.6 && lineLoss > 0.5
+    expect(triggered).toBe(false)
+  })
+
+  test("triggers just above both thresholds", () => {
+    // original: 1000 chars, merged: 390 chars → charLoss = 0.61
+    // original: 100 lines, merged: 49 lines → lineLoss = 0.51
+    const originalCode = "x".repeat(900) + "\n".repeat(100)
+    const mergedCode = "x".repeat(341) + "\n".repeat(49)
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    expect(result.charLoss).toBeGreaterThan(0.6)
+    expect(result.lineLoss).toBeGreaterThan(0.5)
+    expect(result.triggered).toBe(true)
+  })
+
+  test("does not trigger when just below char threshold", () => {
+    // original: 1000 chars, merged: 401 chars → charLoss = 0.599
+    // original: 100 lines, merged: 10 lines → lineLoss = 0.90
+    const originalCode = "x".repeat(900) + "\n".repeat(100)
+    const mergedCode = "x".repeat(391) + "\n".repeat(10)
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    expect(result.charLoss).toBeLessThanOrEqual(0.6)
+    expect(result.triggered).toBe(false)
+  })
+
+  test("handles single-line file correctly", () => {
+    const originalCode = "x".repeat(100)
+    const mergedCode = "x".repeat(10)
+
+    const result = wouldTriggerTruncation(originalCode, mergedCode, true)
+    // lineLoss = (1-1)/1 = 0, which is below 0.5
+    expect(result.lineLoss).toBe(0)
+    expect(result.triggered).toBe(false)
   })
 })

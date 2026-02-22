@@ -36,7 +36,7 @@ Or pin to a specific version:
 ```json
 {
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.5.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.6.0"
   ]
 }
 ```
@@ -166,6 +166,15 @@ If edits are applied to the wrong location, add more unique context around your 
 The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
 
 ## Changelog
+
+### v1.6.0
+
+- **Post-merge safety guards** - Blocks unsafe Morph output before writing to disk:
+  - **Marker leakage guard** - Detects when merge model treats `// ... existing code ...` as literal text
+  - **Truncation guard** - Dual-metric validation (>60% char + >50% line loss) prevents silent data loss
+- **Input normalization** - Strips markdown fences from `code_edit` to prevent merge confusion
+- **TUI guard titles** - Shows `Morph: blocked (marker leakage)` or `Morph: blocked (truncation)` on guard failures
+- **32 test cases** - Comprehensive coverage of normalization, leakage detection, and truncation edge cases
 
 ### v1.5.0
 

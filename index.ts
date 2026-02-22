@@ -25,7 +25,7 @@ const ALLOW_READONLY_AGENTS =
   process.env.MORPH_ALLOW_READONLY_AGENTS === "true"
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.5.0"
+const PLUGIN_VERSION = "1.6.0"
 
 /**
  * Generate a unified diff with context for display
@@ -472,6 +472,8 @@ ${diff.slice(0, 3000)}${diff.length > 3000 ? "\n... (truncated)" : ""}
         const errorMatch = output.output.match(/^Error:/)
         const blockedMatch = output.output.match(/not available in (.+?) mode/)
         const apiFailMatch = output.output.match(/^Morph API failed:/)
+        const unsafeMatch = output.output.match(/^Morph API produced unsafe output for (.+?)\./)
+        const truncationMatch = output.output.match(/^Morph API produced a potentially destructive merge for (.+?)\./)
 
         if (createdMatch) {
           // New file created
@@ -481,6 +483,12 @@ ${diff.slice(0, 3000)}${diff.length > 3000 ? "\n... (truncated)" : ""}
           // Successful edit
           const timing = timingMatch ? ` (${timingMatch[1]}ms)` : ""
           output.title = `Morph: ${fileMatch[1]} +${statsMatch[1]}/-${statsMatch[2]}${timing}`
+        } else if (unsafeMatch) {
+          // Post-merge guard: marker leakage
+          output.title = `Morph: blocked (marker leakage) ${unsafeMatch[1]}`
+        } else if (truncationMatch) {
+          // Post-merge guard: catastrophic truncation
+          output.title = `Morph: blocked (truncation) ${truncationMatch[1]}`
         } else if (blockedMatch) {
           // Blocked by readonly agent
           output.title = `Morph: blocked (${blockedMatch[1]} mode)`

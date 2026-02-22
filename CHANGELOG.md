@@ -5,23 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0] - 2026-02-22
 
 ### Added
 
-- **Input normalization**: `normalizeCodeEditInput()` strips markdown fences from LLM-wrapped code blocks to prevent Morph API confusion
-- **Marker leakage guard**: Post-merge validation detects when Morph treats `// ... existing code ...` markers as literal text instead of expanding them
-- **Catastrophic truncation guard**: Dual-metric validation (>60% char loss AND >50% line loss) prevents data loss from failed merges
-- **Structured error recovery**: Guard failures include specific metrics, explanations, and 3+ actionable recovery options
+- **Input normalization**: `normalizeCodeEditInput()` strips markdown fences from LLM-wrapped `code_edit` to prevent Morph API confusion
+- **Marker leakage guard**: Post-merge validation detects when Morph treats `// ... existing code ...` markers as literal text instead of expanding them — aborts file write and returns actionable error
+- **Catastrophic truncation guard**: Dual-metric validation (>60% char loss AND >50% line loss) prevents silent data loss from failed merges
+- **Structured error recovery**: Guard failures include specific metrics, explanations, and 3 actionable recovery options
+- **TUI titles for guard failures**: `tool.execute.after` hook now shows branded titles like `Morph: blocked (marker leakage)` and `Morph: blocked (truncation)`
+- **Test suite**: 32 tests covering normalization, marker leakage logic, and truncation detection edge cases
 
 ### Changed
 
 - **`EXISTING_CODE_MARKER` constant**: Extracted to module-level export for consistency and testability
-- **Guard logging**: Both post-merge guards emit diagnostic logs at warn level before returning errors
-
-### Fixed
-
-- Markdown fence stripping no longer requires exact whitespace — uses line-based parsing for robustness
+- **Guard logging**: Both post-merge guards emit diagnostic `warn`-level logs before returning errors
+- **Hardcoded marker strings**: All references to `"// ... existing code ..."` now use the `EXISTING_CODE_MARKER` constant
 
 ## [1.5.0] - 2026-02-04
 
