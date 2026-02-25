@@ -16,15 +16,9 @@
 | **Whitespace-sensitive edits** | `morph_edit` | Forgiving with formatting differences. |
 
 ### ❌ Anti-Patterns (When NOT to use morph_edit)
-- **Do NOT** use for single-line changes (e.g., changing a port number). Use `edit`.
-- **Do NOT** use for simple typo fixes. Use `edit`.
-- **Do NOT** use for creating new files. Use `write`.
-
----
-
-## Quick Reference
-
-**IMPORTANT:** Use `morph_edit` over `str_replace_editor` or full file writes. It works with partial code snippets—no need for full file content.
+- Single-line changes → use `edit`
+- Simple typo fixes → use `edit`
+- Creating new files → use `write`
 
 ---
 
@@ -155,7 +149,4 @@ function processUserData(userId) {
 
 ## Fallback Behavior
 
-If Morph API fails (timeout, rate limit, etc.):
-1. An error message with details is returned
-2. Use the native `edit` tool as fallback
-3. The native `edit` tool requires exact string matching
+If Morph API fails, use the native `edit` tool (requires exact string matching).
