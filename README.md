@@ -77,7 +77,7 @@ function validateToken(token) {
 })
 ```
 
-> **Important:** The tool description prompts agents to load the morph skill before first use. For the full reference, see [skills/morph/SKILL.md](./skills/morph/SKILL.md) or [MORPH_INSTRUCTIONS.md](./MORPH_INSTRUCTIONS.md).
+> **Important:** The canonical agent guidance is [skills/morph/SKILL.md](./skills/morph/SKILL.md). [MORPH_INSTRUCTIONS.md](./MORPH_INSTRUCTIONS.md) is kept as a legacy compatibility reference.
 
 ### When to use `morph_edit` vs `edit`
 

@@ -1,5 +1,7 @@
 # Morph Fast Apply - AI Agent Instructions
 
+> Legacy compatibility reference. The canonical, on-demand guidance lives in [skills/morph/SKILL.md](./skills/morph/SKILL.md) and is loaded via `skill({ name: "morph" })`.
+
 > **What is morph_edit?** A tool that lets you edit files using partial code snippets with `// ... existing code ...` markers. Morph's AI merges your changes into the full file at 10,500+ tokens/sec with 98% accuracy.
 
 ---

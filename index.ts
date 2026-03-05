@@ -27,6 +27,10 @@ const ALLOW_READONLY_AGENTS =
 /** Plugin version */
 const PLUGIN_VERSION = "1.6.0";
 
+/** Skill-loading hint shown in the morph_edit tool description */
+export const MORPH_SKILL_LOAD_HINT =
+  'IMPORTANT: Before your first morph_edit call in a session, load the morph skill for detailed guidance: skill({ name: "morph" })';
+
 /**
  * Generate a unified diff with context for display
  */
@@ -228,7 +232,7 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
       morph_edit: tool({
         description: `Use this tool to edit existing files by showing only the changed lines.
 
-IMPORTANT: Before your first morph_edit call in a session, load the morph skill for detailed guidance: skill({ name: "morph" })
+${MORPH_SKILL_LOAD_HINT}
 
 USAGE GUIDELINES:
 - Use 'morph_edit' for: multi-hunk edits, large files (300+ lines), complex refactoring, or when exact string matching is difficult.

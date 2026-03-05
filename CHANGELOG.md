@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Skill-load guardrail in tool description**: `morph_edit` now includes an explicit instruction to load the morph skill (`skill({ name: "morph" })`) before first use in a session
+- **Regression test for skill guidance**: Added test coverage to ensure the skill-load hint remains present
+
+### Changed
+
+- **Docs are skill-first**: README now points to `skills/morph/SKILL.md` as the canonical agent guidance, with `MORPH_INSTRUCTIONS.md` marked as legacy compatibility docs
+
 ## [1.6.0] - 2026-02-22
 
 ### Added

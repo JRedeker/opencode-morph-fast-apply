@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { MORPH_SKILL_LOAD_HINT } from "./index";
 
 // These are internal to the plugin but duplicated here for testing.
 // Keep in sync with index.ts.
@@ -19,6 +20,13 @@ function normalizeCodeEditInput(codeEdit: string): string {
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
     expect(EXISTING_CODE_MARKER).toBe("// ... existing code ...");
+  });
+});
+
+describe("morph skill loading guidance", () => {
+  test("includes explicit skill load instruction", () => {
+    expect(MORPH_SKILL_LOAD_HINT).toContain('skill({ name: "morph" })');
+    expect(MORPH_SKILL_LOAD_HINT).toContain("Before your first morph_edit call");
   });
 });
 
