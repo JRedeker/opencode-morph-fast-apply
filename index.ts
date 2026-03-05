@@ -27,10 +27,6 @@ const ALLOW_READONLY_AGENTS =
 /** Plugin version */
 const PLUGIN_VERSION = "1.7.0";
 
-/** Skill-loading hint shown in the morph_edit tool description */
-export const MORPH_SKILL_LOAD_HINT =
-  'IMPORTANT: Before your first morph_edit call in a session, load the morph skill for detailed guidance: skill({ name: "morph" })';
-
 /**
  * Generate a unified diff with context for display
  */
@@ -230,30 +226,33 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
        * Uses "// ... existing code ..." markers to represent unchanged sections.
        */
       morph_edit: tool({
-        description: `Use this tool to edit existing files by showing only the changed lines.
+        description: `Edit existing files using partial code snippets with "// ... existing code ..." markers. Morph's AI merges your changes into the full file.
 
-${MORPH_SKILL_LOAD_HINT}
+WHEN TO USE morph_edit vs edit:
+- morph_edit: large files (300+ lines), multiple scattered changes, complex refactoring, whitespace-sensitive edits
+- native edit: small exact string replacements, simple renames, single-line fixes (faster, no API call)
+- native write: creating new files from scratch
 
-USAGE GUIDELINES:
-- Use 'morph_edit' for: multi-hunk edits, large files (300+ lines), complex refactoring, or when exact string matching is difficult.
-- Use native 'edit' for: simple single-string replacements, small files (<50 lines), or creating new files.
-
-Use "// ... existing code ..." to represent unchanged code blocks. Include just enough surrounding context to locate each edit precisely.
-
-Example format:
+FORMAT — use "// ... existing code ..." to represent unchanged sections:
 // ... existing code ...
 FIRST_EDIT
 // ... existing code ...
 SECOND_EDIT
 // ... existing code ...
 
-Rules:
-- ALWAYS use "// ... existing code ..." for unchanged sections (omitting this marker will cause deletions)
-- ALWAYS wrap your changes with markers at the start AND end to preserve surrounding code
-- Include minimal context around edits for disambiguation
+CRITICAL RULES:
+- ALWAYS wrap changes with markers at start AND end (omitting markers DELETES surrounding code)
+- Include 1-2 unique context lines around each edit to anchor the location precisely
+- Write a specific 'instructions' param: "I am adding X to function Y" not "update code"
 - Preserve exact indentation
-- For deletions: show context before and after, omit the deleted lines
-- Batch multiple edits to the same file in one call`,
+- For deletions: show surrounding context, omit the deleted lines
+- Batch multiple edits to the same file in one call
+
+DISAMBIGUATION — when a file has repeated patterns, include enough unique context:
+  BAD:  just "return result;" (matches many places)
+  GOOD: include the unique function signature above it
+
+FALLBACK: If morph_edit fails (API error, timeout), use the native 'edit' tool with exact oldString/newString matching.`,
 
         args: {
           target_filepath: tool.schema

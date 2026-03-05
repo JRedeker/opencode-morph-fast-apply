@@ -9,14 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.0] - 2026-03-05
 
-### Added
-
-- **Skill-load guardrail in tool description**: `morph_edit` now includes an explicit instruction to load the morph skill (`skill({ name: "morph" })`) before first use in a session
-- **Regression test for skill guidance**: Added test coverage to ensure the skill-load hint remains present
-
 ### Changed
 
-- **Docs are skill-first**: README now points to `skills/morph/SKILL.md` as the canonical agent guidance, with `MORPH_INSTRUCTIONS.md` marked as legacy compatibility docs
+- **Self-contained tool description**: All agent guidance (decision table, marker rules, disambiguation, fallback) is now embedded directly in the `morph_edit` tool description. No external skill or instructions file needed.
+
+### Removed
+
+- **Skill pattern**: Deleted `skills/morph/SKILL.md` — the skill added a round-trip and split-brain problem where guidance lived in multiple places
+- **Legacy instructions**: Deleted `MORPH_INSTRUCTIONS.md` — redundant with the tool description; the README serves as human-readable docs
+- **`MORPH_SKILL_LOAD_HINT` export**: Agents no longer need to load a skill before using `morph_edit`
+- **Skill hint test**: Removed the regression test for the now-deleted skill hint
 
 ## [1.6.0] - 2026-02-22
 

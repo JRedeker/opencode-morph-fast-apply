@@ -37,14 +37,12 @@ Or pin to a specific version:
 ```json
 {
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.7.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.6.0"
   ]
 }
 ```
 
-The `morph_edit` tool description automatically prompts agents to load the morph skill (`skill({ name: "morph" })`) before first use. No manual instructions wiring is needed.
-
-> **Legacy setup:** If you previously added `MORPH_INSTRUCTIONS.md` to your `instructions` array, you can remove it — the skill-based approach is lighter and on-demand.
+All agent guidance is embedded in the `morph_edit` tool description — no separate instructions file or skill loading needed.
 
 ### 2. Set your Morph API key
 
@@ -76,8 +74,6 @@ function validateToken(token) {
 // ... existing code ...`
 })
 ```
-
-> **Important:** The canonical agent guidance is [skills/morph/SKILL.md](./skills/morph/SKILL.md). [MORPH_INSTRUCTIONS.md](./MORPH_INSTRUCTIONS.md) is kept as a legacy compatibility reference.
 
 ### When to use `morph_edit` vs `edit`
 
@@ -161,9 +157,9 @@ The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). S
 
 ### v1.7.0
 
-- **Skill-load guardrail** - `morph_edit` now explicitly prompts agents to load the morph skill (`skill({ name: "morph" })`) before first use
-- **Regression test coverage** - Added a test to ensure the skill-load hint remains present
-- **Skill-first docs** - Canonical agent guidance now points to `skills/morph/SKILL.md`; `MORPH_INSTRUCTIONS.md` is marked as legacy compatibility docs
+- **Self-contained tool description** — All agent guidance (decision table, marker rules, disambiguation, fallback) is embedded directly in the `morph_edit` tool description. No external skill or instructions file needed.
+- **Removed skill pattern** — Deleted `skills/morph/SKILL.md` and `MORPH_INSTRUCTIONS.md`. The skill added a round-trip and split-brain problem where guidance lived in multiple places.
+- **Removed `MORPH_SKILL_LOAD_HINT`** — Agents no longer need to load a skill before using `morph_edit`.
 
 ### v1.6.0
 
