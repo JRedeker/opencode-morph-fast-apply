@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-03-05
+
 ### Added
 
 - **Skill-load guardrail in tool description**: `morph_edit` now includes an explicit instruction to load the morph skill (`skill({ name: "morph" })`) before first use in a session

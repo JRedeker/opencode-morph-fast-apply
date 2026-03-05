@@ -25,7 +25,7 @@ const ALLOW_READONLY_AGENTS =
   process.env.MORPH_ALLOW_READONLY_AGENTS === "true";
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.6.0";
+const PLUGIN_VERSION = "1.7.0";
 
 /** Skill-loading hint shown in the morph_edit tool description */
 export const MORPH_SKILL_LOAD_HINT =

@@ -37,7 +37,7 @@ Or pin to a specific version:
 ```json
 {
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.6.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.7.0"
   ]
 }
 ```
