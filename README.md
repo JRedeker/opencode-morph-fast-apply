@@ -159,6 +159,12 @@ The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). S
 
 ## Changelog
 
+### v1.7.0
+
+- **Skill-load guardrail** - `morph_edit` now explicitly prompts agents to load the morph skill (`skill({ name: "morph" })`) before first use
+- **Regression test coverage** - Added a test to ensure the skill-load hint remains present
+- **Skill-first docs** - Canonical agent guidance now points to `skills/morph/SKILL.md`; `MORPH_INSTRUCTIONS.md` is marked as legacy compatibility docs
+
 ### v1.6.0
 
 - **Post-merge safety guards** - Blocks unsafe Morph output before writing to disk:
