@@ -28,9 +28,6 @@ Add to your global config (`~/.config/opencode/opencode.json`):
 {
   "plugin": [
     "github:JRedeker/opencode-morph-fast-apply"
-  ],
-  "instructions": [
-    "~/.config/opencode/node_modules/opencode-morph-fast-apply/MORPH_INSTRUCTIONS.md"
   ]
 }
 ```
@@ -45,18 +42,9 @@ Or pin to a specific version:
 }
 ```
 
-For project-local config (`.opencode/opencode.json`):
+The `morph_edit` tool description automatically prompts agents to load the morph skill (`skill({ name: "morph" })`) before first use. No manual instructions wiring is needed.
 
-```json
-{
-  "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply"
-  ],
-  "instructions": [
-    ".opencode/node_modules/opencode-morph-fast-apply/MORPH_INSTRUCTIONS.md"
-  ]
-}
-```
+> **Legacy setup:** If you previously added `MORPH_INSTRUCTIONS.md` to your `instructions` array, you can remove it — the skill-based approach is lighter and on-demand.
 
 ### 2. Set your Morph API key
 
@@ -89,7 +77,7 @@ function validateToken(token) {
 })
 ```
 
-> **Important:** See [MORPH_INSTRUCTIONS.md](./MORPH_INSTRUCTIONS.md) for detailed AI agent guidelines.
+> **Important:** The tool description prompts agents to load the morph skill before first use. For the full reference, see [skills/morph/SKILL.md](./skills/morph/SKILL.md) or [MORPH_INSTRUCTIONS.md](./MORPH_INSTRUCTIONS.md).
 
 ### When to use `morph_edit` vs `edit`
 

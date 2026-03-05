@@ -228,6 +228,8 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
       morph_edit: tool({
         description: `Use this tool to edit existing files by showing only the changed lines.
 
+IMPORTANT: Before your first morph_edit call in a session, load the morph skill for detailed guidance: skill({ name: "morph" })
+
 USAGE GUIDELINES:
 - Use 'morph_edit' for: multi-hunk edits, large files (300+ lines), complex refactoring, or when exact string matching is difficult.
 - Use native 'edit' for: simple single-string replacements, small files (<50 lines), or creating new files.
