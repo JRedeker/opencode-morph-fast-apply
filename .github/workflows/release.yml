@@ -34,12 +34,21 @@ jobs:
           # Extract the section for this version from CHANGELOG.md
           NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
           # Write to file for gh release
-          echo "$NOTES" > /tmp/release-notes.md
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+          echo "$NOTES" > "$NOTES_FILE"
 
       - name: Create GitHub Release
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --notes-file /tmp/release-notes.md
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file "$NOTES_FILE"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file "$NOTES_FILE"
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
