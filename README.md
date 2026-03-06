@@ -20,7 +20,7 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 
 ## Installation
 
-### 1. Add the plugin to your OpenCode config
+### 1. Add the plugin and always-on instruction to your OpenCode config
 
 Add to your global config (`~/.config/opencode/opencode.json`):
 
@@ -51,7 +51,7 @@ Or pin to a specific version:
 The `morph_edit` tool description remains self-contained, but for more reliable
 tool selection you should also load the packaged always-on instruction file
 shown above. This avoids agents defaulting to native `edit` when `morph_edit`
-is the better fit.
+is the better fit for large, scattered, or whitespace-sensitive edits.
 
 ### 2. Set your Morph API key
 
@@ -163,6 +163,12 @@ If edits are applied to the wrong location, add more unique context around your 
 The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
 
 ## Changelog
+
+### v1.8.0
+
+- **Packaged always-on instruction** - `instructions/morph-tools.md` now ships with the plugin so OpenCode can load reliable `morph_edit` selection guidance through the `instructions` array
+- **Packaging coverage** - package metadata now includes the `instructions/` directory, and tests verify that the shipped instruction path is documented
+- **Installation docs updated** - README now recommends adding the packaged always-on instruction to global OpenCode config for more reliable `morph_edit` selection
 
 ### v1.7.0
 
