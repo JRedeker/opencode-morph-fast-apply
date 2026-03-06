@@ -26,6 +26,9 @@ Add to your global config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
+  "instructions": [
+    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+  ],
   "plugin": [
     "github:JRedeker/opencode-morph-fast-apply"
   ]
@@ -36,13 +39,19 @@ Or pin to a specific version:
 
 ```json
 {
+  "instructions": [
+    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+  ],
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.6.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.8.0"
   ]
 }
 ```
 
-All agent guidance is embedded in the `morph_edit` tool description — no separate instructions file or skill loading needed.
+The `morph_edit` tool description remains self-contained, but for more reliable
+tool selection you should also load the packaged always-on instruction file
+shown above. This avoids agents defaulting to native `edit` when `morph_edit`
+is the better fit.
 
 ### 2. Set your Morph API key
 
@@ -157,7 +166,8 @@ The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). S
 
 ### v1.7.0
 
-- **Self-contained tool description** — All agent guidance (decision table, marker rules, disambiguation, fallback) is embedded directly in the `morph_edit` tool description. No external skill or instructions file needed.
+- **Self-contained tool description** — Core `morph_edit` guidance still lives in the tool description so the tool is usable even without extra setup.
+- **Packaged always-on instruction** — `instructions/morph-tools.md` can be added to your OpenCode `instructions` array so agents choose `morph_edit` more reliably.
 - **Removed skill pattern** — Deleted `skills/morph/SKILL.md` and `MORPH_INSTRUCTIONS.md`. The skill added a round-trip and split-brain problem where guidance lived in multiple places.
 - **Removed `MORPH_SKILL_LOAD_HINT`** — Agents no longer need to load a skill before using `morph_edit`.
 

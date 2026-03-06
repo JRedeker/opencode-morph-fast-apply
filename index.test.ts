@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 // These are internal to the plugin but duplicated here for testing.
 // Keep in sync with index.ts.
@@ -19,6 +21,32 @@ function normalizeCodeEditInput(codeEdit: string): string {
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
     expect(EXISTING_CODE_MARKER).toBe("// ... existing code ...");
+  });
+});
+
+describe("packaged tool-selection instructions", () => {
+  test("instruction file exists and routes large edits to morph_edit", () => {
+    const content = readFileSync(
+      join(import.meta.dir, "instructions", "morph-tools.md"),
+      "utf-8",
+    );
+
+    expect(content).toContain("morph_edit Tool Selection Policy");
+    expect(content).toContain("Large file edits (300+ lines)");
+    expect(content).toContain("`morph_edit`");
+    expect(content).toContain("Small exact replacement");
+    expect(content).toContain("`edit`");
+    expect(content).toContain("New file creation");
+    expect(content).toContain("`write`");
+  });
+
+  test("README documents packaged instruction path", () => {
+    const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
+
+    expect(content).toContain(
+      "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md",
+    );
+    expect(content).toContain("always-on instruction file");
   });
 });
 

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-03-06
+
+### Added
+
+- **Packaged always-on instruction** — `instructions/morph-tools.md` now ships with the plugin so OpenCode can load reliable `morph_edit` tool-selection guidance through the `instructions` array.
+- **Packaging coverage** — package metadata now includes the `instructions/` directory and tests verify the shipped instruction path is documented.
+
+### Changed
+
+- **Installation docs** now recommend adding the packaged always-on instruction to global OpenCode config for more reliable `morph_edit` selection.
+
 ## [1.7.0] - 2026-03-05
 
 ### Changed
