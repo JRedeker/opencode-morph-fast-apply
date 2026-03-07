@@ -22,12 +22,14 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 
 ### 1. Add the plugin and always-on instruction to your OpenCode config
 
+Preferred when your setup syncs packaged instructions into `~/.config/opencode/instructions/`:
+
 Add to your global config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
   "instructions": [
-    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+    "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
     "github:JRedeker/opencode-morph-fast-apply"
@@ -40,10 +42,25 @@ Or pin to a specific version:
 ```json
 {
   "instructions": [
-    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+    "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
     "github:JRedeker/opencode-morph-fast-apply#v1.8.0"
+  ]
+}
+```
+
+If you are installing the plugin directly and do not sync packaged instructions into
+`~/.config/opencode/instructions/`, you can point OpenCode at the packaged file
+instead:
+
+```json
+{
+  "instructions": [
+    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+  ],
+  "plugin": [
+    "github:JRedeker/opencode-morph-fast-apply"
   ]
 }
 ```

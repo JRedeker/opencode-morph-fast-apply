@@ -44,6 +44,9 @@ describe("packaged tool-selection instructions", () => {
     const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
 
     expect(content).toContain(
+      "~/.config/opencode/instructions/morph-tools.md",
+    );
+    expect(content).toContain(
       "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md",
     );
     expect(content).toContain("always-on instruction file");
