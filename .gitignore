@@ -16,6 +16,14 @@ logs/
 .vscode/
 .idea/
 
+# Lockfiles (bun/pnpm — npm uses package-lock.json)
+bun.lock
+pnpm-lock.yaml
+
+# ADV plugin state
+.specdb/
+project.json
+
 # OS
 .DS_Store
 Thumbs.db

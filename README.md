@@ -45,7 +45,7 @@ Or pin to a specific version:
     "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.8.1"
+    "github:JRedeker/opencode-morph-fast-apply#v1.8.2"
   ]
 }
 ```
@@ -75,6 +75,10 @@ The `morph_edit` tool description remains self-contained, but for more reliable
 tool selection you should also load the packaged always-on instruction file
 shown above. This avoids agents defaulting to native `edit` when `morph_edit`
 is the better fit for large, scattered, or whitespace-sensitive edits.
+
+Important: the active agent must also expose `morph_edit` in its tool manifest.
+If an agent profile marks `morph_edit: false`, the model cannot choose Morph
+even when the plugin is installed and the always-on instruction is present.
 
 ### 2. Set your Morph API key
 
@@ -186,6 +190,12 @@ If edits are applied to the wrong location, add more unique context around your 
 The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
 
 ## Changelog
+
+### v1.8.2
+
+- **Tool exposure requirement docs** — `instructions/morph-tools.md` now documents that agent profiles must expose `morph_edit: true` in their tool manifest for the routing policy to take effect
+- **README alignment** — Installation section notes the tool manifest requirement alongside the always-on instruction
+- **Test coverage** — Tests verify the tool exposure section exists in the instruction file and README
 
 ### v1.8.1
 

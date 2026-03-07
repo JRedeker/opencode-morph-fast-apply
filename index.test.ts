@@ -40,6 +40,8 @@ describe("packaged tool-selection instructions", () => {
     expect(content).toContain("`edit`");
     expect(content).toContain("New file creation");
     expect(content).toContain("`write`");
+    expect(content).toContain("Tool Exposure Requirement");
+    expect(content).toContain("morph_edit: true");
   });
 
   test("README documents packaged instruction path", () => {
@@ -52,6 +54,7 @@ describe("packaged tool-selection instructions", () => {
       "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md",
     );
     expect(content).toContain("always-on instruction file");
+    expect(content).toContain("tool manifest");
   });
 });
 

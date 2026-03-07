@@ -44,6 +44,17 @@ faster or more reliable than exact-string replacement.
 - Packaged fallback path: `~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md`
 - The `morph_edit` tool description is self-contained, but loading this file as an always-on instruction makes tool choice more reliable
 
+### Tool Exposure Requirement
+
+Instruction policy is necessary but not sufficient. The active agent or
+sub-agent must also expose `morph_edit` in its tool manifest.
+
+- If an agent profile sets `morph_edit: false` or omits the tool, the model
+  cannot choose Morph even when this instruction is loaded.
+- Enable `morph_edit: true` for write-capable agents that should use Morph for
+  large or scattered edits.
+- Keep readonly agents blocked unless you explicitly want them to edit files.
+
 ### Anti-Patterns
 
 - Do NOT use `edit` first for large, scattered, or whitespace-sensitive edits
