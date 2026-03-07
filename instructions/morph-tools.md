@@ -3,6 +3,10 @@
 This instruction is designed to be always loaded by OpenCode so agents reliably
 choose `morph_edit` when it is the better editing tool.
 
+This file is the canonical always-on routing policy for `morph_edit`. Keep it in
+the `instructions` array, not in a skill, so agents do not need an extra load
+step before choosing the right editing tool.
+
 ## Code Editing Tool Selection (Critical)
 
 Use the right editing tool for the job. `morph_edit` is not the default for all
@@ -33,6 +37,12 @@ faster or more reliable than exact-string replacement.
 - If `morph_edit` fails due to API error or timeout, use native `edit`
 - If `morph_edit` is blocked in readonly agents, switch to a write-capable agent
 - If the change requires replacing the entire file, use `write`
+
+### Setup Notes
+
+- Preferred instruction path: `~/.config/opencode/instructions/morph-tools.md`
+- Packaged fallback path: `~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md`
+- The `morph_edit` tool description is self-contained, but loading this file as an always-on instruction makes tool choice more reliable
 
 ### Anti-Patterns
 

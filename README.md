@@ -45,10 +45,16 @@ Or pin to a specific version:
     "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.8.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.8.1"
   ]
 }
 ```
+
+Recommended setup summary:
+
+- Prefer the stable synced instruction path: `~/.config/opencode/instructions/morph-tools.md`
+- Use the packaged `node_modules/.../morph-tools.md` path only when your setup does not sync instructions
+- Keep the routing policy in the OpenCode `instructions` array, not a skill
 
 If you are installing the plugin directly and do not sync packaged instructions into
 `~/.config/opencode/instructions/`, you can point OpenCode at the packaged file
@@ -180,6 +186,12 @@ If edits are applied to the wrong location, add more unique context around your 
 The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
 
 ## Changelog
+
+### v1.8.1
+
+- **Stable instruction path guidance** - README now prefers `~/.config/opencode/instructions/morph-tools.md` and keeps the packaged `node_modules/...` path as a fallback for direct installs
+- **Canonical routing policy wording** - `instructions/morph-tools.md` now explicitly says morph routing belongs in always-on instructions, not a skill
+- **Docs/test alignment** - Tests now verify the stable instruction path and canonical policy wording
 
 ### v1.8.0
 

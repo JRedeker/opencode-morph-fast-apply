@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-03-07
+
+### Changed
+
+- **Stable instruction path guidance** — installation docs now prefer `~/.config/opencode/instructions/morph-tools.md` as the primary OpenCode instruction path, with the packaged `node_modules/...` path documented as a fallback for direct installs.
+- **Canonical routing policy wording** — `instructions/morph-tools.md` now explicitly documents that `morph_edit` guidance belongs in always-on instructions, not a skill.
+- **Documentation alignment** — tests now verify the preferred stable instruction path and the canonical always-on policy language so README/instruction guidance does not drift.
+
 ## [1.8.0] - 2026-03-06
 
 ### Added

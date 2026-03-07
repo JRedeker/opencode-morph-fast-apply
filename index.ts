@@ -25,7 +25,7 @@ const ALLOW_READONLY_AGENTS =
   process.env.MORPH_ALLOW_READONLY_AGENTS === "true";
 
 /** Plugin version */
-const PLUGIN_VERSION = "1.8.0";
+const PLUGIN_VERSION = "1.8.1";
 
 /**
  * Generate a unified diff with context for display

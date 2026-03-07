@@ -32,6 +32,8 @@ describe("packaged tool-selection instructions", () => {
     );
 
     expect(content).toContain("morph_edit Tool Selection Policy");
+    expect(content).toContain("canonical always-on routing policy");
+    expect(content).toContain("~/.config/opencode/instructions/morph-tools.md");
     expect(content).toContain("Large file edits (300+ lines)");
     expect(content).toContain("`morph_edit`");
     expect(content).toContain("Small exact replacement");
