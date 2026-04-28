@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-04-28
+
+### Added
+
+- **Import identifier preservation guard**: Post-merge validation detects when Morph's server-side model silently drops imported identifiers that were present in the original file. Blocks file write and returns actionable error with list of dropped identifiers. Covers Python, TypeScript/JavaScript, Go, Rust, Java, C/C++, and C# import statements.
+- **Python multi-line import handling**: Parenthesized multi-line imports (`from X import (\n  Y,\n  Z\n)`) are normalized before extraction so identifiers inside paren blocks are correctly captured.
+- **TUI title for dropped-imports guard**: `tool.execute.after` hook shows `Morph: blocked (dropped imports) <file>` when the guard triggers.
+- **30 new tests**: Full coverage for `extractImportedIdentifiers` (language-specific extraction) and `findDroppedIdentifiers` (roundtrip validation), including an end-to-end simulation of the exact scenario from GitHub issue #5.
+
+### Fixed
+
+- **Silent import data loss** (#5): Morph's Fast Apply model can silently drop top-level import blocks when they fall outside the edit snippet's anchoring context. The new guard catches this before any file is written.
+
 ## [1.8.1] - 2026-03-07
 
 ### Changed

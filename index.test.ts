@@ -6,6 +6,190 @@ import { join } from "node:path";
 // Keep in sync with index.ts.
 const EXISTING_CODE_MARKER = "// ... existing code ...";
 
+/**
+ * Extract imported identifiers from source code.
+ * Duplicated from index.ts for testing. Keep in sync.
+ */
+function extractImportedIdentifiers(code: string, filepath: string): string[] {
+  const ext = filepath.split(".").pop()?.toLowerCase() || "";
+  const identifiers: string[] = [];
+  const cExts = ["c", "cpp", "cc", "cxx", "h", "hpp", "hxx"];
+  const jsExts = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
+
+  let normalizedCode = code;
+  if (ext === "py") {
+    let result = "";
+    let depth = 0;
+    for (const ch of code) {
+      if (ch === "(") { depth++; result += ch; continue; }
+      if (ch === ")") { depth--; result += ch; continue; }
+      if (ch === "\n" && depth > 0) { result += " "; continue; }
+      result += ch;
+    }
+    normalizedCode = result;
+  }
+
+  const lines = normalizedCode.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith("#") && ext !== "py" && !cExts.includes(ext)) continue;
+
+    if (ext === "py") {
+      if (trimmed.startsWith("#")) continue;
+      const fromImport = trimmed.match(/^from\s+[\w.]+\s+import\s+(.+)/);
+      if (fromImport) {
+        const names = fromImport[1]
+          .replace(/[()]/g, "")
+          .split(",")
+          .map((s) => {
+            const parts = s.trim().split(/\s+as\s+/);
+            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+          })
+          .filter((s) => s && s.length > 0 && !s.startsWith("*"));
+        identifiers.push(...names);
+        continue;
+      }
+      const bareImport = trimmed.match(/^import\s+(.+)/);
+      if (bareImport) {
+        const names = bareImport[1]
+          .split(",")
+          .map((s) => {
+            const parts = s.trim().split(/\s+as\s+/);
+            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+          })
+          .filter((s) => s && s.length > 0);
+        identifiers.push(...names);
+        continue;
+      }
+    }
+
+    if (jsExts.includes(ext)) {
+      const namedImport = trimmed.match(/^import\s+\{([^}]+)\}\s+from/);
+      if (namedImport) {
+        const names = namedImport[1]
+          .split(",")
+          .map((s) => s.trim().split(/\s+as\s+/)[0]?.trim())
+          .filter((s) => s && s.length > 0);
+        identifiers.push(...names);
+        continue;
+      }
+      const defaultImport = trimmed.match(/^import\s+(\w+)\s+from/);
+      if (defaultImport) {
+        identifiers.push(defaultImport[1]);
+        continue;
+      }
+      const namespaceImport = trimmed.match(/^import\s+\*\s+as\s+(\w+)\s+from/);
+      if (namespaceImport) {
+        identifiers.push(namespaceImport[1]);
+        continue;
+      }
+      const requireImport = trimmed.match(/(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(/);
+      if (requireImport) {
+        identifiers.push(requireImport[1]);
+        continue;
+      }
+      const requireDestructure = trimmed.match(/(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\s*\(/);
+      if (requireDestructure) {
+        const names = requireDestructure[1]
+          .split(",")
+          .map((s) => s.trim().split(/:/)[0]?.trim())
+          .filter((s) => s && s.length > 0);
+        identifiers.push(...names);
+        continue;
+      }
+    }
+
+    if (ext === "go") {
+      const singleImport = trimmed.match(/^import\s+(?:(\w+)\s+)?"([^"]+)"/);
+      if (singleImport) {
+        if (singleImport[1]) {
+          identifiers.push(singleImport[1]);
+        } else {
+          const parts = singleImport[2].split("/");
+          identifiers.push(parts[parts.length - 1] || "");
+        }
+        continue;
+      }
+      const blockImport = trimmed.match(/^(?:(\w+)\s+)?"([^"]+)"/);
+      if (blockImport && !trimmed.startsWith("//")) {
+        if (blockImport[1]) {
+          identifiers.push(blockImport[1]);
+        } else {
+          const parts = blockImport[2].split("/");
+          identifiers.push(parts[parts.length - 1] || "");
+        }
+        continue;
+      }
+    }
+
+    if (ext === "rs") {
+      const useStmt = trimmed.match(/^use\s+(.+);/);
+      if (useStmt) {
+        const path = useStmt[1];
+        const multiMatch = path.match(/\{([^}]+)\}/);
+        if (multiMatch) {
+          const names = multiMatch[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+          identifiers.push(...names);
+        } else {
+          const segments = path.split("::");
+          const last = segments[segments.length - 1];
+          if (last && last !== "*") identifiers.push(last);
+        }
+        continue;
+      }
+    }
+
+    if (ext === "java") {
+      const javaImport = trimmed.match(/^import\s+(?:static\s+)?(.+);/);
+      if (javaImport) {
+        const parts = javaImport[1].split(".");
+        const last = parts[parts.length - 1];
+        if (last && last !== "*") identifiers.push(last);
+        continue;
+      }
+    }
+
+    if (cExts.includes(ext)) {
+      const include = trimmed.match(/^#include\s+[<"]([^>"]+)[>"]/);
+      if (include) {
+        const headerPath = include[1];
+        const baseName = headerPath.split("/").pop() || headerPath;
+        const name = baseName.split(".")[0];
+        if (name) identifiers.push(name);
+        continue;
+      }
+    }
+
+    if (ext === "cs") {
+      const usingStmt = trimmed.match(/^using\s+(?:static\s+)?(.+);/);
+      if (usingStmt) {
+        const parts = usingStmt[1].split(".");
+        const last = parts[parts.length - 1];
+        if (last && last !== "*") identifiers.push(last);
+        continue;
+      }
+    }
+  }
+  return [...new Set(identifiers)];
+}
+
+function findDroppedIdentifiers(
+  originalCode: string,
+  mergedCode: string,
+  filepath: string,
+): string[] {
+  const originalIds = extractImportedIdentifiers(originalCode, filepath);
+  if (originalIds.length === 0) return [];
+  const dropped: string[] = [];
+  for (const id of originalIds) {
+    if (!mergedCode.includes(id)) {
+      dropped.push(id);
+    }
+  }
+  return dropped;
+}
+
 function normalizeCodeEditInput(codeEdit: string): string {
   const trimmed = codeEdit.trim();
   const lines = trimmed.split("\n");
@@ -330,5 +514,210 @@ describe("truncation detection logic", () => {
     // lineLoss = (1-1)/1 = 0, which is below 0.5
     expect(result.lineLoss).toBe(0);
     expect(result.triggered).toBe(false);
+  });
+});
+
+describe("extractImportedIdentifiers", () => {
+  test("extracts Python from-import identifiers", () => {
+    const code = "from asyncpg import PostgresError\nfrom services.ops import DataOps";
+    const ids = extractImportedIdentifiers(code, "svc.py");
+    expect(ids).toContain("PostgresError");
+    expect(ids).toContain("DataOps");
+  });
+
+  test("extracts Python bare import identifiers", () => {
+    const code = "import os\nimport sys";
+    const ids = extractImportedIdentifiers(code, "svc.py");
+    expect(ids).toContain("os");
+    expect(ids).toContain("sys");
+  });
+
+  test("extracts Python from-import with as alias (uses original name)", () => {
+    const code = "from typing import List as TList";
+    const ids = extractImportedIdentifiers(code, "svc.py");
+    expect(ids).toContain("TList");
+  });
+
+  test("ignores Python star imports", () => {
+    const code = "from os import *";
+    const ids = extractImportedIdentifiers(code, "svc.py");
+    expect(ids).toEqual([]);
+  });
+
+  test("extracts TypeScript named imports", () => {
+    const code = 'import { Router, Request } from "express";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids).toContain("Router");
+    expect(ids).toContain("Request");
+  });
+
+  test("extracts TypeScript default import", () => {
+    const code = 'import React from "react";';
+    const ids = extractImportedIdentifiers(code, "app.tsx");
+    expect(ids).toContain("React");
+  });
+
+  test("extracts TypeScript namespace import", () => {
+    const code = 'import * as fs from "fs";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids).toContain("fs");
+  });
+
+  test("extracts TypeScript require destructure", () => {
+    const code = 'const { parse } = require("path");';
+    const ids = extractImportedIdentifiers(code, "app.js");
+    expect(ids).toContain("parse");
+  });
+
+  test("extracts TypeScript require assignment", () => {
+    const code = 'const express = require("express");';
+    const ids = extractImportedIdentifiers(code, "app.cjs");
+    expect(ids).toContain("express");
+  });
+
+  test("extracts Go import with alias", () => {
+    const code = 'import http "net/http"';
+    const ids = extractImportedIdentifiers(code, "main.go");
+    expect(ids).toContain("http");
+  });
+
+  test("extracts Go import without alias (last path segment)", () => {
+    const code = 'import "fmt"';
+    const ids = extractImportedIdentifiers(code, "main.go");
+    expect(ids).toContain("fmt");
+  });
+
+  test("extracts Rust use statement", () => {
+    const code = "use std::collections::HashMap;\nuse tokio::io::{AsyncRead, AsyncWrite};";
+    const ids = extractImportedIdentifiers(code, "main.rs");
+    expect(ids).toContain("HashMap");
+    expect(ids).toContain("AsyncRead");
+    expect(ids).toContain("AsyncWrite");
+  });
+
+  test("extracts Java import", () => {
+    const code = "import java.util.ArrayList;\nimport static org.junit.Assert.*;";
+    const ids = extractImportedIdentifiers(code, "App.java");
+    expect(ids).toContain("ArrayList");
+  });
+
+  test("extracts C include", () => {
+    const code = '#include <stdio.h>\n#include "myheader.h"';
+    const ids = extractImportedIdentifiers(code, "main.c");
+    expect(ids).toContain("stdio");
+    expect(ids).toContain("myheader");
+  });
+
+  test("extracts C# using statement", () => {
+    const code = "using System.Collections.Generic;\nusing static System.Math;";
+    const ids = extractImportedIdentifiers(code, "Program.cs");
+    expect(ids).toContain("Generic");
+  });
+
+  test("returns empty for unrecognized extension", () => {
+    const code = "some random text";
+    const ids = extractImportedIdentifiers(code, "readme.txt");
+    expect(ids).toEqual([]);
+  });
+
+  test("deduplicates identifiers", () => {
+    const code = 'import { Router } from "express";\nimport { Router } from "express";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids.filter((id) => id === "Router")).toHaveLength(1);
+  });
+
+  test("skips comment lines", () => {
+    const code = '// import { Fake } from "nowhere";\nimport { Real } from "somewhere";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids).toContain("Real");
+    expect(ids).not.toContain("Fake");
+  });
+});
+
+describe("findDroppedIdentifiers", () => {
+  test("detects dropped Python imports", () => {
+    const original = [
+      "from asyncpg import PostgresError",
+      "from services.ops import DataOps, QueryBuilder",
+      "",
+      "async def main():",
+      "    pass",
+    ].join("\n");
+
+    // Simulate Morph dropping imports — identifiers not present anywhere
+    const merged = [
+      "async def main():",
+      "    pass",
+    ].join("\n");
+
+    const dropped = findDroppedIdentifiers(original, merged, "svc.py");
+    expect(dropped).toContain("PostgresError");
+    expect(dropped).toContain("DataOps");
+  });
+
+  test("returns empty when all imports preserved", () => {
+    const original = [
+      "from asyncpg import PostgresError",
+      "from services.ops import DataOps",
+      "",
+      "async def main():",
+      "    pass",
+    ].join("\n");
+
+    const merged = original + "\n    # added line\n";
+
+    const dropped = findDroppedIdentifiers(original, merged, "svc.py");
+    expect(dropped).toEqual([]);
+  });
+
+  test("does not flag identifiers that are used but not imported", () => {
+    // If an identifier appears in the merged code (even if import was dropped
+    // but the identifier is used inline), it should NOT be flagged
+    const original = 'import { Router } from "express";\nconst app = Router();';
+    const merged = "// import dropped\nconst app = Router();";
+
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    // Router still appears in merged code (in the usage)
+    expect(dropped).toEqual([]);
+  });
+
+  test("flags identifier dropped from import and not used elsewhere", () => {
+    const original = 'import { Router, Request, Response } from "express";\nconst app = Router();';
+    const merged = 'import { Router } from "express";\nconst app = Router();';
+    // Request and Response are in original but not in merged
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toContain("Request");
+    expect(dropped).toContain("Response");
+  });
+
+  test("returns empty for files with no imports", () => {
+    const original = "function foo() { return 1; }";
+    const merged = "function foo() { return 2; }";
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toEqual([]);
+  });
+
+  test("handles the exact scenario from issue #5", () => {
+    // Simulated 1370-line Python file with top-level imports
+    const originalImports = [
+      "from asyncpg import PostgresError",
+      "from services.ops.data_operations_service import (",
+      "    DataOperationsService,",
+      "    QueryBuilder,",
+      "    ResultMapper,",
+      ")",
+    ].join("\n");
+    const originalBody = Array.from({ length: 1360 }, (_, i) => `# line ${i + 30}`).join("\n");
+    const original = originalImports + "\n" + originalBody;
+
+    // Morph drops the import block silently
+    const merged = Array.from({ length: 1360 }, (_, i) => `# line ${i + 30}`).join("\n");
+
+    const dropped = findDroppedIdentifiers(original, merged, "service.py");
+    expect(dropped.length).toBeGreaterThan(0);
+    expect(dropped).toContain("PostgresError");
+    expect(dropped).toContain("DataOperationsService");
+    expect(dropped).toContain("QueryBuilder");
+    expect(dropped).toContain("ResultMapper");
   });
 });
