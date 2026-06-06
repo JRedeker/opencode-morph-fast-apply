@@ -8,6 +8,12 @@ import {
   extractImportEntries,
 } from "./src/imports.js";
 import { normalizeCodeEditInput } from "./src/normalize.js";
+import {
+  executeMorphEdit,
+  type ExecuteMorphEditArgs,
+  type ExecuteMorphEditRuntime,
+} from "./src/execute.js";
+import { generateUnifiedDiff, countChanges } from "./src/diff.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -847,5 +853,350 @@ describe("resolveTargetPath", () => {
     if ("error" in result) {
       expect(result.error).toContain("outside");
     }
+  });
+});
+
+/* ── executeMorphEdit no-network tests ── */
+
+function makeMockRuntime(
+  overrides: Partial<ExecuteMorphEditRuntime> = {},
+): ExecuteMorphEditRuntime {
+  const logs: Array<{ level: string; message: string }> = [];
+  return {
+    log: async (level, message) => {
+      logs.push({ level, message });
+    },
+    directory: "/project",
+    context: { agent: "build" },
+    now: () => 42,
+    readFile: async () => ({ exists: false, text: "" }),
+    writeFile: async () => {},
+    callMorphApply: async () => ({
+      success: false,
+      error: "mock-not-configured",
+    }),
+    resolveTargetPath: (targetPath, root, _options?) =>
+      ({ path: join(root, targetPath) }),
+    normalizeCodeEditInput: (s) => normalizeCodeEditInput(s),
+    findDroppedIdentifiers: (orig, merged, fp) =>
+      findDroppedIdentifiers(orig, merged, fp),
+    generateUnifiedDiff: (fp, orig, mod) =>
+      generateUnifiedDiff(fp, orig, mod),
+    countChanges: (diff) => countChanges(diff),
+    constants: {
+      MORPH_API_KEY: "fake-key",
+      ALLOW_READONLY_AGENTS: false,
+      READONLY_AGENTS: ["plan", "explore"],
+      EXISTING_CODE_MARKER: "// ... existing code ...",
+      PLUGIN_VERSION: "1.0.0",
+      MORPH_MODEL: "morph-v3-fast",
+    },
+    ...overrides,
+  };
+}
+
+describe("executeMorphEdit - missing API key", () => {
+  test("returns error when MORPH_API_KEY is missing", async () => {
+    const runtime = makeMockRuntime({
+      constants: {
+        MORPH_API_KEY: undefined,
+        ALLOW_READONLY_AGENTS: false,
+        READONLY_AGENTS: ["plan", "explore"],
+        EXISTING_CODE_MARKER,
+        PLUGIN_VERSION: "1.0.0",
+        MORPH_MODEL: "morph-v3-fast",
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("MORPH_API_KEY not configured");
+  });
+});
+
+describe("executeMorphEdit - readonly agent block", () => {
+  test("blocks plan agent when ALLOW_READONLY_AGENTS is false", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "plan" },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("not available in plan mode");
+  });
+
+  test("blocks explore agent when ALLOW_READONLY_AGENTS is false", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "explore" },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("not available in explore mode");
+  });
+
+  test("allows build agent", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "build" },
+      readFile: async () => ({
+        exists: true,
+        text: "// existing\nconst a = 1;\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "// existing\nconst a = 1;\nconst bar = 1;\n",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Applied edit to");
+  });
+});
+
+describe("executeMorphEdit - missing marker refusal", () => {
+  test("refuses edit with no markers on file >10 lines", async () => {
+    const lines = Array.from({ length: 15 }, (_, i) => `line ${i}`).join("\n");
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: lines }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "replace everything",
+        code_edit: "completely new content",
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Missing");
+    expect(result).toContain(EXISTING_CODE_MARKER);
+  });
+
+  test("allows edit with no markers on file ≤3 lines", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({
+        exists: true,
+        text: "a\nb\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "x\ny\n",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "change it",
+        code_edit: "x\ny\n",
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Applied edit to");
+  });
+});
+
+describe("executeMorphEdit - unsafe Morph output refusal", () => {
+  test("rejects marker leakage when original had no markers", async () => {
+    const original = "const a = 1;\nconst b = 2;\n";
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: `const a = 1;\n${EXISTING_CODE_MARKER}\nconst b = 2;\n`,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add marker",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst c = 3;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("unsafe output");
+    expect(result).toContain("placeholder marker text");
+  });
+
+  test("rejects catastrophic truncation", async () => {
+    // original: 20 lines, ~80 chars
+    const original = Array.from({ length: 20 }, (_, i) => `const x${i} = ${i};`).join("\n");
+    // merged: 2 lines, ~10 chars  (>60% char loss, >50% line loss)
+    const merged = "const a = 1;\n";
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "shrink",
+        code_edit: `${EXISTING_CODE_MARKER}\n// tiny\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("potentially destructive merge");
+    expect(result).toContain("% characters");
+  });
+
+  test("rejects dropped import identifiers", async () => {
+    const original = `import { foo, bar } from "baz";\nconst x = foo();\n`;
+    const merged = `import { foo } from "baz";\nconst x = foo();\n`;
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "drop bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst x = foo();\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("missing imports");
+    expect(result).toContain("bar");
+  });
+});
+
+describe("executeMorphEdit - write failure", () => {
+  test("returns error when writeFile throws", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({
+        exists: true,
+        text: "const a = 1;\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "const a = 1;\nconst b = 2;\n",
+      }),
+      writeFile: async () => {
+        throw new Error("disk full");
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Error writing file");
+    expect(result).toContain("disk full");
+  });
+});
+
+describe("executeMorphEdit - mocked successful write/diff flow", () => {
+  test("writes merged code and returns diff stats", async () => {
+    let writtenPath: string | undefined;
+    let writtenContent: string | undefined;
+
+    const original = "const a = 1;\nconst b = 2;\n";
+    const merged = "const a = 1;\nconst b = 2;\nconst c = 3;\n";
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+      writeFile: async (path, content) => {
+        writtenPath = path;
+        writtenContent = content;
+      },
+      now: () => 1000,
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add c",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst c = 3;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(writtenPath).toBe(join("/project", "src/foo.ts"));
+    expect(writtenContent).toBe(merged);
+    expect(result).toContain("Applied edit to src/foo.ts");
+    expect(result).toContain("+1");
+    expect(result).toContain("->");
+    expect(result).toContain("0ms"); // 1000 - 1000 if we call now() twice... wait
+    // Actually now() returns 1000 both times, so 0ms
+    expect(result).toContain("diff");
+  });
+
+  test("creates new file when target does not exist and no markers", async () => {
+    let writtenPath: string | undefined;
+    let writtenContent: string | undefined;
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: false, text: "" }),
+      writeFile: async (path, content) => {
+        writtenPath = path;
+        writtenContent = content;
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/new.ts",
+        instructions: "create file",
+        code_edit: "const x = 1;\n",
+      },
+      runtime,
+    );
+
+    expect(writtenPath).toBe(join("/project", "src/new.ts"));
+    expect(writtenContent).toBe("const x = 1;\n");
+    expect(result).toContain("Created new file: src/new.ts");
   });
 });
