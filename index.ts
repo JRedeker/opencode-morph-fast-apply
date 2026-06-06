@@ -24,6 +24,7 @@ import {
   findDroppedIdentifiers,
 } from "./src/imports.js";
 import { normalizeCodeEditInput } from "./src/normalize.js";
+import { resolveTargetPath } from "./src/path-confinement.js";
 
 /**
  * Call Morph's Apply API to merge code edits
@@ -216,10 +217,14 @@ Options:
 3. Set MORPH_ALLOW_READONLY_AGENTS=true to override this restriction`;
           }
 
-          // Resolve file path relative to project directory
-          const filepath = target_filepath.startsWith("/")
-            ? target_filepath
-            : `${directory}/${target_filepath}`;
+          // Resolve and confine target path to allowed root
+          const root = context.worktree ?? context.directory ?? directory;
+          const resolved = resolveTargetPath(target_filepath, root);
+          if ("error" in resolved) {
+            await log("warn", `Blocked morph_edit: ${resolved.error}`);
+            return `Error: ${resolved.error}`;
+          }
+          const filepath = resolved.path;
 
           // Check if API key is available
           if (!MORPH_API_KEY) {

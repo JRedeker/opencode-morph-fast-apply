@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { EXISTING_CODE_MARKER } from "./src/constants.js";
@@ -525,5 +525,150 @@ describe("findDroppedIdentifiers", () => {
     expect(dropped).toContain("DataOperationsService");
     expect(dropped).toContain("QueryBuilder");
     expect(dropped).toContain("ResultMapper");
+  });
+});
+
+import { resolveTargetPath } from "./src/path-confinement.js";
+import { tmpdir } from "node:os";
+import { mkdtempSync, writeFileSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
+
+describe("resolveTargetPath", () => {
+  let tmpDir: string;
+  let root: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "morph-pc-test-"));
+    root = join(tmpDir, "root");
+    mkdirSync(root, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("allows relative path inside root", () => {
+    const result = resolveTargetPath("src/foo.ts", root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(root, "src", "foo.ts"));
+    }
+  });
+
+  test("rejects absolute path outside root", () => {
+    const result = resolveTargetPath("/etc/passwd", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("rejects relative path with ../ escape", () => {
+    const result = resolveTargetPath("../escape.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("rejects sibling-prefix /root vs /rootEvil", () => {
+    // Create /rootEvil sibling
+    const evilRoot = join(tmpDir, "rootEvil");
+    mkdirSync(evilRoot, { recursive: true });
+    // If root is /tmp/.../root, a path like ../rootEvil/file should NOT be allowed
+    const result = resolveTargetPath("../rootEvil/file.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("allows absolute path inside root", () => {
+    const innerPath = join(root, "deep", "file.ts");
+    const result = resolveTargetPath(innerPath, root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(innerPath);
+    }
+  });
+
+  test("rejects absolute path that is sibling prefix", () => {
+    // root = /tmp/.../root
+    // /tmp/.../rootEvil/file should be rejected
+    const evilPath = join(tmpDir, "rootEvil", "file.txt");
+    const result = resolveTargetPath(evilPath, root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("existing target follows symlinks and rejects if outside root", () => {
+    const evilDir = join(tmpDir, "evil");
+    mkdirSync(evilDir, { recursive: true });
+    writeFileSync(join(evilDir, "secret.txt"), "secret");
+    // Create symlink inside root pointing outside
+    symlinkSync(evilDir, join(root, "link-out"));
+    const result = resolveTargetPath(join(root, "link-out", "secret.txt"), root, {
+      targetExists: true,
+    });
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("existing target allows symlink inside root", () => {
+    const realDir = join(root, "real-dir");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "file.txt"), "hello");
+    symlinkSync(realDir, join(root, "link-in"));
+    const result = resolveTargetPath(join(root, "link-in", "file.txt"), root, {
+      targetExists: true,
+    });
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(realDir, "file.txt"));
+    }
+  });
+
+  test("new target rejects when nearest existing parent is symlink outside root", () => {
+    const evilDir = join(tmpDir, "evil");
+    mkdirSync(evilDir, { recursive: true });
+    symlinkSync(evilDir, join(root, "link-out"));
+    const result = resolveTargetPath(join(root, "link-out", "new-file.txt"), root, {
+      targetExists: false,
+    });
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("new target allows when nearest existing parent is real directory inside root", () => {
+    const subDir = join(root, "sub");
+    mkdirSync(subDir, { recursive: true });
+    const result = resolveTargetPath(join(root, "sub", "new", "file.txt"), root, {
+      targetExists: false,
+    });
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(root, "sub", "new", "file.txt"));
+    }
+  });
+
+  test("allows root itself as target path", () => {
+    const result = resolveTargetPath(root, root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(root);
+    }
+  });
+
+  test("rejects path with double-dot mid-segment", () => {
+    const result = resolveTargetPath("foo/../../escape.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
   });
 });
