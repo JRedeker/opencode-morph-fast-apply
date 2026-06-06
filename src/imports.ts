@@ -10,8 +10,41 @@ export function extractImportedIdentifiers(
   code: string,
   filepath: string,
 ): string[] {
+  const entries = extractImportEntries(code, filepath);
+  const bindings = new Set<string>();
+  for (const entry of entries) {
+    for (const b of entry.bindings) {
+      bindings.add(b);
+    }
+  }
+  return [...bindings];
+}
+
+/**
+ * A stable, structured representation of a single import declaration.
+ *
+ * `kind`    — language-specific discriminator (e.g. "ts-named", "py-from")
+ * `source`  — module path / package name when available
+ * `bindings`— local identifiers introduced by this declaration
+ */
+export type ImportEntry = {
+  kind: string;
+  source?: string;
+  bindings: string[];
+};
+
+/**
+ * Parse supported import declarations into stable entries representing
+ * required local bindings in import declarations.
+ *
+ * Covers Python, TypeScript, JavaScript, Go, Rust, Java, C/C++, and C#.
+ */
+export function extractImportEntries(
+  code: string,
+  filepath: string,
+): ImportEntry[] {
   const ext = filepath.split(".").pop()?.toLowerCase() || "";
-  const identifiers: string[] = [];
+  const entries: ImportEntry[] = [];
   const cExts = ["c", "cpp", "cc", "cxx", "h", "hpp", "hxx"];
   const jsExts = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
 
@@ -42,10 +75,11 @@ export function extractImportedIdentifiers(
     if (ext === "py") {
       // Skip comment lines in Python (# comment, not import)
       if (trimmed.startsWith("#")) continue;
-      const fromImport = trimmed.match(/^from\s+[\w.]+\s+import\s+(.+)/);
+
+      const fromImport = trimmed.match(/^from\s+([\w.]+)\s+import\s+(.+)/);
       if (fromImport) {
-        // "Y, Z as A" → extract the LOCAL name (after 'as' if present)
-        const names = fromImport[1]
+        const source = fromImport[1];
+        const names = fromImport[2]
           .replace(/[()]/g, "") // strip parens from multi-line imports
           .split(",")
           .map((s) => {
@@ -53,10 +87,13 @@ export function extractImportedIdentifiers(
             // If aliased, take the alias (last part); otherwise take the name
             return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
           })
-          .filter((s) => s && s.length > 0 && !s.startsWith("*"));
-        identifiers.push(...names);
+          .filter((s): s is string => s && s.length > 0 && !s.startsWith("*"));
+        if (names.length > 0) {
+          entries.push({ kind: "py-from", source, bindings: names });
+        }
         continue;
       }
+
       const bareImport = trimmed.match(/^import\s+(.+)/);
       if (bareImport) {
         const names = bareImport[1]
@@ -65,8 +102,10 @@ export function extractImportedIdentifiers(
             const parts = s.trim().split(/\s+as\s+/);
             return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
           })
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
+          .filter((s): s is string => s && s.length > 0);
+        for (const name of names) {
+          entries.push({ kind: "py-import", source: name, bindings: [name] });
+        }
         continue;
       }
     }
@@ -74,45 +113,75 @@ export function extractImportedIdentifiers(
     // TypeScript / JavaScript: import { X, Y } from ...  |  import X from ...
     if (jsExts.includes(ext)) {
       // import { X, Y as Z } from '...'
-      const namedImport = trimmed.match(/^import\s+\{([^}]+)\}\s+from/);
+      const namedImport = trimmed.match(/^import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
       if (namedImport) {
+        const source = namedImport[2];
         const names = namedImport[1]
           .split(",")
-          .map((s) => s.trim().split(/\s+as\s+/)[0]?.trim())
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
+          .map((s) => {
+            const parts = s.trim().split(/\s+as\s+/);
+            // For named imports, the LOCAL binding is the last part (alias)
+            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+          })
+          .filter((s): s is string => s && s.length > 0);
+        if (names.length > 0) {
+          entries.push({ kind: "ts-named", source, bindings: names });
+        }
         continue;
       }
+
       // import X from '...'  (default import)
-      const defaultImport = trimmed.match(/^import\s+(\w+)\s+from/);
+      const defaultImport = trimmed.match(/^import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
       if (defaultImport) {
-        identifiers.push(defaultImport[1]);
+        entries.push({
+          kind: "ts-default",
+          source: defaultImport[2],
+          bindings: [defaultImport[1]],
+        });
         continue;
       }
+
       // import * as X from '...'
-      const namespaceImport = trimmed.match(/^import\s+\*\s+as\s+(\w+)\s+from/);
+      const namespaceImport = trimmed.match(/^import\s+\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
       if (namespaceImport) {
-        identifiers.push(namespaceImport[1]);
+        entries.push({
+          kind: "ts-namespace",
+          source: namespaceImport[2],
+          bindings: [namespaceImport[1]],
+        });
         continue;
       }
+
       // const X = require('...')
       const requireImport = trimmed.match(
-        /(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(/,
+        /(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/,
       );
       if (requireImport) {
-        identifiers.push(requireImport[1]);
+        entries.push({
+          kind: "ts-require",
+          source: requireImport[2],
+          bindings: [requireImport[1]],
+        });
         continue;
       }
+
       // const { X, Y } = require('...')
       const requireDestructure = trimmed.match(
-        /(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\s*\(/,
+        /(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/,
       );
       if (requireDestructure) {
+        const source = requireDestructure[2];
         const names = requireDestructure[1]
           .split(",")
-          .map((s) => s.trim().split(/:/)[0]?.trim())
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
+          .map((s) => {
+            const parts = s.trim().split(/\s*:\s*/);
+            // For destructured require, the LOCAL binding is the left side of colon
+            return parts[0]?.trim();
+          })
+          .filter((s): s is string => s && s.length > 0);
+        if (names.length > 0) {
+          entries.push({ kind: "ts-require-destructure", source, bindings: names });
+        }
         continue;
       }
     }
@@ -123,22 +192,34 @@ export function extractImportedIdentifiers(
         /^import\s+(?:(\w+)\s+)?"([^"]+)"/,
       );
       if (singleImport) {
-        if (singleImport[1]) {
-          identifiers.push(singleImport[1]); // aliased
+        const source = singleImport[2];
+        const alias = singleImport[1];
+        if (alias) {
+          entries.push({ kind: "go-import", source, bindings: [alias] });
         } else {
-          const parts = singleImport[2].split("/");
-          identifiers.push(parts[parts.length - 1] || "");
+          const parts = source.split("/");
+          entries.push({
+            kind: "go-import",
+            source,
+            bindings: [parts[parts.length - 1] || ""],
+          });
         }
         continue;
       }
       // Inside import block: "pkg" or alias "pkg"
       const blockImport = trimmed.match(/^(?:(\w+)\s+)?"([^"]+)"/);
       if (blockImport && !trimmed.startsWith("//")) {
-        if (blockImport[1]) {
-          identifiers.push(blockImport[1]);
+        const source = blockImport[2];
+        const alias = blockImport[1];
+        if (alias) {
+          entries.push({ kind: "go-import", source, bindings: [alias] });
         } else {
-          const parts = blockImport[2].split("/");
-          identifiers.push(parts[parts.length - 1] || "");
+          const parts = source.split("/");
+          entries.push({
+            kind: "go-import",
+            source,
+            bindings: [parts[parts.length - 1] || ""],
+          });
         }
         continue;
       }
@@ -155,11 +236,15 @@ export function extractImportedIdentifiers(
             .split(",")
             .map((s) => s.trim())
             .filter((s) => s.length > 0);
-          identifiers.push(...names);
+          if (names.length > 0) {
+            entries.push({ kind: "rs-use", bindings: names });
+          }
         } else {
           const segments = path.split("::");
           const last = segments[segments.length - 1];
-          if (last && last !== "*") identifiers.push(last);
+          if (last && last !== "*") {
+            entries.push({ kind: "rs-use", bindings: [last] });
+          }
         }
         continue;
       }
@@ -169,9 +254,12 @@ export function extractImportedIdentifiers(
     if (ext === "java") {
       const javaImport = trimmed.match(/^import\s+(?:static\s+)?(.+);/);
       if (javaImport) {
-        const parts = javaImport[1].split(".");
+        const source = javaImport[1];
+        const parts = source.split(".");
         const last = parts[parts.length - 1];
-        if (last && last !== "*") identifiers.push(last);
+        if (last && last !== "*") {
+          entries.push({ kind: "java-import", source, bindings: [last] });
+        }
         continue;
       }
     }
@@ -183,7 +271,13 @@ export function extractImportedIdentifiers(
         const headerPath = include[1];
         const baseName = headerPath.split("/").pop() || headerPath;
         const name = baseName.split(".")[0];
-        if (name) identifiers.push(name);
+        if (name) {
+          entries.push({
+            kind: "c-include",
+            source: headerPath,
+            bindings: [name],
+          });
+        }
         continue;
       }
     }
@@ -192,35 +286,65 @@ export function extractImportedIdentifiers(
     if (ext === "cs") {
       const usingStmt = trimmed.match(/^using\s+(?:static\s+)?(.+);/);
       if (usingStmt) {
-        const parts = usingStmt[1].split(".");
+        const source = usingStmt[1];
+        const parts = source.split(".");
         const last = parts[parts.length - 1];
-        if (last && last !== "*") identifiers.push(last);
+        if (last && last !== "*") {
+          entries.push({ kind: "cs-using", source, bindings: [last] });
+        }
         continue;
       }
     }
   }
 
-  return [...new Set(identifiers)]; // deduplicate
+  // Deduplicate entries by serializing to a stable key
+  const seen = new Set<string>();
+  const deduped: ImportEntry[] = [];
+  for (const entry of entries) {
+    const key = JSON.stringify({ kind: entry.kind, source: entry.source, bindings: entry.bindings });
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(entry);
+    }
+  }
+
+  return deduped;
 }
 
 /**
  * Check whether the merged code preserves all imported identifiers from
  * the original file. Returns an array of identifiers that were dropped.
+ *
+ * This performs declaration-level comparison: it parses import declarations
+ * in both original and merged code, then checks whether each local binding
+ * from the original imports still appears in an import declaration in the
+ * merged code. Identifiers that are merely *used* in the merged code but
+ * no longer imported are still flagged.
  */
 export function findDroppedIdentifiers(
   originalCode: string,
   mergedCode: string,
   filepath: string,
 ): string[] {
-  const originalIds = extractImportedIdentifiers(originalCode, filepath);
-  if (originalIds.length === 0) return [];
+  const originalEntries = extractImportEntries(originalCode, filepath);
+  if (originalEntries.length === 0) return [];
 
-  const dropped: string[] = [];
-  for (const id of originalIds) {
-    // Check if identifier appears anywhere in merged code (usage or import)
-    if (!mergedCode.includes(id)) {
-      dropped.push(id);
+  const mergedEntries = extractImportEntries(mergedCode, filepath);
+  const mergedBindings = new Set<string>();
+  for (const entry of mergedEntries) {
+    for (const b of entry.bindings) {
+      mergedBindings.add(b);
     }
   }
-  return dropped;
+
+  const dropped: string[] = [];
+  for (const entry of originalEntries) {
+    for (const binding of entry.bindings) {
+      if (!mergedBindings.has(binding)) {
+        dropped.push(binding);
+      }
+    }
+  }
+
+  return [...new Set(dropped)];
 }

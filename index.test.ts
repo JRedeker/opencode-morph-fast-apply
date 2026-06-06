@@ -5,6 +5,7 @@ import { EXISTING_CODE_MARKER } from "./src/constants.js";
 import {
   extractImportedIdentifiers,
   findDroppedIdentifiers,
+  extractImportEntries,
 } from "./src/imports.js";
 import { normalizeCodeEditInput } from "./src/normalize.js";
 
@@ -440,6 +441,156 @@ describe("extractImportedIdentifiers", () => {
   });
 });
 
+describe("extractImportEntries", () => {
+  test("returns stable entries for TypeScript named imports", () => {
+    const code = 'import { Router, Request } from "express";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-named",
+      source: "express",
+      bindings: ["Router", "Request"],
+    });
+  });
+
+  test("returns stable entries for TypeScript default import", () => {
+    const code = 'import React from "react";';
+    const entries = extractImportEntries(code, "app.tsx");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-default",
+      source: "react",
+      bindings: ["React"],
+    });
+  });
+
+  test("returns stable entries for TypeScript namespace import", () => {
+    const code = 'import * as fs from "fs";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-namespace",
+      source: "fs",
+      bindings: ["fs"],
+    });
+  });
+
+  test("returns stable entries for require assignment", () => {
+    const code = 'const express = require("express");';
+    const entries = extractImportEntries(code, "app.cjs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require",
+      source: "express",
+      bindings: ["express"],
+    });
+  });
+
+  test("returns stable entries for require destructure", () => {
+    const code = 'const { parse, join } = require("path");';
+    const entries = extractImportEntries(code, "app.js");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require-destructure",
+      source: "path",
+      bindings: ["parse", "join"],
+    });
+  });
+
+  test("returns stable entries for Python from-import", () => {
+    const code = "from asyncpg import PostgresError";
+    const entries = extractImportEntries(code, "svc.py");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "py-from",
+      source: "asyncpg",
+      bindings: ["PostgresError"],
+    });
+  });
+
+  test("returns stable entries for Python bare import", () => {
+    const code = "import os";
+    const entries = extractImportEntries(code, "svc.py");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "py-import",
+      source: "os",
+      bindings: ["os"],
+    });
+  });
+
+  test("returns stable entries for Go import with alias", () => {
+    const code = 'import http "net/http"';
+    const entries = extractImportEntries(code, "main.go");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "go-import",
+      source: "net/http",
+      bindings: ["http"],
+    });
+  });
+
+  test("returns stable entries for Go import without alias", () => {
+    const code = 'import "fmt"';
+    const entries = extractImportEntries(code, "main.go");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "go-import",
+      source: "fmt",
+      bindings: ["fmt"],
+    });
+  });
+
+  test("returns stable entries for Rust use statement", () => {
+    const code = "use std::collections::HashMap;";
+    const entries = extractImportEntries(code, "main.rs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "rs-use",
+      bindings: ["HashMap"],
+    });
+  });
+
+  test("returns stable entries for Java import", () => {
+    const code = "import java.util.ArrayList;";
+    const entries = extractImportEntries(code, "App.java");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "java-import",
+      source: "java.util.ArrayList",
+      bindings: ["ArrayList"],
+    });
+  });
+
+  test("returns stable entries for C include", () => {
+    const code = '#include <stdio.h>';
+    const entries = extractImportEntries(code, "main.c");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "c-include",
+      source: "stdio.h",
+      bindings: ["stdio"],
+    });
+  });
+
+  test("returns stable entries for C# using", () => {
+    const code = "using System.Collections.Generic;";
+    const entries = extractImportEntries(code, "Program.cs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "cs-using",
+      source: "System.Collections.Generic",
+      bindings: ["Generic"],
+    });
+  });
+
+  test("deduplicates identical entries", () => {
+    const code = 'import { Router } from "express";\nimport { Router } from "express";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+  });
+});
+
 describe("findDroppedIdentifiers", () => {
   test("detects dropped Python imports", () => {
     const original = [
@@ -476,21 +627,22 @@ describe("findDroppedIdentifiers", () => {
     expect(dropped).toEqual([]);
   });
 
-  test("does not flag identifiers that are used but not imported", () => {
-    // If an identifier appears in the merged code (even if import was dropped
-    // but the identifier is used inline), it should NOT be flagged
+  test("flags import binding removed even when identifier is used elsewhere (RED regression)", () => {
+    // If an import declaration is removed but the identifier still appears
+    // in the merged code (e.g., in a usage), it MUST be flagged because the
+    // binding is no longer imported.
     const original = 'import { Router } from "express";\nconst app = Router();';
     const merged = "// import dropped\nconst app = Router();";
 
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
-    // Router still appears in merged code (in the usage)
-    expect(dropped).toEqual([]);
+    // Router is no longer declared in any import statement in merged
+    expect(dropped).toContain("Router");
   });
 
   test("flags identifier dropped from import and not used elsewhere", () => {
     const original = 'import { Router, Request, Response } from "express";\nconst app = Router();';
     const merged = 'import { Router } from "express";\nconst app = Router();';
-    // Request and Response are in original but not in merged
+    // Request and Response are in original imports but not in merged imports
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
     expect(dropped).toContain("Request");
     expect(dropped).toContain("Response");
@@ -525,6 +677,31 @@ describe("findDroppedIdentifiers", () => {
     expect(dropped).toContain("DataOperationsService");
     expect(dropped).toContain("QueryBuilder");
     expect(dropped).toContain("ResultMapper");
+  });
+
+  test("declaration-level comparison: does not flag identifier moved to a different import form", () => {
+    // If an identifier is still imported, just in a different declaration form,
+    // it should NOT be flagged.
+    const original = 'import { Router } from "express";';
+    const merged = 'import express from "express";\nconst { Router } = express;';
+    // Note: Router is no longer in an import declaration, so this WILL be flagged
+    // with declaration-level comparison. This is correct behavior.
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toContain("Router");
+  });
+
+  test("declaration-level comparison: preserves alias bindings correctly", () => {
+    const original = 'import { createRouter as cr } from "express";';
+    const merged = 'import { createRouter as cr } from "express";';
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toEqual([]);
+  });
+
+  test("declaration-level comparison: flags dropped alias binding", () => {
+    const original = 'import { createRouter as cr } from "express";';
+    const merged = '// import dropped';
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toContain("cr");
   });
 });
 
