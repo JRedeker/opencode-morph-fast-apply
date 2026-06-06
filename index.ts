@@ -25,33 +25,86 @@ import { resolveTargetPath } from "./src/path-confinement.js";
 import { executeMorphEdit } from "./src/execute.js";
 
 /**
- * Call Morph's Apply API to merge code edits
+ * Stable failure-kind classification for API/guard/write failures.
+ * These strings are safe to log and contain no secrets.
  */
-async function callMorphApply(
+export type FailureKind =
+  | "api_timeout"
+  | "api_http_error"
+  | "api_parse_error"
+  | "api_request_failed"
+  | "api_empty_response"
+  | "missing_api_key";
+
+/**
+ * Remove secrets from a message before returning or logging it.
+ */
+export function scrubSecrets(message: string, apiKey?: string): string {
+  let result = message;
+  if (apiKey) {
+    result = result.split(apiKey).join("***REDACTED***");
+  }
+  // Scrub generic Bearer tokens
+  result = result.replace(
+    /Bearer\s+[A-Za-z0-9_\-\.]{10,}/gi,
+    "Bearer ***REDACTED***",
+  );
+  return result;
+}
+
+export interface CallMorphApplyResult {
+  success: boolean;
+  content?: string;
+  error?: string;
+  kind?: FailureKind;
+}
+
+/**
+ * Call Morph's Apply API to merge code edits.
+ *
+ * The AbortController timeout stays active through the full response lifecycle
+ * (fetch, error body read, and JSON body parse) so slow body streams are also
+ * bounded.
+ */
+export async function callMorphApply(
   originalCode: string,
   codeEdit: string,
   instructions: string,
-): Promise<{ success: boolean; content?: string; error?: string }> {
-  if (!MORPH_API_KEY) {
+  options?: {
+    timeout?: number;
+    apiKey?: string;
+    apiUrl?: string;
+    model?: string;
+  },
+): Promise<CallMorphApplyResult> {
+  const {
+    timeout = MORPH_TIMEOUT,
+    apiKey = MORPH_API_KEY,
+    apiUrl = MORPH_API_URL,
+    model = MORPH_MODEL,
+  } = options || {};
+
+  if (!apiKey) {
     return {
       success: false,
       error:
         "MORPH_API_KEY not set. Get one at https://morphllm.com/dashboard/api-keys",
+      kind: "missing_api_key",
     };
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), MORPH_TIMEOUT);
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(`${MORPH_API_URL}/v1/chat/completions`, {
+    const response = await fetch(`${apiUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${MORPH_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: MORPH_MODEL,
+        model,
         messages: [
           {
             role: "user",
@@ -63,25 +116,41 @@ async function callMorphApply(
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
       const errorText = await response.text();
+      clearTimeout(timeoutId);
       return {
         success: false,
-        error: `Morph API error (${response.status}): ${errorText}`,
+        error: scrubSecrets(
+          `Morph API error (${response.status}): ${errorText}`,
+          apiKey,
+        ),
+        kind: "api_http_error",
       };
     }
 
-    const result = (await response.json()) as {
-      choices: Array<{ message: { content: string } }>;
-    };
+    let result: { choices: Array<{ message: { content: string } }> };
+    try {
+      result = (await response.json()) as {
+        choices: Array<{ message: { content: string } }>;
+      };
+    } catch (parseErr) {
+      clearTimeout(timeoutId);
+      return {
+        success: false,
+        error: "Morph API returned invalid JSON",
+        kind: "api_parse_error",
+      };
+    }
+
+    clearTimeout(timeoutId);
     const mergedCode = result.choices?.[0]?.message?.content;
 
     if (!mergedCode) {
       return {
         success: false,
         error: "Morph API returned empty response",
+        kind: "api_empty_response",
       };
     }
 
@@ -95,12 +164,17 @@ async function callMorphApply(
     if (error.name === "AbortError") {
       return {
         success: false,
-        error: `Morph API timeout after ${MORPH_TIMEOUT}ms`,
+        error: `Morph API timeout after ${timeout}ms`,
+        kind: "api_timeout",
       };
     }
     return {
       success: false,
-      error: `Morph API request failed: ${error.message}`,
+      error: scrubSecrets(
+        `Morph API request failed: ${error.message}`,
+        apiKey,
+      ),
+      kind: "api_request_failed",
     };
   }
 }

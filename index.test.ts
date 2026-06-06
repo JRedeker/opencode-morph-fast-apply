@@ -14,6 +14,11 @@ import {
   type ExecuteMorphEditRuntime,
 } from "./src/execute.js";
 import { generateUnifiedDiff, countChanges } from "./src/diff.js";
+import {
+  callMorphApply,
+  scrubSecrets,
+  type FailureKind,
+} from "./index.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -1198,5 +1203,265 @@ describe("executeMorphEdit - mocked successful write/diff flow", () => {
     expect(writtenPath).toBe(join("/project", "src/new.ts"));
     expect(writtenContent).toBe("const x = 1;\n");
     expect(result).toContain("Created new file: src/new.ts");
+  });
+});
+
+/* ── scrubSecrets ── */
+
+describe("scrubSecrets", () => {
+  test("removes explicit apiKey from message", () => {
+    const key = "sk-morph-test-key-12345";
+    const message = `Request failed with key ${key} and token`;
+    expect(scrubSecrets(message, key)).not.toContain(key);
+    expect(scrubSecrets(message, key)).toContain("***REDACTED***");
+  });
+
+  test("removes Bearer token pattern", () => {
+    const message = `Authorization: Bearer abcdef1234567890abcdef`;
+    const scrubbed = scrubSecrets(message);
+    expect(scrubbed).not.toContain("abcdef1234567890abcdef");
+    expect(scrubbed).toContain("Bearer ***REDACTED***");
+  });
+
+  test("leaves unrelated text intact", () => {
+    const message = "Morph API error (500): model not found";
+    expect(scrubSecrets(message)).toBe(message);
+  });
+});
+
+/* ── callMorphApply - mocked fetch ── */
+
+describe("callMorphApply - timeout", () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  test("returns api_timeout when fetch hangs", async () => {
+    globalThis.fetch = ((_url: string, init?: RequestInit) => {
+      return new Promise<Response>((_, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        if (signal?.aborted) {
+          reject(new Error("AbortError"));
+          return;
+        }
+        signal?.addEventListener("abort", () => {
+          const err = new Error("AbortError");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      timeout: 10,
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_timeout");
+    expect(result.error).toContain("timeout");
+    expect(result.error).not.toContain("fake-key");
+  });
+});
+
+describe("callMorphApply - failure kinds and secret scrubbing", () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  test("returns api_http_error with scrubbed body", async () => {
+    const secretKey = "sk-live-morph-abc123";
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        text: () =>
+          Promise.resolve(`Invalid key ${secretKey} or Bearer ${secretKey}`),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: secretKey,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_http_error");
+    expect(result.error).toContain("401");
+    expect(result.error).not.toContain(secretKey);
+    expect(result.error).toContain("***REDACTED***");
+  });
+
+  test("returns api_parse_error on invalid JSON", async () => {
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("not json"),
+        json: () => Promise.reject(new Error("Unexpected token")),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_parse_error");
+    expect(result.error).toContain("invalid JSON");
+  });
+
+  test("returns api_empty_response when choices are missing", async () => {
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("{}"),
+        json: () => Promise.resolve({ choices: [] }),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_empty_response");
+    expect(result.error).toContain("empty response");
+  });
+
+  test("returns api_request_failed on network error", async () => {
+    globalThis.fetch = (() =>
+      Promise.reject(new Error("ECONNREFUSED"))) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_request_failed");
+    expect(result.error).toContain("ECONNREFUSED");
+  });
+
+  test("returns missing_api_key when no key provided", async () => {
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("missing_api_key");
+    expect(result.error).toContain("MORPH_API_KEY not set");
+  });
+});
+
+/* ── executeMorphEdit - failure kind propagation ── */
+
+describe("executeMorphEdit - API failure kind propagation", () => {
+  test("propagates api_timeout from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API timeout after 10ms",
+        kind: "api_timeout",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("timeout");
+  });
+
+  test("propagates api_http_error from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API error (500): server error",
+        kind: "api_http_error",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("500");
+  });
+
+  test("propagates api_parse_error from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API returned invalid JSON",
+        kind: "api_parse_error",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("invalid JSON");
+  });
+
+  test("output does not leak secrets on API failure", async () => {
+    const secret = "sk-super-secret-key";
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: `Something went wrong with ${secret}`,
+        kind: "api_request_failed",
+      }),
+      constants: {
+        MORPH_API_KEY: secret,
+        ALLOW_READONLY_AGENTS: false,
+        READONLY_AGENTS: ["plan", "explore"],
+        EXISTING_CODE_MARKER,
+        PLUGIN_VERSION: "1.0.0",
+        MORPH_MODEL: "morph-v3-fast",
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).not.toContain(secret);
   });
 });

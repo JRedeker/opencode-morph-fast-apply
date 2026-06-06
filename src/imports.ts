@@ -87,7 +87,7 @@ export function extractImportEntries(
             // If aliased, take the alias (last part); otherwise take the name
             return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
           })
-          .filter((s): s is string => s && s.length > 0 && !s.startsWith("*"));
+          .filter((s): s is string => !!s && s.length > 0 && !s.startsWith("*"));
         if (names.length > 0) {
           entries.push({ kind: "py-from", source, bindings: names });
         }
@@ -102,7 +102,7 @@ export function extractImportEntries(
             const parts = s.trim().split(/\s+as\s+/);
             return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
           })
-          .filter((s): s is string => s && s.length > 0);
+          .filter((s): s is string => !!s && s.length > 0);
         for (const name of names) {
           entries.push({ kind: "py-import", source: name, bindings: [name] });
         }
@@ -123,7 +123,7 @@ export function extractImportEntries(
             // For named imports, the LOCAL binding is the last part (alias)
             return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
           })
-          .filter((s): s is string => s && s.length > 0);
+          .filter((s): s is string => !!s && s.length > 0);
         if (names.length > 0) {
           entries.push({ kind: "ts-named", source, bindings: names });
         }
@@ -178,7 +178,7 @@ export function extractImportEntries(
             // For destructured require, the LOCAL binding is the left side of colon
             return parts[0]?.trim();
           })
-          .filter((s): s is string => s && s.length > 0);
+          .filter((s): s is string => !!s && s.length > 0);
         if (names.length > 0) {
           entries.push({ kind: "ts-require-destructure", source, bindings: names });
         }

@@ -1,6 +1,8 @@
 import type {
   ResolveTargetPathResult,
 } from "./path-confinement.js";
+import type { FailureKind } from "../index.js";
+import { scrubSecrets } from "../index.js";
 
 export interface ExecuteMorphEditArgs {
   target_filepath: string;
@@ -28,7 +30,7 @@ export interface ExecuteMorphEditRuntime {
     originalCode: string,
     codeEdit: string,
     instructions: string,
-  ) => Promise<{ success: boolean; content?: string; error?: string }>;
+  ) => Promise<{ success: boolean; content?: string; error?: string; kind?: FailureKind }>;
   resolveTargetPath: (
     targetPath: string,
     root: string,
@@ -170,7 +172,8 @@ export async function executeMorphEdit(
   const apiDuration = now() - startTime;
 
   if (!result.success || !result.content) {
-    return `Morph API failed: ${result.error}\n\nSuggestion: Try using the native 'edit' tool instead with exact string replacement.\nThe edit tool requires matching the exact text in the file.`;
+    const safeError = scrubSecrets(result.error || "unknown error", MORPH_API_KEY);
+    return `Morph API failed: ${safeError}\n\nSuggestion: Try using the native 'edit' tool instead with exact string replacement.\nThe edit tool requires matching the exact text in the file.`;
   }
 
   const mergedCode = result.content;
