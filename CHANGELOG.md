@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-06-06
+
 ### Added
 
 - **Path confinement**: `morph_edit` resolves requested paths against the OpenCode worktree/directory context and rejects out-of-root targets before file access.
@@ -17,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Import preservation guard**: Declaration-level import comparison now covers TypeScript type-only imports, combined default+named imports, and CommonJS destructuring aliases as local bindings.
 - **Bun lockfile policy**: `bun.lock` is tracked, npm lockfile state is removed, and CI/release install steps use `bun ci`.
+- **No-marker small-file guard gap**: Marker-less edits on small files now run the truncation and marker-leakage guards before writing — catastrophic shrink and merged-in marker text are blocked instead of silently written. No-marker full replacements are validated against the provided `code_edit` rather than the original file.
+- **Abort timeout classification**: A request abort during response body parsing is now classified as `api_timeout` instead of `api_parse_error`.
 
 ### Changed
 
