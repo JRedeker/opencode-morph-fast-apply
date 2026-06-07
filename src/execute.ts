@@ -179,9 +179,13 @@ export async function executeMorphEdit(
   const mergedCode = result.content;
 
   // Post-merge guard: marker leakage detection
+  //
+  // Fires regardless of whether the code_edit carried markers: a merged file
+  // should never gain literal marker text it did not previously contain. The
+  // `!originalHadMarker` precondition avoids false positives on files that
+  // legitimately contain the marker string.
   const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER);
   if (
-    hasMarkers &&
     !originalHadMarker &&
     mergedCode.includes(EXISTING_CODE_MARKER)
   ) {
@@ -193,18 +197,38 @@ export async function executeMorphEdit(
   }
 
   // Post-merge guard: catastrophic truncation detection
+  //
+  // Runs for both marker and no-marker edits. The "expected" output differs by
+  // mode: for marker edits the merged result should be ~the original file; for
+  // a no-marker full replacement it should be ~the provided code_edit. Comparing
+  // the merged output against the right baseline catches Morph mangling in both
+  // modes without false-positiving an intentional small replacement (where the
+  // merged result is close to the code_edit and therefore shows ~0 loss).
   const mergedLineCount = mergedCode.split("\n").length;
+  const truncationBaseline = hasMarkers ? originalCode : normalizedCodeEdit;
+  const baselineLineCount = truncationBaseline.split("\n").length;
   const charLoss =
-    (originalCode.length - mergedCode.length) / originalCode.length;
+    truncationBaseline.length > 0
+      ? (truncationBaseline.length - mergedCode.length) /
+        truncationBaseline.length
+      : 0;
   const lineLoss =
-    (originalLineCount - mergedLineCount) / originalLineCount;
+    baselineLineCount > 0
+      ? (baselineLineCount - mergedLineCount) / baselineLineCount
+      : 0;
 
-  if (hasMarkers && charLoss > 0.6 && lineLoss > 0.5) {
+  if (charLoss > 0.6 && lineLoss > 0.5) {
     await log(
       "warn",
       `Catastrophic truncation detected for ${target_filepath}: ${Math.round(charLoss * 100)}% char loss, ${Math.round(lineLoss * 100)}% line loss`,
     );
-    return `Morph API produced a potentially destructive merge for ${target_filepath}.\n\nOriginal: ${originalLineCount} lines (${originalCode.length} chars)\nMerged:   ${mergedLineCount} lines (${mergedCode.length} chars)\nLoss:     ${Math.round(charLoss * 100)}% characters, ${Math.round(lineLoss * 100)}% lines\n\nBecause markers were provided, this large shrink is likely unintended.\nNo file changes were written.\n\nOptions:\n1. Retry with more precise anchors in code_edit\n2. Use the native 'edit' tool for exact string replacement\n3. Break the change into smaller edits`;
+    const baselineLabel = hasMarkers
+      ? `Original: ${originalLineCount} lines (${originalCode.length} chars)`
+      : `Your edit: ${baselineLineCount} lines (${truncationBaseline.length} chars)`;
+    const reason = hasMarkers
+      ? "Because markers were provided, this large shrink is likely unintended."
+      : "The merged result is far smaller than the replacement you provided, indicating the merge model mangled the edit.";
+    return `Morph API produced a potentially destructive merge for ${target_filepath}.\n\n${baselineLabel}\nMerged:   ${mergedLineCount} lines (${mergedCode.length} chars)\nLoss:     ${Math.round(charLoss * 100)}% characters, ${Math.round(lineLoss * 100)}% lines\n\n${reason}\nNo file changes were written.\n\nOptions:\n1. Retry with more precise anchors in code_edit\n2. Use the native 'edit' tool for exact string replacement\n3. Break the change into smaller edits`;
   }
 
   // Post-merge guard: import identifier preservation

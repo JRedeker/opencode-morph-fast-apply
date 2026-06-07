@@ -1178,6 +1178,97 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
   });
 });
 
+describe("executeMorphEdit - no-marker guard coverage", () => {
+  const tenLines = Array.from({ length: 10 }, (_, i) => `const v${i} = ${i};`).join(
+    "\n",
+  );
+
+  test("blocks catastrophic shrink on no-marker edit (vs code_edit baseline)", async () => {
+    // 10-line file (≤10 so the missing-marker refusal does not trigger),
+    // no markers, agent provides a substantial full replacement, but Morph
+    // returns an almost-empty result.
+    const bigReplacement = Array.from(
+      { length: 10 },
+      (_, i) => `const replaced${i} = ${i};`,
+    ).join("\n");
+
+    let wrote = false;
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: tenLines }),
+      callMorphApply: async () => ({ success: true, content: "x\n" }),
+      writeFile: async () => {
+        wrote = true;
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "replace",
+        code_edit: bigReplacement,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("potentially destructive merge");
+    expect(result).toContain("% characters");
+    expect(wrote).toBe(false);
+  });
+
+  test("allows intentional no-marker replacement where merged ~= code_edit", async () => {
+    // No false positive: merged result matches the provided replacement.
+    const replacement = "const a = 1;\nconst b = 2;\nconst c = 3;\n";
+
+    let wrote = false;
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\nconst b = 2;\n" }),
+      callMorphApply: async () => ({ success: true, content: replacement }),
+      writeFile: async () => {
+        wrote = true;
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "replace",
+        code_edit: replacement,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Applied edit to");
+    expect(wrote).toBe(true);
+  });
+
+  test("blocks marker leakage on no-marker edit", async () => {
+    let wrote = false;
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\nconst b = 2;\n" }),
+      callMorphApply: async () => ({
+        success: true,
+        content: `const a = 1;\n${EXISTING_CODE_MARKER}\nconst b = 2;\n`,
+      }),
+      writeFile: async () => {
+        wrote = true;
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "replace",
+        code_edit: "const a = 1;\nconst b = 2;\nconst c = 3;\n",
+      },
+      runtime,
+    );
+
+    expect(result).toContain("unsafe output");
+    expect(result).toContain("placeholder marker text");
+    expect(wrote).toBe(false);
+  });
+});
+
 describe("executeMorphEdit - write failure", () => {
   test("returns error when writeFile throws", async () => {
     const runtime = makeMockRuntime({
@@ -1387,6 +1478,34 @@ describe("callMorphApply - failure kinds and secret scrubbing", () => {
     expect(result.success).toBe(false);
     expect(result.kind).toBe("api_parse_error");
     expect(result.error).toContain("invalid JSON");
+  });
+
+  test("returns api_timeout when abort fires during body parse", async () => {
+    globalThis.fetch = ((_url: string, init?: RequestInit) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(""),
+        json: () =>
+          new Promise((_resolve, reject) => {
+            const signal = init?.signal as AbortSignal | undefined;
+            signal?.addEventListener("abort", () => {
+              const err = new Error("aborted");
+              err.name = "AbortError";
+              reject(err);
+            });
+          }),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      timeout: 10,
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_timeout");
+    expect(result.error).toContain("timeout");
+    expect(result.error).not.toContain("invalid JSON");
   });
 
   test("returns api_empty_response when choices are missing", async () => {

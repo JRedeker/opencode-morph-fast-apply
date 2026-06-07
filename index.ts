@@ -136,6 +136,17 @@ export async function callMorphApply(
       };
     } catch (parseErr) {
       clearTimeout(timeoutId);
+      // A timeout that fires while the response body is being read/parsed
+      // surfaces here as an AbortError. Classify it as a timeout rather than a
+      // parse error so failures are diagnosed correctly.
+      const e = parseErr as Error;
+      if (e?.name === "AbortError" || controller.signal.aborted) {
+        return {
+          success: false,
+          error: `Morph API timeout after ${timeout}ms`,
+          kind: "api_timeout",
+        };
+      }
       return {
         success: false,
         error: "Morph API returned invalid JSON",
