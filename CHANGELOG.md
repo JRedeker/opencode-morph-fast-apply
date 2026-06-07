@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **README**: Fixed stale version pin (`v1.8.2` → `v1.9.0`) in installation examples.
+- **README**: Expanded Safety guards section to document dropped imports guard, path confinement, and secret scrubbing behavior.
+- **README**: Added Bun lockfile policy note to Contributing section.
+
 ## [1.9.0] - 2026-04-28
 
 ### Added

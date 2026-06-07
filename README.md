@@ -45,7 +45,7 @@ Or pin to a specific version:
     "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.8.2"
+    "github:JRedeker/opencode-morph-fast-apply#v1.9.0"
   ]
 }
 ```
@@ -170,12 +170,15 @@ If code is being deleted unexpectedly, ensure your `code_edit` includes `// ... 
 
 ### Safety guards
 
-The plugin now blocks unsafe Morph responses before writing files:
+The plugin blocks unsafe Morph responses before writing files:
 
 - **Marker leakage guard**: If merged output contains `// ... existing code ...` but the original file did not, the write is aborted.
 - **Catastrophic truncation guard**: If merged output loses more than 60% of characters **and** more than 50% of lines (for marker-based edits), the write is aborted.
+- **Dropped imports guard**: If top-level import identifiers present in the original file are missing from the merged output, the write is aborted. This catches silent import loss that can occur when edits fall outside the anchoring context.
+- **Path confinement**: All target paths are resolved and confined to the project root. Symlinks are followed and validated; paths that resolve outside the root are rejected.
+- **Secret scrubbing**: API error messages are automatically scrubbed to prevent leaking your `MORPH_API_KEY` or Bearer tokens in tool output.
 
-In both cases, `morph_edit` returns a detailed error with recovery options (retry with tighter anchors, use native `edit`, or split into smaller edits).
+In all guard cases, `morph_edit` returns a detailed error with recovery options (retry with tighter anchors, use native `edit`, or split into smaller edits).
 
 ### Markdown-fenced `code_edit` input
 
@@ -263,6 +266,8 @@ The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). S
 ## Contributing
 
 Contributions welcome! This plugin could potentially be integrated into OpenCode core.
+
+This project uses Bun. The `bun.lock` lockfile is tracked in git; `pnpm-lock.yaml` and `package-lock.json` are ignored.
 
 ## License
 
