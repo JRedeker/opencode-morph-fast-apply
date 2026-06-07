@@ -1,0 +1,573 @@
+{
+  "id": "fixMorphGuardGaps",
+  "title": "Fix morph guard gaps",
+  "status": "archived",
+  "created_at": "2026-06-07T00:37:36.559Z",
+  "tasks": [
+    {
+      "id": "tk-c3466c6971a2",
+      "title": "Fix truncation + marker-leakage guard gating in src/execute.ts",
+      "type": "code",
+      "status": "done",
+      "priority": 0,
+      "created_at": "2026-06-07T00:38:43.533Z",
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC1",
+          "SC2"
+        ],
+        "verifies": [
+          "AC1",
+          "AC2",
+          "AC3"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "DONT1",
+          "DONT2"
+        ]
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-07T00:39:02.885Z",
+      "verification": "bun run ci passed: 124 pass, 0 fail, 234 expect calls; tsc --noEmit passed. Includes both guard fixes and timeout fix plus new regression tests.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "src/execute.ts: marker-leakage guard fires whenever merged gains marker text original lacked; truncation guard uses baseline = hasMarkers ? originalCode : normalizedCodeEdit and fires regardless of markers, with mode-aware message. Added no-marker guard coverage tests (catastrophic shrink blocked, intentional replacement allowed, marker leakage blocked).",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts"
+      ],
+      "checkpointSha": "869ef6d0b9696e41c15b257e59fce895b131fbec",
+      "completedAt": "2026-06-07T00:41:18.847Z",
+      "completed_at": "2026-06-07T00:41:18.847Z",
+      "notes": "Guard gating fixed in src/execute.ts. Checkpoint 869ef6d. Truncation guard now baseline-aware (original vs code_edit) and runs for both modes; marker-leakage guard decoupled from hasMarkers (keeps !originalHadMarker). 3 new tests + full suite pass.",
+      "updatedAt": "2026-06-07T00:41:27.980Z"
+    },
+    {
+      "id": "tk-23c8863fda42",
+      "title": "Classify body-parse abort as api_timeout in index.ts callMorphApply",
+      "type": "code",
+      "status": "done",
+      "priority": 1,
+      "created_at": "2026-06-07T00:38:43.819Z",
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC3"
+        ],
+        "verifies": [
+          "AC4"
+        ],
+        "respects": [
+          "C1",
+          "C3",
+          "DONT2"
+        ]
+      },
+      "verification": "Timeout classification fix committed in 869ef6d (index.ts JSON-parse catch). bun run ci passed: 124 pass, tsc --noEmit passed. New test asserts api_timeout on body-parse abort.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "index.ts: JSON-parse catch returns api_timeout when parseErr.name === 'AbortError' || controller.signal.aborted, else api_parse_error. Added test that aborts during response.json() and asserts kind api_timeout.",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "869ef6d0b9696e41c15b257e59fce895b131fbec",
+      "completedAt": "2026-06-07T00:41:43.231Z",
+      "completed_at": "2026-06-07T00:41:43.231Z",
+      "notes": "Timeout classification fixed in index.ts callMorphApply JSON-parse catch. Committed in 869ef6d. New regression test passes. Full suite 124 pass.",
+      "updatedAt": "2026-06-07T00:41:49.707Z"
+    },
+    {
+      "id": "tk-c7a3b81cae58",
+      "title": "Verify and redeploy locally",
+      "type": "code",
+      "status": "done",
+      "priority": 2,
+      "created_at": "2026-06-07T00:38:46.660Z",
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC4"
+        ],
+        "verifies": [
+          "AC5"
+        ],
+        "respects": [
+          "C4",
+          "DONT1",
+          "OOS2"
+        ]
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-07T00:41:50.376Z",
+      "verification": "Redeployed plugin from worktree to ~/.config/opencode/node_modules/opencode-morph-fast-apply (backup taken). Deployed-module probe PASS: no-marker catastrophic shrink blocked, intentional replacement still writes, no-marker marker leakage blocked, body-parse abort -> api_timeout, invalid JSON -> api_parse_error. bun run ci green (124 pass).",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Deployed worktree package files to global node_modules and probed the deployed module reproducing the two originally-failing scenarios plus controls. All pass.",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "869ef6d0b9696e41c15b257e59fce895b131fbec",
+      "completedAt": "2026-06-07T00:43:19.328Z",
+      "completed_at": "2026-06-07T00:43:19.328Z",
+      "notes": "Verified and redeployed. Deployed-module probe confirms both fixes live with no false positives. Backup at /tmp/opencode-morph-fast-apply-deploy-backup. bun run ci green.",
+      "updatedAt": "2026-06-07T00:43:25.521Z"
+    }
+  ],
+  "subagent_reports": [],
+  "deltas": {},
+  "wisdom": [],
+  "gates": {
+    "proposal": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:37:47.636Z",
+      "completed_by": "agent",
+      "approval_evidence": "Problem confirmed via scenario testing. User directive 'fix both now' authorizes proceeding. Scope: two bugfixes (guard gating, timeout classification). B/F/S: boundaries present (In/Out/Must Not), user outcomes implementation-free, completion signals concrete.",
+      "artifact_evidence": {
+        "kind": "proposal",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/proposal.md",
+        "content_hash": "a5bb38c8b2e094f47b0a175b43cd5252e52cbfb51769e265c707ca05d23ca3fb",
+        "non_whitespace_chars": 2410,
+        "checked_at": "2026-06-07T00:37:36.608Z"
+      }
+    },
+    "discovery": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:38:10.278Z",
+      "completed_by": "agent",
+      "approval_evidence": "Root cause confirmed by reading source: index.ts:137-144 inner JSON-parse catch returns api_parse_error before outer AbortError handler (index.ts:164); src/execute.ts:183 and :202 gate leakage/truncation guards behind hasMarkers. Agreement persisted, contract minted (17 items). No open questions.",
+      "artifact_evidence": {
+        "kind": "agreement",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/agreement.md",
+        "content_hash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "non_whitespace_chars": 2199,
+        "checked_at": "2026-06-07T00:37:36.609Z"
+      }
+    },
+    "design": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:38:32.973Z",
+      "completed_by": "agent",
+      "approval_evidence": "Design persisted: baseline-aware truncation guard, marker-leakage decoupled from hasMarkers (keep !originalHadMarker), abort-aware JSON parse classification. Two small localized fixes; inline validation VALIDATED, no conflict/compromise.",
+      "artifact_evidence": {
+        "kind": "design",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/design.md",
+        "content_hash": "a0257d375d5e56947280be97600238592a233a876efdab620a4a18c857c897b2",
+        "non_whitespace_chars": 2621,
+        "checked_at": "2026-06-07T00:37:36.610Z"
+      }
+    },
+    "planning": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:38:52.475Z",
+      "completed_by": "agent",
+      "approval_evidence": "User directive 'fix both now' approves the plan. Three tasks: guard gating fix, timeout classification fix, verify+redeploy. Tasks carry contract refs covering SC1-SC4 and AC1-AC5."
+    },
+    "execution": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:43:33.768Z",
+      "completed_by": "agent",
+      "approval_evidence": "All 3 tasks done. bun run ci green (124 pass, 234 expects, tsc clean). Deployed module probed: both fixes live, no false positives. Worktree clean at 869ef6d."
+    },
+    "acceptance": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:44:10.194Z",
+      "completed_by": "agent",
+      "approval_evidence": "Acceptance: bun run ci green (124 pass); deployed-module probe confirms both fixes live with no false positives; contract review matrix 17/17 pass/respected/not-applicable; executive summary persisted. User directive 'fix both now' authorizes acceptance.",
+      "artifact_evidence": {
+        "kind": "acceptance",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/executive-summary.md",
+        "content_hash": "67f8139f430bb95537824a4b2f4e3ca707cd6d18a72eab51fc2c4b6bad246af1",
+        "non_whitespace_chars": 1258,
+        "checked_at": "2026-06-07T00:37:36.611Z"
+      }
+    },
+    "release": {
+      "status": "pending"
+    }
+  },
+  "reentry_history": [],
+  "origin": {
+    "kind": "discovery",
+    "source_artifact": "scenario-testing of fixImprovementFindings deploy"
+  },
+  "contract": {
+    "version": 1,
+    "rigor": "standard",
+    "source": {
+      "artifact": "agreement",
+      "contentHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+      "approvedAt": "2026-06-07T00:38:05.626Z"
+    },
+    "items": [
+      {
+        "id": "SC1",
+        "kind": "success_criterion",
+        "text": "The catastrophic-truncation guard protects no-marker edits while still allowing intentional full-replacement where the merged result matches the provided code_edit.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC2",
+        "kind": "success_criterion",
+        "text": "The marker-leakage guard fires whenever the merged output contains marker text the original file lacked, regardless of whether the code_edit had markers.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC3",
+        "kind": "success_criterion",
+        "text": "A Morph API abort during response body parse is classified as `api_timeout`, not `api_parse_error`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC4",
+        "kind": "success_criterion",
+        "text": "All existing tests continue to pass and new regression tests cover the fixed behavior.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "AC1",
+        "kind": "acceptance_criterion",
+        "text": "Test: 10-line file, no markers, Morph returns a result ~90% smaller than the provided code_edit -> blocked, no write.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC2",
+        "kind": "acceptance_criterion",
+        "text": "Test: no-marker edit where the merged result is close to the provided code_edit (intentional replacement) -> writes, no false positive.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC3",
+        "kind": "acceptance_criterion",
+        "text": "Test: no-marker edit where merged output gains marker text the original lacked -> blocked, no write.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC4",
+        "kind": "acceptance_criterion",
+        "text": "Test: abort during `response.json()` -> result kind is `api_timeout`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC5",
+        "kind": "acceptance_criterion",
+        "text": "`bun run ci` passes (bun test + tsc --noEmit) and the fix is redeployed locally.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "C1",
+        "kind": "constraint",
+        "text": "Do not weaken existing guards (dropped-import, >10-line refusal, path confinement, secret scrubbing).",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C2",
+        "kind": "constraint",
+        "text": "Do not block intentional full-replacement of small files.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C3",
+        "kind": "constraint",
+        "text": "Do not expose secrets.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C4",
+        "kind": "constraint",
+        "text": "No release/tag/publish.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "DONT1",
+        "kind": "avoidance",
+        "text": "Avoid changing the >10-line missing-marker refusal threshold.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT2",
+        "kind": "avoidance",
+        "text": "Avoid adding new tool surface or replacing Morph.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "OOS1",
+        "kind": "out_of_scope",
+        "text": "Broader rework of the marker threshold policy.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS2",
+        "kind": "out_of_scope",
+        "text": "Release automation.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      }
+    ],
+    "amendments": [],
+    "reviewMatrix": {
+      "reviewedAt": "2026-06-07T00:43:53.849Z",
+      "rows": [
+        {
+          "contractId": "SC1",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Truncation guard now baseline-aware; tests + deployed probe show catastrophic no-marker shrink blocked and intentional replacement still writes.",
+          "notes": ""
+        },
+        {
+          "contractId": "SC2",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Marker-leakage guard fires regardless of input markers; deployed probe blocks no-marker leakage.",
+          "notes": ""
+        },
+        {
+          "contractId": "SC3",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "JSON-parse abort classified api_timeout; new test + deployed probe pass; invalid-JSON control still api_parse_error.",
+          "notes": ""
+        },
+        {
+          "contractId": "SC4",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "bun run ci: 124 pass, 0 fail, 234 expect calls; tsc --noEmit clean. 4 new regression tests.",
+          "notes": ""
+        },
+        {
+          "contractId": "AC1",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Test 'blocks catastrophic shrink on no-marker edit' + deployed FIX1a probe: blocked, no write.",
+          "notes": ""
+        },
+        {
+          "contractId": "AC2",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Test 'allows intentional no-marker replacement where merged ~= code_edit' + deployed control probe: writes.",
+          "notes": ""
+        },
+        {
+          "contractId": "AC3",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Test 'blocks marker leakage on no-marker edit' + deployed FIX1b probe: blocked, no write.",
+          "notes": ""
+        },
+        {
+          "contractId": "AC4",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Test 'returns api_timeout when abort fires during body parse' + deployed FIX2 probe.",
+          "notes": ""
+        },
+        {
+          "contractId": "AC5",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "bun run ci green; redeployed to global node_modules; deployed-module probe passes.",
+          "notes": ""
+        },
+        {
+          "contractId": "C1",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Existing guards preserved: dropped-import, >10-line refusal, path confinement, secret scrubbing tests all still pass.",
+          "notes": ""
+        },
+        {
+          "contractId": "C2",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "test",
+          "evidence": "Intentional-replacement control test passes; no false positive introduced.",
+          "notes": ""
+        },
+        {
+          "contractId": "C3",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No secret values added to logs/errors; scrubbing tests still pass.",
+          "notes": ""
+        },
+        {
+          "contractId": "C4",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No release/tag/publish performed.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT1",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": ">10-line missing-marker refusal threshold unchanged.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT2",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No new tool surface; Morph integration unchanged.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS1",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "Marker threshold policy rework not attempted.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS2",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "No release automation work.",
+          "notes": ""
+        }
+      ]
+    }
+  },
+  "acceptanceCriteria": [
+    "Test: 10-line file, no markers, Morph returns a result ~90% smaller than the provided code_edit -> blocked, no write.",
+    "Test: no-marker edit where the merged result is close to the provided code_edit (intentional replacement) -> writes, no false positive.",
+    "Test: no-marker edit where merged output gains marker text the original lacked -> blocked, no write.",
+    "Test: abort during `response.json()` -> result kind is `api_timeout`.",
+    "`bun run ci` passes (bun test + tsc --noEmit) and the fix is redeployed locally."
+  ],
+  "documents": {
+    "proposal": "# Proposal: Fix morph guard gaps\n\n## Why\n\nScenario testing of the deployed `opencode-morph-fast-apply` plugin (after archiving `fixImprovementFindings`) surfaced two real defects in `morph_edit` safety behavior:\n\n1. **Guard gap on no-marker edits.** The catastrophic-truncation guard (`src/execute.ts`) and the marker-leakage guard are both gated behind `hasMarkers`. Files with 10 or fewer lines and no markers are still sent through the Morph API and written, but with those two guards skipped. A bad Morph merge can truncate or corrupt a small file with no protection (only the marker-independent dropped-import guard still applies).\n\n2. **Timeout misclassification.** In `callMorphApply` (`index.ts`), an `AbortError` raised during `response.json()` parsing is caught by the inner JSON-parse `catch` and returned as `api_parse_error`. The outer `catch` already maps `AbortError` to `api_timeout`, but body-parse aborts never reach it.\n\n## What Changes\n\n- Make the truncation guard protect no-marker edits without false-positiving intentional small full-replacements, by comparing the merged result against the expected baseline (original code when markers present, the provided code_edit when not).\n- Make the marker-leakage guard fire whenever the merged output gains marker text the original file did not have, regardless of input markers.\n- Classify aborts during response body read/parse as `api_timeout`.\n\n## User Outcomes\n\n- Small files are protected from catastrophic Morph truncation/corruption even when an agent omits markers.\n- Intentional full-replacement of small files still works.\n- Timeout failures are reported as timeouts, improving diagnosability.\n\n## Scope\n\n### In Scope\n\n- `src/execute.ts` truncation + marker-leakage guard conditions.\n- `index.ts` `callMorphApply` body-parse abort classification.\n- Tests in `index.test.ts` for the new behavior.\n- Local redeploy to `~/.config/opencode/node_modules/opencode-morph-fast-apply`.\n\n### Out of Scope\n\n- Changing the >10-line missing-marker refusal threshold.\n- Replacing Morph or adding new tool surface.\n- Release/tag/publish.\n\n### Must Not\n\n- Must not weaken existing guards (dropped-import, >10-line refusal, path confinement, secret scrubbing).\n- Must not block intentional full-replacement of small files (no false positives when merged output matches the provided code_edit).\n- Must not expose secrets.\n\n## Affected Code\n\n- `src/execute.ts`\n- `index.ts`\n- `index.test.ts`\n\n## Constraints\n\n- Preserve `morph_edit` behavior and Morph integration.\n- Prefer deterministic, testable guard conditions.\n\n## Discovery Agenda\n\n- Confirm the correct truncation baseline for no-marker edits to avoid false positives.\n- Confirm whether body-read (`response.text()`) aborts already reach the outer catch (they do; only JSON parse needs the fix).",
+    "problemStatement": "Scenario testing of the deployed Morph plugin surfaced two real defects. (1) The catastrophic-truncation and marker-leakage post-merge guards are gated behind `hasMarkers`, so no-marker edits on files of 10 or fewer lines are sent through Morph and written with those guards skipped, allowing a bad Morph merge to truncate or corrupt small files. (2) When the Morph API request times out during response body parsing, the inner JSON-parse catch classifies the AbortError as `api_parse_error` instead of `api_timeout`. Both should be fixed while preserving intentional full-replacement behavior and all existing guards.",
+    "agreement": "# Agreement\n\n## Objectives\n\n1. Close the two defects found in scenario testing of the deployed Morph plugin.\n2. Preserve `morph_edit` behavior, Morph integration, and all existing guards.\n3. Avoid false positives that would block intentional small-file full-replacement.\n\n## Success Criteria\n\n1. The catastrophic-truncation guard protects no-marker edits while still allowing intentional full-replacement where the merged result matches the provided code_edit.\n2. The marker-leakage guard fires whenever the merged output contains marker text the original file lacked, regardless of whether the code_edit had markers.\n3. A Morph API abort during response body parse is classified as `api_timeout`, not `api_parse_error`.\n4. All existing tests continue to pass and new regression tests cover the fixed behavior.\n\n## Acceptance Criteria\n\n1. Test: 10-line file, no markers, Morph returns a result ~90% smaller than the provided code_edit -> blocked, no write.\n2. Test: no-marker edit where the merged result is close to the provided code_edit (intentional replacement) -> writes, no false positive.\n3. Test: no-marker edit where merged output gains marker text the original lacked -> blocked, no write.\n4. Test: abort during `response.json()` -> result kind is `api_timeout`.\n5. `bun run ci` passes (bun test + tsc --noEmit) and the fix is redeployed locally.\n\n## Constraints\n\n1. Do not weaken existing guards (dropped-import, >10-line refusal, path confinement, secret scrubbing).\n2. Do not block intentional full-replacement of small files.\n3. Do not expose secrets.\n4. No release/tag/publish.\n\n## Avoidances\n\n1. Avoid changing the >10-line missing-marker refusal threshold.\n2. Avoid adding new tool surface or replacing Morph.\n\n## Out of Scope\n\n1. Broader rework of the marker threshold policy.\n2. Release automation.\n\n## Preview Applicability\n\n`visual_surface: false` — plugin/tool logic and tests only.\n\n## Decisions\n\n### User Decisions\n\n1. Fix both defects now (explicit directive).\n\n### Agent Decisions (LBP)\n\n1. Truncation baseline: compare merged against `originalCode` when markers are present, else against the normalized `code_edit`. This protects no-marker edits from Morph mangling while allowing intentional small replacements.\n2. Marker-leakage: drop the `hasMarkers` precondition; keep the `!originalHadMarker` precondition to avoid false positives on files that legitimately contain marker text.\n3. Timeout: in the JSON-parse catch, detect `AbortError`/`signal.aborted` and return `api_timeout`.\n\n## Deferred Questions\n\nNone.\n\n## Sign-Off\n\nUser directive: \"fix both now\".",
+    "design": "# Design\n\n## Architecture Overview\n\nTwo localized guard fixes in existing modules. No new modules, no API surface change.\n\n## Key Decisions\n\n### 1. Truncation guard baseline (src/execute.ts)\n\nReplace `if (hasMarkers && charLoss > 0.6 && lineLoss > 0.5)` with a baseline-aware check that runs for both marker and no-marker edits:\n\n- baseline = `hasMarkers ? originalCode : normalizedCodeEdit`\n- Compute `charLoss` / `lineLoss` against the baseline.\n- Fire when `charLoss > 0.6 && lineLoss > 0.5`.\n\nRationale: for marker edits the expected output is ~the original; for no-marker full replacement the expected output is ~the provided code_edit. Comparing merged against the right baseline catches Morph mangling in both modes without blocking an intentional small replacement (where merged ≈ code_edit → ~0 loss).\n\nMessage adapts to mode (markers vs full replacement).\n\n### 2. Marker-leakage guard (src/execute.ts)\n\nDrop the `hasMarkers` precondition; keep `!originalHadMarker`:\n\n- Fire when `!originalHadMarker && mergedCode.includes(EXISTING_CODE_MARKER)`.\n\nRationale: a merged file should never gain literal marker text it did not previously contain, regardless of whether the input carried markers. `!originalHadMarker` prevents false positives on files that legitimately contain the marker string.\n\n### 3. Timeout classification (index.ts callMorphApply)\n\nIn the JSON-parse `catch`, detect abort and return `api_timeout`:\n\n- If `parseErr.name === \"AbortError\" || controller.signal.aborted` → `{ success:false, kind:\"api_timeout\", error: \"Morph API timeout after ${timeout}ms\" }`.\n- Otherwise keep `api_parse_error`.\n\nThe outer catch already handles fetch-phase aborts; `response.text()` aborts already propagate to the outer catch (not wrapped in an inner try). Only the JSON-parse catch needs the fix.\n\n## Implementation Strategy\n\n1. RED: add tests in `index.test.ts`:\n   - no-marker 10-line file + Morph 90% shrink vs code_edit → blocked.\n   - no-marker edit where merged ≈ code_edit → writes (no false positive).\n   - no-marker edit + merged gains marker text → blocked.\n   - abort during `response.json()` → kind `api_timeout`.\n2. GREEN: apply the three guard/classification edits.\n3. Verify: `bun test`, `tsc --noEmit`.\n4. Redeploy locally and re-run scenario probes.\n\n## Design-Derived Criteria\n\n1. No-marker truncation must use the code_edit baseline, not the original, to avoid false positives.\n2. Leakage guard must retain `!originalHadMarker`.\n3. Timeout detection must not depend on message text (use `name`/`signal.aborted`).\n\n## Risks / Mitigations\n\n- Risk: no-marker truncation false positive. Mitigation: baseline = code_edit; add the intentional-replacement test.\n- Risk: leakage false positive on marker-containing files. Mitigation: keep `!originalHadMarker`.\n- Risk: abort detection brittle. Mitigation: check both `name` and `signal.aborted`.\n\n## Validator Result\n\nInline self-review (change is two small, well-understood guard fixes with direct tests; no external architecture dependency). Verdict: VALIDATED. No conflict, no contract-compromise risk.",
+    "executiveSummary": "# Executive Summary\n\n`fixMorphGuardGaps` closes two `morph_edit` safety defects found during scenario testing of the deployed plugin.\n\n## What Changed\n\n- `src/execute.ts`: the catastrophic-truncation guard now runs for both marker and no-marker edits, comparing the merged result against the correct baseline (original file for marker edits, the provided code_edit for no-marker full replacements). The marker-leakage guard no longer requires the input to carry markers; it fires whenever the merged output gains marker text the original lacked (keeping the `!originalHadMarker` guard against false positives).\n- `index.ts`: `callMorphApply` now classifies an abort raised during response body parsing as `api_timeout` instead of `api_parse_error`.\n- `index.test.ts`: 4 new regression tests (no-marker catastrophic shrink blocked, intentional no-marker replacement allowed, no-marker marker leakage blocked, body-parse abort -> api_timeout).\n\n## Verification\n\n- `bun run ci`: 124 pass, 0 fail, 234 expect calls; `tsc --noEmit` clean.\n- Redeployed to `~/.config/opencode/node_modules/opencode-morph-fast-apply`; deployed-module probe reproduced the two originally-failing scenarios and confirmed they are now fixed, with controls confirming no false positives.\n- Contract review matrix: 17/17 pass/respected/not-applicable.\n\n## Remaining Concerns\n\nNone. The >10-line missing-marker refusal threshold was intentionally left unchanged (out of scope).",
+    "acceptance": "# Acceptance\n\nReviewed at: 2026-06-07T00:43:53.849Z\n\n## Contract Review Matrix\n\n| ID | Kind | Requirement | Status | Evidence |\n|---|---|---|---|---|\n| SC1 | success_criterion | The catastrophic-truncation guard protects no-marker edits while still allowing intentional full-replacement where the merged result matches the provided code_edit. | pass | Truncation guard now baseline-aware; tests + deployed probe show catastrophic no-marker shrink blocked and intentional replacement still writes. |\n| SC2 | success_criterion | The marker-leakage guard fires whenever the merged output contains marker text the original file lacked, regardless of whether the code_edit had markers. | pass | Marker-leakage guard fires regardless of input markers; deployed probe blocks no-marker leakage. |\n| SC3 | success_criterion | A Morph API abort during response body parse is classified as `api_timeout`, not `api_parse_error`. | pass | JSON-parse abort classified api_timeout; new test + deployed probe pass; invalid-JSON control still api_parse_error. |\n| SC4 | success_criterion | All existing tests continue to pass and new regression tests cover the fixed behavior. | pass | bun run ci: 124 pass, 0 fail, 234 expect calls; tsc --noEmit clean. 4 new regression tests. |\n| AC1 | acceptance_criterion | Test: 10-line file, no markers, Morph returns a result ~90% smaller than the provided code_edit -> blocked, no write. | pass | Test 'blocks catastrophic shrink on no-marker edit' + deployed FIX1a probe: blocked, no write. |\n| AC2 | acceptance_criterion | Test: no-marker edit where the merged result is close to the provided code_edit (intentional replacement) -> writes, no false positive. | pass | Test 'allows intentional no-marker replacement where merged ~= code_edit' + deployed control probe: writes. |\n| AC3 | acceptance_criterion | Test: no-marker edit where merged output gains marker text the original lacked -> blocked, no write. | pass | Test 'blocks marker leakage on no-marker edit' + deployed FIX1b probe: blocked, no write. |\n| AC4 | acceptance_criterion | Test: abort during `response.json()` -> result kind is `api_timeout`. | pass | Test 'returns api_timeout when abort fires during body parse' + deployed FIX2 probe. |\n| AC5 | acceptance_criterion | `bun run ci` passes (bun test + tsc --noEmit) and the fix is redeployed locally. | pass | bun run ci green; redeployed to global node_modules; deployed-module probe passes. |\n| C1 | constraint | Do not weaken existing guards (dropped-import, >10-line refusal, path confinement, secret scrubbing). | respected | Existing guards preserved: dropped-import, >10-line refusal, path confinement, secret scrubbing tests all still pass. |\n| C2 | constraint | Do not block intentional full-replacement of small files. | respected | Intentional-replacement control test passes; no false positive introduced. |\n| C3 | constraint | Do not expose secrets. | respected | No secret values added to logs/errors; scrubbing tests still pass. |\n| C4 | constraint | No release/tag/publish. | respected | No release/tag/publish performed. |\n| DONT1 | avoidance | Avoid changing the >10-line missing-marker refusal threshold. | respected | >10-line missing-marker refusal threshold unchanged. |\n| DONT2 | avoidance | Avoid adding new tool surface or replacing Morph. | respected | No new tool surface; Morph integration unchanged. |\n| OOS1 | out_of_scope | Broader rework of the marker threshold policy. | not_applicable | Marker threshold policy rework not attempted. |\n| OOS2 | out_of_scope | Release automation. | not_applicable | No release automation work. |\n\n"
+  },
+  "artifacts": {
+    "proposal": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/proposal.md",
+      "updatedAt": "2026-06-07T00:37:36.626Z",
+      "contentHash": "a5bb38c8b2e094f47b0a175b43cd5252e52cbfb51769e265c707ca05d23ca3fb"
+    },
+    "problemStatement": {
+      "path": "",
+      "updatedAt": "2026-06-07T00:37:36.626Z"
+    },
+    "agreement": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/agreement.md",
+      "updatedAt": "2026-06-07T00:38:02.014Z",
+      "contentHash": "3eca1bc53383896d06470e1c864783145f4661974b60d38f0d2abdb3283cde9f"
+    },
+    "design": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/design.md",
+      "updatedAt": "2026-06-07T00:38:27.665Z",
+      "contentHash": "a0257d375d5e56947280be97600238592a233a876efdab620a4a18c857c897b2"
+    },
+    "executiveSummary": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixMorphGuardGaps/executive-summary.md",
+      "updatedAt": "2026-06-07T00:44:05.188Z",
+      "contentHash": "67f8139f430bb95537824a4b2f4e3ca707cd6d18a72eab51fc2c4b6bad246af1"
+    }
+  },
+  "lastSignalAt": "2026-06-07T00:44:10.194Z",
+  "adv_project_id": "a4b8e1b703f8294bb83a820749df6ec98b9a5f61",
+  "worktree_auto_managed": true
+}
