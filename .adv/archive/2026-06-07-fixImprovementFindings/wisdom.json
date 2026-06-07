@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "id": "ws-hvQmfw",
+      "type": "gotcha",
+      "content": "When extracting TypeScript helper modules in this ESM/Bun plugin, relative imports between `.ts` source files needed `.js` specifiers for `tsc`/bundler resolution while still passing `bun test`.",
+      "source_task": "tk-6e05fe43d4c0",
+      "recorded_at": "2026-06-06T23:22:29.093Z"
+    },
+    {
+      "id": "ws-HZ98aS",
+      "type": "pattern",
+      "content": "For write confinement in this OpenCode plugin, resolve against per-call `context.worktree ?? context.directory`, use `path.resolve`, enforce `resolved === root || resolved.startsWith(root + path.sep)`, and realpath existing targets / nearest existing parent for new targets before any Bun file access.",
+      "source_task": "tk-11f8596cb0e7",
+      "recorded_at": "2026-06-06T23:29:00.156Z"
+    },
+    {
+      "id": "ws-VPjgzg",
+      "type": "pattern",
+      "content": "Import-preservation guards should compare parsed import declaration entries between original and merged code, not search for binding names in whole-file text; usage of a dropped binding can otherwise mask the missing import.",
+      "source_task": "tk-16508fc77ef1",
+      "recorded_at": "2026-06-06T23:35:44.670Z"
+    },
+    {
+      "id": "ws-8R2exX",
+      "type": "success",
+      "content": "Extracting `executeMorphEdit(args, runtime)` with injected fs/api/log/time/context/config dependencies enabled full no-network coverage of tool execution while keeping the OpenCode plugin wrapper thin and stable.",
+      "source_task": "tk-c8f27b165f42",
+      "recorded_at": "2026-06-06T23:45:32.918Z"
+    },
+    {
+      "id": "ws-hj6Yov",
+      "type": "gotcha",
+      "content": "With strict TypeScript, `.filter((s) => s && s.length > 0)` can infer `string | boolean` rather than boolean; use explicit boolean predicates such as `!!s && s.length > 0` to keep helper modules typecheck-clean.",
+      "source_task": "tk-cca411fa9a20",
+      "recorded_at": "2026-06-06T23:58:37.591Z"
+    },
+    {
+      "id": "ws-ejMYRs",
+      "type": "success",
+      "content": "Docs freshness can be guarded with tests: asserting stale version pins are absent and current pins/safety sections are present catches README drift during behavior changes.",
+      "source_task": "tk-1b18bc9e1b77",
+      "recorded_at": "2026-06-07T00:04:34.489Z"
+    },
+    {
+      "id": "ws-LKGo2B",
+      "type": "success",
+      "content": "After switching to Bun lockfile policy, final verification should include both `bun ci` (lockfile/install invariant) and `bun run ci` (test + typecheck) to prove dependency and code correctness separately.",
+      "source_task": "tk-3cd7f5425724",
+      "recorded_at": "2026-06-07T00:05:35.669Z"
+    }
+  ],
+  "count": 7
+}
