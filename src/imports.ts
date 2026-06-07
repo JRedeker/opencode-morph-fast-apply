@@ -33,6 +33,32 @@ export type ImportEntry = {
   bindings: string[];
 };
 
+function parseTsNamedBindings(bindingList: string): string[] {
+  return bindingList
+    .split(",")
+    .map((s) => {
+      const parts = s.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+      return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+    })
+    .filter((s): s is string => !!s && s.length > 0);
+}
+
+function parseRequireDestructureBindings(bindingList: string): string[] {
+  return bindingList
+    .split(",")
+    .map((s) => {
+      const parts = s.trim().split(/\s*:\s*/);
+      // For destructured require aliases (`{ exported: local }`), the local
+      // binding is the right side. Without an alias, it is the property name.
+      const local = (parts.length > 1 ? parts[parts.length - 1] : parts[0])
+        ?.replace(/^\.\.\./, "")
+        .split("=")[0]
+        ?.trim();
+      return local;
+    })
+    .filter((s): s is string => !!s && s.length > 0);
+}
+
 /**
  * Parse supported import declarations into stable entries representing
  * required local bindings in import declarations.
@@ -112,18 +138,27 @@ export function extractImportEntries(
 
     // TypeScript / JavaScript: import { X, Y } from ...  |  import X from ...
     if (jsExts.includes(ext)) {
+      // import X, { Y as Z } from '...'
+      const combinedImport = trimmed.match(/^import\s+(\w+)\s*,\s*\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
+      if (combinedImport) {
+        const source = combinedImport[3];
+        const names = parseTsNamedBindings(combinedImport[2]);
+        entries.push({
+          kind: "ts-default",
+          source,
+          bindings: [combinedImport[1]],
+        });
+        if (names.length > 0) {
+          entries.push({ kind: "ts-named", source, bindings: names });
+        }
+        continue;
+      }
+
       // import { X, Y as Z } from '...'
-      const namedImport = trimmed.match(/^import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
+      const namedImport = trimmed.match(/^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
       if (namedImport) {
         const source = namedImport[2];
-        const names = namedImport[1]
-          .split(",")
-          .map((s) => {
-            const parts = s.trim().split(/\s+as\s+/);
-            // For named imports, the LOCAL binding is the last part (alias)
-            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
-          })
-          .filter((s): s is string => !!s && s.length > 0);
+        const names = parseTsNamedBindings(namedImport[1]);
         if (names.length > 0) {
           entries.push({ kind: "ts-named", source, bindings: names });
         }
@@ -131,7 +166,7 @@ export function extractImportEntries(
       }
 
       // import X from '...'  (default import)
-      const defaultImport = trimmed.match(/^import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+      const defaultImport = trimmed.match(/^import\s+(?:type\s+)?(\w+)\s+from\s+['"]([^'"]+)['"]/);
       if (defaultImport) {
         entries.push({
           kind: "ts-default",
@@ -142,7 +177,7 @@ export function extractImportEntries(
       }
 
       // import * as X from '...'
-      const namespaceImport = trimmed.match(/^import\s+\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+      const namespaceImport = trimmed.match(/^import\s+(?:type\s+)?\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
       if (namespaceImport) {
         entries.push({
           kind: "ts-namespace",
@@ -171,14 +206,7 @@ export function extractImportEntries(
       );
       if (requireDestructure) {
         const source = requireDestructure[2];
-        const names = requireDestructure[1]
-          .split(",")
-          .map((s) => {
-            const parts = s.trim().split(/\s*:\s*/);
-            // For destructured require, the LOCAL binding is the left side of colon
-            return parts[0]?.trim();
-          })
-          .filter((s): s is string => !!s && s.length > 0);
+        const names = parseRequireDestructureBindings(requireDestructure[1]);
         if (names.length > 0) {
           entries.push({ kind: "ts-require-destructure", source, bindings: names });
         }

@@ -398,6 +398,26 @@ describe("extractImportedIdentifiers", () => {
     expect(ids).toContain("parse");
   });
 
+  test("extracts TypeScript require destructure aliases as local bindings", () => {
+    const code = 'const { readFile: rf } = require("node:fs");';
+    const ids = extractImportedIdentifiers(code, "app.js");
+    expect(ids).toContain("rf");
+    expect(ids).not.toContain("readFile");
+  });
+
+  test("extracts TypeScript combined default and named imports", () => {
+    const code = 'import React, { useState as useHook } from "react";';
+    const ids = extractImportedIdentifiers(code, "app.tsx");
+    expect(ids).toContain("React");
+    expect(ids).toContain("useHook");
+  });
+
+  test("extracts TypeScript type-only named imports", () => {
+    const code = 'import type { Config as AppConfig } from "./types";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids).toContain("AppConfig");
+  });
+
   test("extracts TypeScript require assignment", () => {
     const code = 'const express = require("express");';
     const ids = extractImportedIdentifiers(code, "app.cjs");
@@ -516,6 +536,37 @@ describe("extractImportEntries", () => {
       kind: "ts-require-destructure",
       source: "path",
       bindings: ["parse", "join"],
+    });
+  });
+
+  test("returns local bindings for require destructure aliases", () => {
+    const code = 'const { readFile: rf, writeFile } = require("node:fs");';
+    const entries = extractImportEntries(code, "app.js");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require-destructure",
+      source: "node:fs",
+      bindings: ["rf", "writeFile"],
+    });
+  });
+
+  test("returns stable entries for combined default and named imports", () => {
+    const code = 'import React, { useState as useHook } from "react";';
+    const entries = extractImportEntries(code, "app.tsx");
+    expect(entries).toEqual([
+      { kind: "ts-default", source: "react", bindings: ["React"] },
+      { kind: "ts-named", source: "react", bindings: ["useHook"] },
+    ]);
+  });
+
+  test("returns stable entries for type-only named imports", () => {
+    const code = 'import type { Config as AppConfig } from "./types";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-named",
+      source: "./types",
+      bindings: ["AppConfig"],
     });
   });
 
@@ -724,6 +775,13 @@ describe("findDroppedIdentifiers", () => {
     const merged = '// import dropped';
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
     expect(dropped).toContain("cr");
+  });
+
+  test("declaration-level comparison: flags dropped require destructure alias binding", () => {
+    const original = 'const { readFile: rf } = require("node:fs");\nrf("file");';
+    const merged = '// require dropped\nrf("file");';
+    const dropped = findDroppedIdentifiers(original, merged, "app.js");
+    expect(dropped).toContain("rf");
   });
 });
 
