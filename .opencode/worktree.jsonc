@@ -1,0 +1,38 @@
+{
+  "$schema": "https://registry.kdco.dev/schemas/worktree.json",
+
+  // Worktree plugin configuration
+  // Documentation: https://github.com/kdcokenny/ocx
+
+  // Worktree session mode:
+  // - "warp" (default): register the ADV worktree as an OpenCode workspace
+  //   and warp this session into it. Requires OPENCODE_EXPERIMENTAL_WORKSPACES=true.
+  // - "terminal": stay in this session and use workdir= per tool (legacy inline behavior).
+  // - "spawn": open a new terminal with a forked OpenCode session (legacy non-inline behavior).
+  // "mode": "warp",
+
+  // Deprecated: "inline": true maps to "mode": "terminal"; false maps to "mode": "spawn".
+
+  "sync": {
+    // Files to copy from main worktree to new worktrees
+    // Example: [".env", ".env.local", "dev.sqlite"]
+    "copyFiles": [],
+
+    // Directories to symlink (saves disk space)
+    // Example: ["node_modules"]
+    "symlinkDirs": [],
+
+    // Patterns to exclude from copying
+    "exclude": []
+  },
+
+  "hooks": {
+    // Commands to run after worktree creation
+    // Example: ["pnpm install", "docker compose up -d"]
+    "postCreate": [],
+
+    // Commands to run before worktree deletion
+    // Example: ["docker compose down"]
+    "preDelete": []
+  }
+}
