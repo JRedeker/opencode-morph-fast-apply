@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Path confinement**: `morph_edit` resolves requested paths against the OpenCode worktree/directory context and rejects out-of-root targets before file access.
+- **No-network execute coverage**: Production `executeMorphEdit()` is dependency-injected and directly tested for missing API key, readonly blocks, marker refusals, unsafe Morph output, and successful write/diff flow.
+- **Secret-safe failure classification**: Morph API failures return stable non-secret failure kinds and scrub API keys/Bearer tokens from returned error text.
+
+### Fixed
+
+- **Import preservation guard**: Declaration-level import comparison now covers TypeScript type-only imports, combined default+named imports, and CommonJS destructuring aliases as local bindings.
+- **Bun lockfile policy**: `bun.lock` is tracked, npm lockfile state is removed, and CI/release install steps use `bun ci`.
+
+### Changed
+
+- **README**: Fixed stale version pin (`v1.8.2` → `v1.9.0`) in installation examples.
+- **README**: Expanded Safety guards section to document dropped imports guard, path confinement, and secret scrubbing behavior.
+- **README**: Added Bun lockfile policy note to Contributing section.
+
 ## [1.9.0] - 2026-04-28
 
 ### Added

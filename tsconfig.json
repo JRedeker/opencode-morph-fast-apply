@@ -11,6 +11,6 @@
     "rootDir": ".",
     "types": ["bun-types"]
   },
-  "include": ["*.ts"],
+  "include": ["*.ts", "src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

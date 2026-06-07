@@ -1,206 +1,24 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-// These are internal to the plugin but duplicated here for testing.
-// Keep in sync with index.ts.
-const EXISTING_CODE_MARKER = "// ... existing code ...";
-
-/**
- * Extract imported identifiers from source code.
- * Duplicated from index.ts for testing. Keep in sync.
- */
-function extractImportedIdentifiers(code: string, filepath: string): string[] {
-  const ext = filepath.split(".").pop()?.toLowerCase() || "";
-  const identifiers: string[] = [];
-  const cExts = ["c", "cpp", "cc", "cxx", "h", "hpp", "hxx"];
-  const jsExts = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
-
-  let normalizedCode = code;
-  if (ext === "py") {
-    let result = "";
-    let depth = 0;
-    for (const ch of code) {
-      if (ch === "(") { depth++; result += ch; continue; }
-      if (ch === ")") { depth--; result += ch; continue; }
-      if (ch === "\n" && depth > 0) { result += " "; continue; }
-      result += ch;
-    }
-    normalizedCode = result;
-  }
-
-  const lines = normalizedCode.split("\n");
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (trimmed.startsWith("#") && ext !== "py" && !cExts.includes(ext)) continue;
-
-    if (ext === "py") {
-      if (trimmed.startsWith("#")) continue;
-      const fromImport = trimmed.match(/^from\s+[\w.]+\s+import\s+(.+)/);
-      if (fromImport) {
-        const names = fromImport[1]
-          .replace(/[()]/g, "")
-          .split(",")
-          .map((s) => {
-            const parts = s.trim().split(/\s+as\s+/);
-            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
-          })
-          .filter((s) => s && s.length > 0 && !s.startsWith("*"));
-        identifiers.push(...names);
-        continue;
-      }
-      const bareImport = trimmed.match(/^import\s+(.+)/);
-      if (bareImport) {
-        const names = bareImport[1]
-          .split(",")
-          .map((s) => {
-            const parts = s.trim().split(/\s+as\s+/);
-            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
-          })
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
-        continue;
-      }
-    }
-
-    if (jsExts.includes(ext)) {
-      const namedImport = trimmed.match(/^import\s+\{([^}]+)\}\s+from/);
-      if (namedImport) {
-        const names = namedImport[1]
-          .split(",")
-          .map((s) => s.trim().split(/\s+as\s+/)[0]?.trim())
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
-        continue;
-      }
-      const defaultImport = trimmed.match(/^import\s+(\w+)\s+from/);
-      if (defaultImport) {
-        identifiers.push(defaultImport[1]);
-        continue;
-      }
-      const namespaceImport = trimmed.match(/^import\s+\*\s+as\s+(\w+)\s+from/);
-      if (namespaceImport) {
-        identifiers.push(namespaceImport[1]);
-        continue;
-      }
-      const requireImport = trimmed.match(/(?:const|let|var)\s+(\w+)\s*=\s*require\s*\(/);
-      if (requireImport) {
-        identifiers.push(requireImport[1]);
-        continue;
-      }
-      const requireDestructure = trimmed.match(/(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\s*\(/);
-      if (requireDestructure) {
-        const names = requireDestructure[1]
-          .split(",")
-          .map((s) => s.trim().split(/:/)[0]?.trim())
-          .filter((s) => s && s.length > 0);
-        identifiers.push(...names);
-        continue;
-      }
-    }
-
-    if (ext === "go") {
-      const singleImport = trimmed.match(/^import\s+(?:(\w+)\s+)?"([^"]+)"/);
-      if (singleImport) {
-        if (singleImport[1]) {
-          identifiers.push(singleImport[1]);
-        } else {
-          const parts = singleImport[2].split("/");
-          identifiers.push(parts[parts.length - 1] || "");
-        }
-        continue;
-      }
-      const blockImport = trimmed.match(/^(?:(\w+)\s+)?"([^"]+)"/);
-      if (blockImport && !trimmed.startsWith("//")) {
-        if (blockImport[1]) {
-          identifiers.push(blockImport[1]);
-        } else {
-          const parts = blockImport[2].split("/");
-          identifiers.push(parts[parts.length - 1] || "");
-        }
-        continue;
-      }
-    }
-
-    if (ext === "rs") {
-      const useStmt = trimmed.match(/^use\s+(.+);/);
-      if (useStmt) {
-        const path = useStmt[1];
-        const multiMatch = path.match(/\{([^}]+)\}/);
-        if (multiMatch) {
-          const names = multiMatch[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0);
-          identifiers.push(...names);
-        } else {
-          const segments = path.split("::");
-          const last = segments[segments.length - 1];
-          if (last && last !== "*") identifiers.push(last);
-        }
-        continue;
-      }
-    }
-
-    if (ext === "java") {
-      const javaImport = trimmed.match(/^import\s+(?:static\s+)?(.+);/);
-      if (javaImport) {
-        const parts = javaImport[1].split(".");
-        const last = parts[parts.length - 1];
-        if (last && last !== "*") identifiers.push(last);
-        continue;
-      }
-    }
-
-    if (cExts.includes(ext)) {
-      const include = trimmed.match(/^#include\s+[<"]([^>"]+)[>"]/);
-      if (include) {
-        const headerPath = include[1];
-        const baseName = headerPath.split("/").pop() || headerPath;
-        const name = baseName.split(".")[0];
-        if (name) identifiers.push(name);
-        continue;
-      }
-    }
-
-    if (ext === "cs") {
-      const usingStmt = trimmed.match(/^using\s+(?:static\s+)?(.+);/);
-      if (usingStmt) {
-        const parts = usingStmt[1].split(".");
-        const last = parts[parts.length - 1];
-        if (last && last !== "*") identifiers.push(last);
-        continue;
-      }
-    }
-  }
-  return [...new Set(identifiers)];
-}
-
-function findDroppedIdentifiers(
-  originalCode: string,
-  mergedCode: string,
-  filepath: string,
-): string[] {
-  const originalIds = extractImportedIdentifiers(originalCode, filepath);
-  if (originalIds.length === 0) return [];
-  const dropped: string[] = [];
-  for (const id of originalIds) {
-    if (!mergedCode.includes(id)) {
-      dropped.push(id);
-    }
-  }
-  return dropped;
-}
-
-function normalizeCodeEditInput(codeEdit: string): string {
-  const trimmed = codeEdit.trim();
-  const lines = trimmed.split("\n");
-  if (lines.length < 3) return codeEdit;
-  const firstLine = lines[0];
-  const lastLine = lines[lines.length - 1];
-  if (/^```[\w-]*$/.test(firstLine!) && /^```$/.test(lastLine!)) {
-    return lines.slice(1, -1).join("\n");
-  }
-  return codeEdit;
-}
+import { EXISTING_CODE_MARKER } from "./src/constants.js";
+import {
+  extractImportedIdentifiers,
+  findDroppedIdentifiers,
+  extractImportEntries,
+} from "./src/imports.js";
+import { normalizeCodeEditInput } from "./src/normalize.js";
+import {
+  executeMorphEdit,
+  type ExecuteMorphEditArgs,
+  type ExecuteMorphEditRuntime,
+} from "./src/execute.js";
+import { generateUnifiedDiff, countChanges } from "./src/diff.js";
+import {
+  callMorphApply,
+  scrubSecrets,
+  type FailureKind,
+} from "./index.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -239,6 +57,17 @@ describe("packaged tool-selection instructions", () => {
     );
     expect(content).toContain("always-on instruction file");
     expect(content).toContain("tool manifest");
+  });
+
+  test("README uses current version pin and documents safety guards", () => {
+    const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
+
+    expect(content).not.toContain("#v1.8.2");
+    expect(content).toContain("#v1.9.0");
+    expect(content).toContain("Path confinement");
+    expect(content).toContain("Secret scrubbing");
+    expect(content).toContain("Dropped imports guard");
+    expect(content).toContain("bun.lock");
   });
 });
 
@@ -569,6 +398,26 @@ describe("extractImportedIdentifiers", () => {
     expect(ids).toContain("parse");
   });
 
+  test("extracts TypeScript require destructure aliases as local bindings", () => {
+    const code = 'const { readFile: rf } = require("node:fs");';
+    const ids = extractImportedIdentifiers(code, "app.js");
+    expect(ids).toContain("rf");
+    expect(ids).not.toContain("readFile");
+  });
+
+  test("extracts TypeScript combined default and named imports", () => {
+    const code = 'import React, { useState as useHook } from "react";';
+    const ids = extractImportedIdentifiers(code, "app.tsx");
+    expect(ids).toContain("React");
+    expect(ids).toContain("useHook");
+  });
+
+  test("extracts TypeScript type-only named imports", () => {
+    const code = 'import type { Config as AppConfig } from "./types";';
+    const ids = extractImportedIdentifiers(code, "app.ts");
+    expect(ids).toContain("AppConfig");
+  });
+
   test("extracts TypeScript require assignment", () => {
     const code = 'const express = require("express");';
     const ids = extractImportedIdentifiers(code, "app.cjs");
@@ -634,6 +483,187 @@ describe("extractImportedIdentifiers", () => {
   });
 });
 
+describe("extractImportEntries", () => {
+  test("returns stable entries for TypeScript named imports", () => {
+    const code = 'import { Router, Request } from "express";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-named",
+      source: "express",
+      bindings: ["Router", "Request"],
+    });
+  });
+
+  test("returns stable entries for TypeScript default import", () => {
+    const code = 'import React from "react";';
+    const entries = extractImportEntries(code, "app.tsx");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-default",
+      source: "react",
+      bindings: ["React"],
+    });
+  });
+
+  test("returns stable entries for TypeScript namespace import", () => {
+    const code = 'import * as fs from "fs";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-namespace",
+      source: "fs",
+      bindings: ["fs"],
+    });
+  });
+
+  test("returns stable entries for require assignment", () => {
+    const code = 'const express = require("express");';
+    const entries = extractImportEntries(code, "app.cjs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require",
+      source: "express",
+      bindings: ["express"],
+    });
+  });
+
+  test("returns stable entries for require destructure", () => {
+    const code = 'const { parse, join } = require("path");';
+    const entries = extractImportEntries(code, "app.js");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require-destructure",
+      source: "path",
+      bindings: ["parse", "join"],
+    });
+  });
+
+  test("returns local bindings for require destructure aliases", () => {
+    const code = 'const { readFile: rf, writeFile } = require("node:fs");';
+    const entries = extractImportEntries(code, "app.js");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-require-destructure",
+      source: "node:fs",
+      bindings: ["rf", "writeFile"],
+    });
+  });
+
+  test("returns stable entries for combined default and named imports", () => {
+    const code = 'import React, { useState as useHook } from "react";';
+    const entries = extractImportEntries(code, "app.tsx");
+    expect(entries).toEqual([
+      { kind: "ts-default", source: "react", bindings: ["React"] },
+      { kind: "ts-named", source: "react", bindings: ["useHook"] },
+    ]);
+  });
+
+  test("returns stable entries for type-only named imports", () => {
+    const code = 'import type { Config as AppConfig } from "./types";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "ts-named",
+      source: "./types",
+      bindings: ["AppConfig"],
+    });
+  });
+
+  test("returns stable entries for Python from-import", () => {
+    const code = "from asyncpg import PostgresError";
+    const entries = extractImportEntries(code, "svc.py");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "py-from",
+      source: "asyncpg",
+      bindings: ["PostgresError"],
+    });
+  });
+
+  test("returns stable entries for Python bare import", () => {
+    const code = "import os";
+    const entries = extractImportEntries(code, "svc.py");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "py-import",
+      source: "os",
+      bindings: ["os"],
+    });
+  });
+
+  test("returns stable entries for Go import with alias", () => {
+    const code = 'import http "net/http"';
+    const entries = extractImportEntries(code, "main.go");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "go-import",
+      source: "net/http",
+      bindings: ["http"],
+    });
+  });
+
+  test("returns stable entries for Go import without alias", () => {
+    const code = 'import "fmt"';
+    const entries = extractImportEntries(code, "main.go");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "go-import",
+      source: "fmt",
+      bindings: ["fmt"],
+    });
+  });
+
+  test("returns stable entries for Rust use statement", () => {
+    const code = "use std::collections::HashMap;";
+    const entries = extractImportEntries(code, "main.rs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "rs-use",
+      bindings: ["HashMap"],
+    });
+  });
+
+  test("returns stable entries for Java import", () => {
+    const code = "import java.util.ArrayList;";
+    const entries = extractImportEntries(code, "App.java");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "java-import",
+      source: "java.util.ArrayList",
+      bindings: ["ArrayList"],
+    });
+  });
+
+  test("returns stable entries for C include", () => {
+    const code = '#include <stdio.h>';
+    const entries = extractImportEntries(code, "main.c");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "c-include",
+      source: "stdio.h",
+      bindings: ["stdio"],
+    });
+  });
+
+  test("returns stable entries for C# using", () => {
+    const code = "using System.Collections.Generic;";
+    const entries = extractImportEntries(code, "Program.cs");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "cs-using",
+      source: "System.Collections.Generic",
+      bindings: ["Generic"],
+    });
+  });
+
+  test("deduplicates identical entries", () => {
+    const code = 'import { Router } from "express";\nimport { Router } from "express";';
+    const entries = extractImportEntries(code, "app.ts");
+    expect(entries).toHaveLength(1);
+  });
+});
+
 describe("findDroppedIdentifiers", () => {
   test("detects dropped Python imports", () => {
     const original = [
@@ -670,21 +700,22 @@ describe("findDroppedIdentifiers", () => {
     expect(dropped).toEqual([]);
   });
 
-  test("does not flag identifiers that are used but not imported", () => {
-    // If an identifier appears in the merged code (even if import was dropped
-    // but the identifier is used inline), it should NOT be flagged
+  test("flags import binding removed even when identifier is used elsewhere (RED regression)", () => {
+    // If an import declaration is removed but the identifier still appears
+    // in the merged code (e.g., in a usage), it MUST be flagged because the
+    // binding is no longer imported.
     const original = 'import { Router } from "express";\nconst app = Router();';
     const merged = "// import dropped\nconst app = Router();";
 
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
-    // Router still appears in merged code (in the usage)
-    expect(dropped).toEqual([]);
+    // Router is no longer declared in any import statement in merged
+    expect(dropped).toContain("Router");
   });
 
   test("flags identifier dropped from import and not used elsewhere", () => {
     const original = 'import { Router, Request, Response } from "express";\nconst app = Router();';
     const merged = 'import { Router } from "express";\nconst app = Router();';
-    // Request and Response are in original but not in merged
+    // Request and Response are in original imports but not in merged imports
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
     expect(dropped).toContain("Request");
     expect(dropped).toContain("Response");
@@ -719,5 +750,787 @@ describe("findDroppedIdentifiers", () => {
     expect(dropped).toContain("DataOperationsService");
     expect(dropped).toContain("QueryBuilder");
     expect(dropped).toContain("ResultMapper");
+  });
+
+  test("declaration-level comparison: does not flag identifier moved to a different import form", () => {
+    // If an identifier is still imported, just in a different declaration form,
+    // it should NOT be flagged.
+    const original = 'import { Router } from "express";';
+    const merged = 'import express from "express";\nconst { Router } = express;';
+    // Note: Router is no longer in an import declaration, so this WILL be flagged
+    // with declaration-level comparison. This is correct behavior.
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toContain("Router");
+  });
+
+  test("declaration-level comparison: preserves alias bindings correctly", () => {
+    const original = 'import { createRouter as cr } from "express";';
+    const merged = 'import { createRouter as cr } from "express";';
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toEqual([]);
+  });
+
+  test("declaration-level comparison: flags dropped alias binding", () => {
+    const original = 'import { createRouter as cr } from "express";';
+    const merged = '// import dropped';
+    const dropped = findDroppedIdentifiers(original, merged, "app.ts");
+    expect(dropped).toContain("cr");
+  });
+
+  test("declaration-level comparison: flags dropped require destructure alias binding", () => {
+    const original = 'const { readFile: rf } = require("node:fs");\nrf("file");';
+    const merged = '// require dropped\nrf("file");';
+    const dropped = findDroppedIdentifiers(original, merged, "app.js");
+    expect(dropped).toContain("rf");
+  });
+});
+
+import { resolveTargetPath } from "./src/path-confinement.js";
+import { tmpdir } from "node:os";
+import { mkdtempSync, writeFileSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
+
+describe("resolveTargetPath", () => {
+  let tmpDir: string;
+  let root: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "morph-pc-test-"));
+    root = join(tmpDir, "root");
+    mkdirSync(root, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("allows relative path inside root", () => {
+    const result = resolveTargetPath("src/foo.ts", root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(root, "src", "foo.ts"));
+    }
+  });
+
+  test("rejects absolute path outside root", () => {
+    const result = resolveTargetPath("/etc/passwd", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("rejects relative path with ../ escape", () => {
+    const result = resolveTargetPath("../escape.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("rejects sibling-prefix /root vs /rootEvil", () => {
+    // Create /rootEvil sibling
+    const evilRoot = join(tmpDir, "rootEvil");
+    mkdirSync(evilRoot, { recursive: true });
+    // If root is /tmp/.../root, a path like ../rootEvil/file should NOT be allowed
+    const result = resolveTargetPath("../rootEvil/file.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("allows absolute path inside root", () => {
+    const innerPath = join(root, "deep", "file.ts");
+    const result = resolveTargetPath(innerPath, root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(innerPath);
+    }
+  });
+
+  test("rejects absolute path that is sibling prefix", () => {
+    // root = /tmp/.../root
+    // /tmp/.../rootEvil/file should be rejected
+    const evilPath = join(tmpDir, "rootEvil", "file.txt");
+    const result = resolveTargetPath(evilPath, root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("existing target follows symlinks and rejects if outside root", () => {
+    const evilDir = join(tmpDir, "evil");
+    mkdirSync(evilDir, { recursive: true });
+    writeFileSync(join(evilDir, "secret.txt"), "secret");
+    // Create symlink inside root pointing outside
+    symlinkSync(evilDir, join(root, "link-out"));
+    const result = resolveTargetPath(join(root, "link-out", "secret.txt"), root, {
+      targetExists: true,
+    });
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("existing target allows symlink inside root", () => {
+    const realDir = join(root, "real-dir");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "file.txt"), "hello");
+    symlinkSync(realDir, join(root, "link-in"));
+    const result = resolveTargetPath(join(root, "link-in", "file.txt"), root, {
+      targetExists: true,
+    });
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(realDir, "file.txt"));
+    }
+  });
+
+  test("new target rejects when nearest existing parent is symlink outside root", () => {
+    const evilDir = join(tmpDir, "evil");
+    mkdirSync(evilDir, { recursive: true });
+    symlinkSync(evilDir, join(root, "link-out"));
+    const result = resolveTargetPath(join(root, "link-out", "new-file.txt"), root, {
+      targetExists: false,
+    });
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+
+  test("new target allows when nearest existing parent is real directory inside root", () => {
+    const subDir = join(root, "sub");
+    mkdirSync(subDir, { recursive: true });
+    const result = resolveTargetPath(join(root, "sub", "new", "file.txt"), root, {
+      targetExists: false,
+    });
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(join(root, "sub", "new", "file.txt"));
+    }
+  });
+
+  test("allows root itself as target path", () => {
+    const result = resolveTargetPath(root, root);
+    expect("path" in result).toBe(true);
+    if ("path" in result) {
+      expect(result.path).toBe(root);
+    }
+  });
+
+  test("rejects path with double-dot mid-segment", () => {
+    const result = resolveTargetPath("foo/../../escape.txt", root);
+    expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error).toContain("outside");
+    }
+  });
+});
+
+/* ── executeMorphEdit no-network tests ── */
+
+function makeMockRuntime(
+  overrides: Partial<ExecuteMorphEditRuntime> = {},
+): ExecuteMorphEditRuntime {
+  const logs: Array<{ level: string; message: string }> = [];
+  return {
+    log: async (level, message) => {
+      logs.push({ level, message });
+    },
+    directory: "/project",
+    context: { agent: "build" },
+    now: () => 42,
+    readFile: async () => ({ exists: false, text: "" }),
+    writeFile: async () => {},
+    callMorphApply: async () => ({
+      success: false,
+      error: "mock-not-configured",
+    }),
+    resolveTargetPath: (targetPath, root, _options?) =>
+      ({ path: join(root, targetPath) }),
+    normalizeCodeEditInput: (s) => normalizeCodeEditInput(s),
+    findDroppedIdentifiers: (orig, merged, fp) =>
+      findDroppedIdentifiers(orig, merged, fp),
+    generateUnifiedDiff: (fp, orig, mod) =>
+      generateUnifiedDiff(fp, orig, mod),
+    countChanges: (diff) => countChanges(diff),
+    constants: {
+      MORPH_API_KEY: "fake-key",
+      ALLOW_READONLY_AGENTS: false,
+      READONLY_AGENTS: ["plan", "explore"],
+      EXISTING_CODE_MARKER: "// ... existing code ...",
+      PLUGIN_VERSION: "1.0.0",
+      MORPH_MODEL: "morph-v3-fast",
+    },
+    ...overrides,
+  };
+}
+
+describe("executeMorphEdit - missing API key", () => {
+  test("returns error when MORPH_API_KEY is missing", async () => {
+    const runtime = makeMockRuntime({
+      constants: {
+        MORPH_API_KEY: undefined,
+        ALLOW_READONLY_AGENTS: false,
+        READONLY_AGENTS: ["plan", "explore"],
+        EXISTING_CODE_MARKER,
+        PLUGIN_VERSION: "1.0.0",
+        MORPH_MODEL: "morph-v3-fast",
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("MORPH_API_KEY not configured");
+  });
+});
+
+describe("executeMorphEdit - readonly agent block", () => {
+  test("blocks plan agent when ALLOW_READONLY_AGENTS is false", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "plan" },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("not available in plan mode");
+  });
+
+  test("blocks explore agent when ALLOW_READONLY_AGENTS is false", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "explore" },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("not available in explore mode");
+  });
+
+  test("allows build agent", async () => {
+    const runtime = makeMockRuntime({
+      context: { agent: "build" },
+      readFile: async () => ({
+        exists: true,
+        text: "// existing\nconst a = 1;\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "// existing\nconst a = 1;\nconst bar = 1;\n",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst bar = 1;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Applied edit to");
+  });
+});
+
+describe("executeMorphEdit - missing marker refusal", () => {
+  test("refuses edit with no markers on file >10 lines", async () => {
+    const lines = Array.from({ length: 15 }, (_, i) => `line ${i}`).join("\n");
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: lines }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "replace everything",
+        code_edit: "completely new content",
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Missing");
+    expect(result).toContain(EXISTING_CODE_MARKER);
+  });
+
+  test("allows edit with no markers on file ≤3 lines", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({
+        exists: true,
+        text: "a\nb\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "x\ny\n",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "change it",
+        code_edit: "x\ny\n",
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Applied edit to");
+  });
+});
+
+describe("executeMorphEdit - unsafe Morph output refusal", () => {
+  test("rejects marker leakage when original had no markers", async () => {
+    const original = "const a = 1;\nconst b = 2;\n";
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: `const a = 1;\n${EXISTING_CODE_MARKER}\nconst b = 2;\n`,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add marker",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst c = 3;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("unsafe output");
+    expect(result).toContain("placeholder marker text");
+  });
+
+  test("rejects catastrophic truncation", async () => {
+    // original: 20 lines, ~80 chars
+    const original = Array.from({ length: 20 }, (_, i) => `const x${i} = ${i};`).join("\n");
+    // merged: 2 lines, ~10 chars  (>60% char loss, >50% line loss)
+    const merged = "const a = 1;\n";
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "shrink",
+        code_edit: `${EXISTING_CODE_MARKER}\n// tiny\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("potentially destructive merge");
+    expect(result).toContain("% characters");
+  });
+
+  test("rejects dropped import identifiers", async () => {
+    const original = `import { foo, bar } from "baz";\nconst x = foo();\n`;
+    const merged = `import { foo } from "baz";\nconst x = foo();\n`;
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "drop bar",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst x = foo();\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("missing imports");
+    expect(result).toContain("bar");
+  });
+});
+
+describe("executeMorphEdit - write failure", () => {
+  test("returns error when writeFile throws", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({
+        exists: true,
+        text: "const a = 1;\n",
+      }),
+      callMorphApply: async () => ({
+        success: true,
+        content: "const a = 1;\nconst b = 2;\n",
+      }),
+      writeFile: async () => {
+        throw new Error("disk full");
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Error writing file");
+    expect(result).toContain("disk full");
+  });
+});
+
+describe("executeMorphEdit - mocked successful write/diff flow", () => {
+  test("writes merged code and returns diff stats", async () => {
+    let writtenPath: string | undefined;
+    let writtenContent: string | undefined;
+
+    const original = "const a = 1;\nconst b = 2;\n";
+    const merged = "const a = 1;\nconst b = 2;\nconst c = 3;\n";
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: original }),
+      callMorphApply: async () => ({
+        success: true,
+        content: merged,
+      }),
+      writeFile: async (path, content) => {
+        writtenPath = path;
+        writtenContent = content;
+      },
+      now: () => 1000,
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add c",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst c = 3;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(writtenPath).toBe(join("/project", "src/foo.ts"));
+    expect(writtenContent).toBe(merged);
+    expect(result).toContain("Applied edit to src/foo.ts");
+    expect(result).toContain("+1");
+    expect(result).toContain("->");
+    expect(result).toContain("0ms"); // 1000 - 1000 if we call now() twice... wait
+    // Actually now() returns 1000 both times, so 0ms
+    expect(result).toContain("diff");
+  });
+
+  test("creates new file when target does not exist and no markers", async () => {
+    let writtenPath: string | undefined;
+    let writtenContent: string | undefined;
+
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: false, text: "" }),
+      writeFile: async (path, content) => {
+        writtenPath = path;
+        writtenContent = content;
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/new.ts",
+        instructions: "create file",
+        code_edit: "const x = 1;\n",
+      },
+      runtime,
+    );
+
+    expect(writtenPath).toBe(join("/project", "src/new.ts"));
+    expect(writtenContent).toBe("const x = 1;\n");
+    expect(result).toContain("Created new file: src/new.ts");
+  });
+});
+
+/* ── scrubSecrets ── */
+
+describe("scrubSecrets", () => {
+  test("removes explicit apiKey from message", () => {
+    const key = "sk-morph-test-key-12345";
+    const message = `Request failed with key ${key} and token`;
+    expect(scrubSecrets(message, key)).not.toContain(key);
+    expect(scrubSecrets(message, key)).toContain("***REDACTED***");
+  });
+
+  test("removes Bearer token pattern", () => {
+    const message = `Authorization: Bearer abcdef1234567890abcdef`;
+    const scrubbed = scrubSecrets(message);
+    expect(scrubbed).not.toContain("abcdef1234567890abcdef");
+    expect(scrubbed).toContain("Bearer ***REDACTED***");
+  });
+
+  test("leaves unrelated text intact", () => {
+    const message = "Morph API error (500): model not found";
+    expect(scrubSecrets(message)).toBe(message);
+  });
+});
+
+/* ── callMorphApply - mocked fetch ── */
+
+describe("callMorphApply - timeout", () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  test("returns api_timeout when fetch hangs", async () => {
+    globalThis.fetch = ((_url: string, init?: RequestInit) => {
+      return new Promise<Response>((_, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        if (signal?.aborted) {
+          reject(new Error("AbortError"));
+          return;
+        }
+        signal?.addEventListener("abort", () => {
+          const err = new Error("AbortError");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      timeout: 10,
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_timeout");
+    expect(result.error).toContain("timeout");
+    expect(result.error).not.toContain("fake-key");
+  });
+});
+
+describe("callMorphApply - failure kinds and secret scrubbing", () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  test("returns api_http_error with scrubbed body", async () => {
+    const secretKey = "sk-live-morph-abc123";
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        text: () =>
+          Promise.resolve(`Invalid key ${secretKey} or Bearer ${secretKey}`),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: secretKey,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_http_error");
+    expect(result.error).toContain("401");
+    expect(result.error).not.toContain(secretKey);
+    expect(result.error).toContain("***REDACTED***");
+  });
+
+  test("returns api_parse_error on invalid JSON", async () => {
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("not json"),
+        json: () => Promise.reject(new Error("Unexpected token")),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_parse_error");
+    expect(result.error).toContain("invalid JSON");
+  });
+
+  test("returns api_empty_response when choices are missing", async () => {
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve("{}"),
+        json: () => Promise.resolve({ choices: [] }),
+      } as Response)) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_empty_response");
+    expect(result.error).toContain("empty response");
+  });
+
+  test("returns api_request_failed on network error", async () => {
+    globalThis.fetch = (() =>
+      Promise.reject(new Error("ECONNREFUSED"))) as unknown as typeof fetch;
+
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "fake-key",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("api_request_failed");
+    expect(result.error).toContain("ECONNREFUSED");
+  });
+
+  test("returns missing_api_key when no key provided", async () => {
+    const result = await callMorphApply("code", "edit", "instr", {
+      apiKey: "",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.kind).toBe("missing_api_key");
+    expect(result.error).toContain("MORPH_API_KEY not set");
+  });
+});
+
+/* ── executeMorphEdit - failure kind propagation ── */
+
+describe("executeMorphEdit - API failure kind propagation", () => {
+  test("propagates api_timeout from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API timeout after 10ms",
+        kind: "api_timeout",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("timeout");
+  });
+
+  test("propagates api_http_error from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API error (500): server error",
+        kind: "api_http_error",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("500");
+  });
+
+  test("propagates api_parse_error from callMorphApply", async () => {
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: "Morph API returned invalid JSON",
+        kind: "api_parse_error",
+      }),
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).toContain("Morph API failed");
+    expect(result).toContain("invalid JSON");
+  });
+
+  test("output does not leak secrets on API failure", async () => {
+    const secret = "sk-super-secret-key";
+    const runtime = makeMockRuntime({
+      readFile: async () => ({ exists: true, text: "const a = 1;\n" }),
+      callMorphApply: async () => ({
+        success: false,
+        error: `Something went wrong with ${secret}`,
+        kind: "api_request_failed",
+      }),
+      constants: {
+        MORPH_API_KEY: secret,
+        ALLOW_READONLY_AGENTS: false,
+        READONLY_AGENTS: ["plan", "explore"],
+        EXISTING_CODE_MARKER,
+        PLUGIN_VERSION: "1.0.0",
+        MORPH_MODEL: "morph-v3-fast",
+      },
+    });
+
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "src/foo.ts",
+        instructions: "add b",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst b = 2;\n${EXISTING_CODE_MARKER}`,
+      },
+      runtime,
+    );
+
+    expect(result).not.toContain(secret);
   });
 });

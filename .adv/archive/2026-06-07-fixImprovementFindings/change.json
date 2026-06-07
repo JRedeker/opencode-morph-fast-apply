@@ -1,0 +1,2481 @@
+{
+  "id": "fixImprovementFindings",
+  "title": "Fix improvement findings",
+  "status": "archived",
+  "created_at": "2026-06-06T22:34:21.175Z",
+  "tasks": [
+    {
+      "id": "tk-6e05fe43d4c0",
+      "title": "Extract production helper modules and migrate helper tests",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 0,
+      "created_at": "2026-06-06T23:08:08.599Z",
+      "deps": [],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC3"
+        ],
+        "verifies": [
+          "AC3"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C5",
+          "DONT1",
+          "DONT2"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:13:44.740Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-6e05fe43d4c0",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-6e05fe43d4c0"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "index.ts",
+            "index.test.ts",
+            "src/constants.ts",
+            "src/diff.ts",
+            "src/imports.ts",
+            "src/normalize.ts",
+            "tsconfig.json",
+            "package.json"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "All 58 tests pass, 93 expect calls"
+            },
+            {
+              "command": "bun run typecheck",
+              "exit_code": 2,
+              "summary": "Pre-existing failure: bun-types not installed (node_modules missing); unrelated to this change"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Extracted helpers into four focused src/ modules: constants, diff, imports, normalize",
+              "why": "Keeps related behavior together and makes helpers independently importable for tests and consumers"
+            },
+            {
+              "what": "Used .js extension in relative imports between .ts files",
+              "why": "Required for ES module resolution with tsc/bundler; bun test confirms this works"
+            },
+            {
+              "what": "Did not extract callMorphApply or the MorphFastApply plugin body",
+              "why": "Those are runtime entry points tied to the OpenCode plugin API and outside the helper-surface scope"
+            },
+            {
+              "what": "Updated package.json files and tsconfig.json includes to ship src/",
+              "why": "Ensures extracted modules are packaged and type-checked with the project"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "Verified no other duplicated helper implementations in index.test.ts beyond the three removed (EXISTING_CODE_MARKER, extractImportedIdentifiers, findDroppedIdentifiers, normalizeCodeEditInput)",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Helper extraction complete. index.ts now imports constants/diff/imports/normalize from src/. index.test.ts imports production helpers and no longer duplicates implementations. 58 tests pass. Typecheck fails only because bun-types is missing from node_modules (pre-existing).",
+            "suggested_next_action": "Run full test suite if needed, or proceed to dependent tasks. Consider `bun install` to resolve the pre-existing typecheck issue."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run typecheck"
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 58 pass, 0 fail, 93 expect calls.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Extracted production helper modules under src/: constants, diff, imports, normalize. Updated index.ts to import helpers, package.json to include src/, tsconfig to include src/**/*.ts, and index.test.ts to import production helpers instead of duplicated helper bodies. Preserved plugin registration/runtime behavior for this task scope.",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "package.json",
+        "src/constants.ts",
+        "src/diff.ts",
+        "src/imports.ts",
+        "src/normalize.ts",
+        "tsconfig.json"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "package.json",
+        "src/constants.ts",
+        "src/diff.ts",
+        "src/imports.ts",
+        "src/normalize.ts",
+        "tsconfig.json"
+      ],
+      "checkpointSha": "0708331f3416968b559d57cab1a73a266b45547c",
+      "completedAt": "2026-06-06T23:22:11.040Z",
+      "completed_at": "2026-06-06T23:22:11.040Z",
+      "notes": "Completed helper extraction and test migration. Checkpoint commit 0708331f3416968b559d57cab1a73a266b45547c. Verification: bun test index.test.ts passed (58 pass, 0 fail, 93 expect calls).",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-06T23:22:20.395Z"
+    },
+    {
+      "id": "tk-11f8596cb0e7",
+      "title": "Implement path confinement resolver and path safety tests",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 1,
+      "created_at": "2026-06-06T23:08:19.046Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-6e05fe43d4c0"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC1"
+        ],
+        "verifies": [
+          "AC1"
+        ],
+        "respects": [
+          "C2",
+          "C3",
+          "C6",
+          "DONT1"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:22:39.950Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-11f8596cb0e7",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-11f8596cb0e7"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "src/path-confinement.ts",
+            "index.test.ts",
+            "index.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "70 tests pass, 0 fail, 117 expect calls"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Used path.resolve for both relative and absolute target paths",
+              "why": "path.resolve handles both cases uniformly, normalizes separators, and collapses .. segments so a single code path covers relative and absolute inputs"
+            },
+            {
+              "what": "Default targetExists to false for the initial execute resolution",
+              "why": "findNearestExistingParent uses existsSync which follows symlinks; an existing symlink target outside root is therefore caught even in default mode, and the parent-realpath check also catches symlinked directories"
+            },
+            {
+              "what": "Reconstruct effective path from canonical parent for new targets",
+              "why": "When a parent directory is a symlink inside root, writes should target the canonical location to avoid creating divergent paths; path.relative + path.resolve achieves this"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "Replaced naive path resolution in index.ts execute (const filepath = target_filepath.startsWith('/') ? ... ) with resolveTargetPath call; all Bun.file, file.exists, file.text, and Bun.write operations now use the confined filepath",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Path confinement resolver implemented and integrated. All file access in morph_edit execute now routes through resolveTargetPath using context.worktree ?? context.directory ?? directory as root. 70 tests pass including 12 new path-confinement tests covering absolute out-of-root, ../ escape, sibling-prefix (/root vs /rootEvil), allowed absolute-inside-root, and symlink/nearest-parent behavior.",
+            "suggested_next_action": "Proceed to next task; path confinement is complete and verified"
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 70 pass, 0 fail, 117 expect calls.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Added src/path-confinement.ts resolver using per-call context.worktree/context.directory root selection, path.resolve canonicalization, separator-boundary containment, existing target realpath checks, and nearest existing parent realpath checks for new files. Routed index.ts file access through resolver before reads/writes and added path safety tests for out-of-root absolute paths, traversal, sibling-prefix, allowed in-root absolute paths, and symlink escapes.",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "src/path-confinement.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "src/path-confinement.ts"
+      ],
+      "checkpointSha": "ad4e188934d9bbff56bcbb8606314f94ee55f066",
+      "completedAt": "2026-06-06T23:28:39.643Z",
+      "completed_at": "2026-06-06T23:28:39.643Z",
+      "notes": "Completed path confinement resolver. Checkpoint commit ad4e188934d9bbff56bcbb8606314f94ee55f066. Verification: bun test index.test.ts passed (70 pass, 0 fail, 117 expect calls).",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-06T23:28:50.688Z"
+    },
+    {
+      "id": "tk-16508fc77ef1",
+      "title": "Replace import preservation heuristic with declaration comparison",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 2,
+      "created_at": "2026-06-06T23:08:28.390Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-6e05fe43d4c0"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC2"
+        ],
+        "verifies": [
+          "AC2"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "DONT1",
+          "DONT2"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:29:09.562Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-16508fc77ef1",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-16508fc77ef1"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "src/imports.ts",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "87 tests pass, 0 fail, 147 expect() calls"
+            },
+            {
+              "command": "bun test index.test.ts --grep \"extractImportEntries|findDroppedIdentifiers|extractImportedIdentifiers\"",
+              "exit_code": 0,
+              "summary": "41 import-specific tests pass, 0 fail, 67 expect() calls"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Added ImportEntry type with kind/source/bindings instead of flat identifier strings",
+              "why": "Provides structured declaration-level comparison rather than fragile whole-file substring matching"
+            },
+            {
+              "what": "Refactored extractImportedIdentifiers to delegate to extractImportEntries",
+              "why": "Preserves backward compatibility for existing consumers while centralizing parsing logic"
+            },
+            {
+              "what": "Rewrote findDroppedIdentifiers to compare import declarations instead of identifier substrings",
+              "why": "Fixes the RED regression where removed import bindings that are still used elsewhere were incorrectly not flagged"
+            },
+            {
+              "what": "Used JSON.stringify key for entry deduplication",
+              "why": "Simple, deterministic way to deduplicate identical import declarations without adding new dependencies"
+            },
+            {
+              "what": "Updated the existing test 'does not flag identifiers that are used but not imported' to expect new behavior",
+              "why": "The old behavior was the bug; declaration-level comparison correctly flags removed imports regardless of usage elsewhere"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "Verified existing extractImportedIdentifiers tests still pass; all language coverage (Python, TS/JS, Go, Rust, Java, C/C++, C#) preserved in both old and new APIs",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Declaration-level import comparison is now implemented. findDroppedIdentifiers no longer uses whole-file substring matching; it parses import declarations in both original and merged code and compares bindings. This correctly catches the RED regression where Morph drops an import but the identifier still appears in usage elsewhere. 87 tests pass.",
+            "suggested_next_action": "Review the diff in src/imports.ts and index.test.ts, then proceed to the next task or gate"
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts --grep \"extractImportEntries|findDroppedIdentifiers|extractImportedIdentifiers\""
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 87 pass, 0 fail, 147 expect calls.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Added ImportEntry/extractImportEntries declaration parsing in src/imports.ts and rewrote findDroppedIdentifiers to compare original and merged import declarations instead of whole-file identifier substrings. Updated tests to assert dropped imports are detected even when identifiers remain used elsewhere and expanded representative import syntax coverage.",
+      "filesTouched": [
+        "index.test.ts",
+        "src/imports.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "src/imports.ts"
+      ],
+      "checkpointSha": "4093433204a4d9c209af9e36b60fd52fa1b3d3a5",
+      "completedAt": "2026-06-06T23:35:26.231Z",
+      "completed_at": "2026-06-06T23:35:26.231Z",
+      "notes": "Completed declaration-level import preservation. Checkpoint commit 4093433204a4d9c209af9e36b60fd52fa1b3d3a5. Verification: bun test index.test.ts passed (87 pass, 0 fail, 147 expect calls).",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-06T23:35:36.980Z"
+    },
+    {
+      "id": "tk-c8f27b165f42",
+      "title": "Extract executeMorphEdit and add no-network execution tests",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 3,
+      "created_at": "2026-06-06T23:08:38.947Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-11f8596cb0e7"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-16508fc77ef1"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC4"
+        ],
+        "verifies": [
+          "AC4"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "DONT1",
+          "DONT2"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:37:42.348Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-c8f27b165f42",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-c8f27b165f42"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "src/execute.ts",
+            "index.ts",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "All 99 tests pass (89 original + 10 new no-network execute tests)"
+            },
+            {
+              "command": "bun run tsc --noEmit",
+              "exit_code": 1,
+              "summary": "Pre-existing TypeScript errors in src/imports.ts only (4 filter-predicate type issues); no new errors introduced by this change"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Mocked resolveTargetPath in test runtime to avoid filesystem dependency",
+              "why": "Real resolveTargetPath does existsSync/realpathSync which fails when /project/src does not exist on disk; mocking keeps tests pure no-network"
+            },
+            {
+              "what": "Removed extractImportedIdentifiers from index.ts imports",
+              "why": "It was unused in index.ts after extraction; only findDroppedIdentifiers is needed"
+            },
+            {
+              "what": "Preserved callMorphApply in index.ts as the API layer",
+              "why": "It is a natural boundary between plugin infrastructure and business logic; injected into runtime for testability"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "None — all changes were localized to the execute extraction and its tests",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "executeMorphEdit extracted to src/execute.ts with fully injected runtime (fs/api/log/time/context/config). index.ts execute method is now a thin delegate. 10 new no-network tests cover: missing API key, readonly-agent block (plan/explore vs build), missing marker refusal, marker leakage, catastrophic truncation, dropped imports, write failure, and mocked success flow including new-file creation. All 99 tests pass.",
+            "suggested_next_action": "Proceed to next task (tk-cca411fa9a20 owns API timeout/failure-kind enhancements). No action needed on this task."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 99 pass, 0 fail, 172 expect calls. Note: subagent reported tsc errors in src/imports.ts to address before final verification.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Added src/execute.ts with production executeMorphEdit and injected runtime dependencies for fs/api/log/time/context/config. Updated index.ts tool wrapper to delegate to executeMorphEdit while preserving plugin/TUI behavior. Added no-network tests for missing API key, readonly block, allowed build agent, missing markers, marker leakage, truncation, dropped imports, write failure, mocked success, and new-file creation.",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts"
+      ],
+      "checkpointSha": "1bb539eead29d9eccb9020873908b3135706782f",
+      "completedAt": "2026-06-06T23:45:11.635Z",
+      "completed_at": "2026-06-06T23:45:11.635Z",
+      "notes": "Completed executeMorphEdit extraction and no-network tests. Checkpoint commit 1bb539eead29d9eccb9020873908b3135706782f. Verification: bun test index.test.ts passed (99 pass, 0 fail, 172 expect calls). Typecheck errors in src/imports.ts remain for later remediation before final verification.",
+      "error_recovery": {
+        "last_error": "Subagent reported bun run tsc --noEmit has 4 type errors in src/imports.ts introduced by prior extraction/import work.",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "SEMANTIC",
+        "next_strategy": "Address typecheck errors during final verification or adjacent implementation task before execution gate completion.",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-06T23:45:23.396Z"
+    },
+    {
+      "id": "tk-cca411fa9a20",
+      "title": "Add Morph API timeout coverage and non-secret failure classification",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 4,
+      "created_at": "2026-06-06T23:08:47.933Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-c8f27b165f42"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC7"
+        ],
+        "verifies": [
+          "AC7"
+        ],
+        "respects": [
+          "C2",
+          "C3",
+          "DONT1"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:45:46.180Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-cca411fa9a20",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-cca411fa9a20"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "src/imports.ts",
+            "index.ts",
+            "src/execute.ts",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "112 tests pass, 0 fail, 205 expect calls"
+            },
+            {
+              "command": "bun run tsc --noEmit",
+              "exit_code": 0,
+              "summary": "TypeScript typecheck passes with no errors"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Added optional options parameter to callMorphApply for testability",
+              "why": "Allows tests to inject short timeouts and fake keys without changing the existing executeMorphEdit call site or relying on environment variables"
+            },
+            {
+              "what": "Used !!s in filter type predicates to fix TS2322",
+              "why": "Expression s && s.length > 0 returned string | boolean; !!s && s.length > 0 returns boolean while preserving the s is string narrowing"
+            },
+            {
+              "what": "Cast mock fetch assignments through unknown as typeof fetch",
+              "why": "Bun's fetch type includes a preconnect property not present on plain arrow functions; casting through unknown satisfies the type checker in tests"
+            },
+            {
+              "what": "Added explicit JSON parse error handling with api_parse_error kind",
+              "why": "Previously invalid JSON fell through to the generic catch block as api_request_failed; dedicated kind improves classification accuracy"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "Fixed same filter predicate pattern in 4 locations in src/imports.ts (lines 90, 105, 126, 181)",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Morph API timeout now covers full response lifecycle (fetch + error body read + JSON body parse). callMorphApply is exported with FailureKind classification and secret scrubbing. executeMorphEdit scrubs API errors before returning them. 4 pre-existing type errors in imports.ts fixed. 112 tests pass, typecheck clean.",
+            "suggested_next_action": "Run full CI suite (bun test && tsc --noEmit) to confirm no regressions before proceeding to next task."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 112 pass, 0 fail, 205 expect calls. bun run tsc --noEmit passed.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Added FailureKind classification and scrubSecrets to Morph API error paths, exported/tested callMorphApply with injected test options, kept timeout active through response body read/JSON parse, added parse/timeout/secret-scrub tests, updated execute API failure path to scrub returned errors, and fixed src/imports.ts type predicate issues so typecheck passes.",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts",
+        "src/imports.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "src/execute.ts",
+        "src/imports.ts"
+      ],
+      "checkpointSha": "545adacfe16ecb75fd9dcde84b4e4a282a4324b0",
+      "completedAt": "2026-06-06T23:58:18.369Z",
+      "completed_at": "2026-06-06T23:58:18.369Z",
+      "notes": "Completed timeout coverage and non-secret failure classification. Checkpoint commit 545adacfe16ecb75fd9dcde84b4e4a282a4324b0. Verification: bun test index.test.ts passed (112 pass); bun run tsc --noEmit passed.",
+      "error_recovery": {
+        "last_error": "Prior typecheck errors in src/imports.ts fixed by replacing nullable filter predicates with boolean-safe predicates.",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "SEMANTIC",
+        "next_strategy": "",
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "error": "bun run tsc --noEmit had 4 type predicate errors in src/imports.ts",
+            "diagnosis": "Filter predicates returned string|undefined rather than boolean in strict TypeScript.",
+            "fix_tried": "Changed predicates to boolean-safe checks (`!!s`/equivalent).",
+            "strategy_label": "strict-type-predicate-fix",
+            "outcome": "succeeded",
+            "attempted_at": "2026-06-06T23:50:00.000Z"
+          }
+        ]
+      },
+      "updatedAt": "2026-06-06T23:58:29.233Z"
+    },
+    {
+      "id": "tk-90834e8b24e3",
+      "title": "Align repository with Bun lockfile policy",
+      "type": "code",
+      "section": "CI / Packaging",
+      "status": "done",
+      "priority": 5,
+      "created_at": "2026-06-06T23:08:55.693Z",
+      "deps": [],
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC5"
+        ],
+        "verifies": [
+          "AC5"
+        ],
+        "respects": [
+          "C4",
+          "C5",
+          "DONT4",
+          "OOS2"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:35:56.580Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-90834e8b24e3",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-90834e8b24e3"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            ".gitignore",
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "bun.lock",
+            "package-lock.json"
+          ],
+          "verification": [
+            {
+              "command": "bun ci",
+              "exit_code": 0,
+              "summary": "Lockfile integrity verified — 31 installs across 37 packages, no changes"
+            },
+            {
+              "command": "git status --short",
+              "exit_code": 0,
+              "summary": "Expected modifications only: ci.yml, release.yml, .gitignore, deleted package-lock.json, new untracked bun.lock"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Deleted package-lock.json",
+              "why": "No repo evidence (e.g., dual-lockfile requirement, npm-publish need) indicated it must stay; Bun is the chosen lockfile policy."
+            },
+            {
+              "what": "Updated .gitignore comment to clarify bun.lock is tracked",
+              "why": "Keeps the ignore list honest and documents the policy decision."
+            },
+            {
+              "what": "Switched both CI and release workflows to `bun ci`",
+              "why": "`bun ci` is the Bun-native frozen-lockfile install path; replaces `bun install --frozen-lockfile` with the idiomatic command."
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "none",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Bun lockfile policy implemented: bun.lock generated, package-lock.json removed, .gitignore updated, both CI and release workflows switched to `bun ci`. Lockfile passes `bun ci` verification.",
+            "suggested_next_action": "Run full CI workflow validation or proceed to next task."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun ci"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: git status --short"
+            }
+          ]
+        }
+      ],
+      "verification": "bun ci passed with committed bun.lock policy; status shows expected workflow/gitignore/lockfile changes only.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Removed bun.lock from .gitignore, generated committed bun.lock, switched CI and release workflows from bun install --frozen-lockfile to bun ci, and removed package-lock.json to leave Bun as the single authoritative lockfile policy.",
+      "filesTouched": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        ".gitignore",
+        "bun.lock",
+        "package-lock.json"
+      ],
+      "touched_files": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        ".gitignore",
+        "bun.lock",
+        "package-lock.json"
+      ],
+      "checkpointSha": "c2843a5401a54091dbb80019e4dc29404139ef3c",
+      "completedAt": "2026-06-06T23:37:22.634Z",
+      "completed_at": "2026-06-06T23:37:22.634Z",
+      "notes": "Completed Bun lockfile policy alignment. Checkpoint commit c2843a5401a54091dbb80019e4dc29404139ef3c. Verification: bun ci passed; expected files changed only.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-06T23:37:31.460Z"
+    },
+    {
+      "id": "tk-1b18bc9e1b77",
+      "title": "Update README, packaged instructions, and changelog",
+      "type": "code",
+      "section": "Documentation",
+      "status": "done",
+      "priority": 6,
+      "created_at": "2026-06-06T23:09:07.431Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-11f8596cb0e7"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-16508fc77ef1"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-cca411fa9a20"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-90834e8b24e3"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC6"
+        ],
+        "verifies": [
+          "AC6"
+        ],
+        "respects": [
+          "C1",
+          "C4",
+          "DONT3",
+          "OOS2"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-06T23:58:48.590Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "fixImprovementFindings",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+          "task_id": "tk-1b18bc9e1b77",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-1b18bc9e1b77"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "README.md",
+            "CHANGELOG.md",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "All 113 tests pass, 211 expect() calls"
+            },
+            {
+              "command": "bun run tsc --noEmit",
+              "exit_code": 0,
+              "summary": "TypeScript type check passes with no errors"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Included dropped imports guard in README Safety guards section",
+              "why": "The guard shipped in v1.9.0 but was missing from README user-facing docs; adding it closes the docs/behavior gap"
+            },
+            {
+              "what": "Used negative + positive pin assertions in test",
+              "why": "Asserting `#v1.8.2` is absent and `#v1.9.0` is present prevents future stale-pin regressions"
+            },
+            {
+              "what": "Left instructions/morph-tools.md unchanged",
+              "why": "The file's tool-selection policy is current and accurate; no behavior changes required there"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "none",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "README stale pin fixed (v1.8.2 → v1.9.0). Safety guards section expanded with dropped imports guard, path confinement, and secret scrubbing. Bun lockfile policy noted in Contributing. CHANGELOG [Unreleased] entry added. Tests updated and passing (113/113). TypeScript clean.",
+            "suggested_next_action": "Proceed to next task or archive change if all tasks complete"
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+            }
+          ]
+        }
+      ],
+      "verification": "bun test index.test.ts passed: 113 pass, 0 fail, 211 expect calls. bun run tsc --noEmit passed.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Updated README stale release pin to v1.9.0, documented safety guards including path confinement, dropped import guard, and secret scrubbing, added Bun lockfile policy note, added changelog entry, and updated tests to assert current docs expectations. instructions/morph-tools.md required no changes because guidance remained current.",
+      "filesTouched": [
+        "CHANGELOG.md",
+        "README.md",
+        "index.test.ts"
+      ],
+      "touched_files": [
+        "CHANGELOG.md",
+        "README.md",
+        "index.test.ts"
+      ],
+      "checkpointSha": "6037fe2b14860d4a176b56ef3600d621d3a6a78f",
+      "completedAt": "2026-06-07T00:04:17.003Z",
+      "completed_at": "2026-06-07T00:04:17.003Z",
+      "notes": "Completed README/changelog/docs assertions. Checkpoint commit 6037fe2b14860d4a176b56ef3600d621d3a6a78f. Verification: bun test index.test.ts passed (113 pass); bun run tsc --noEmit passed.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-07T00:04:26.075Z"
+    },
+    {
+      "id": "tk-3cd7f5425724",
+      "title": "Run final verification and contract coverage review",
+      "type": "code",
+      "section": "Verification",
+      "status": "done",
+      "priority": 7,
+      "created_at": "2026-06-06T23:09:19.152Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-c8f27b165f42"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-cca411fa9a20"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-90834e8b24e3"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-1b18bc9e1b77"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "implements": [],
+        "verifies": [
+          "AC8",
+          "SC1",
+          "SC2",
+          "SC3",
+          "SC4",
+          "SC5",
+          "SC6",
+          "SC7",
+          "SC8"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5",
+          "C6",
+          "DONT1",
+          "DONT2",
+          "DONT3",
+          "DONT4",
+          "OOS1",
+          "OOS2",
+          "OOS3",
+          "OOS4"
+        ],
+        "not_applicable_reason": ""
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-06-07T00:04:48.058Z",
+      "verification": "Acceptance reviewer hardening verified: bun run ci passed (120 pass, 0 fail, 222 expect calls; tsc --noEmit passed), bun ci passed, git diff --check passed, secret scan found only env names/placeholders/test tokens.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Ran final dependency/lockfile verification and full repo CI, then incorporated acceptance reviewer hardening in .gitignore, CHANGELOG.md, index.test.ts, and src/imports.ts. Re-ran CI, lockfile check, whitespace check, and secret scan after hardening. Confirmed contract coverage for SC1-SC8 and AC1-AC8 remains satisfied.",
+      "filesTouched": [
+        ".gitignore",
+        "CHANGELOG.md",
+        "index.test.ts",
+        "src/imports.ts"
+      ],
+      "touched_files": [
+        ".gitignore",
+        "CHANGELOG.md",
+        "index.test.ts",
+        "src/imports.ts"
+      ],
+      "checkpointSha": "a80c05ce0afa3bd200e3d45f64531d1b4c062b9d",
+      "completedAt": "2026-06-07T00:13:47.904Z",
+      "completed_at": "2026-06-07T00:13:47.904Z",
+      "notes": "Final verification + acceptance reviewer hardening complete. Additional checkpoint a80c05ce0afa3bd200e3d45f64531d1b4c062b9d includes reviewer remediation. Verified after hardening: bun run ci passed (120 pass, 0 fail, 222 expect calls; tsc --noEmit passed), bun ci passed, git diff --check passed, secret scan found only env names/placeholders/test tokens.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-07T00:14:00.716Z"
+    }
+  ],
+  "subagent_reports": [
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:discovery-opportunity-scout"
+      },
+      "agent": "adv-researcher",
+      "topic": "Discovery opportunity scout — missed opportunities/leverage points for fixing repo-improve-prep findings",
+      "sources": [
+        {
+          "label": "OpenCode plugin docs (Context7 /websites/opencode_ai_plugins)",
+          "locator": "https://opencode.ai/docs/plugins",
+          "summary": "Custom tool execute(args, context) destructures { directory, worktree } from context; plugin init also receives { project, directory, worktree }. Confirms worktree IS available at execute time — current index.ts:507 only reads context.agent and never context.worktree, resolving the discovery question on boundary source."
+        },
+        {
+          "label": "Local: index.ts path-resolution block",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:530-533",
+          "summary": "filepath = target_filepath.startsWith('/') ? target_filepath : `${directory}/${target_filepath}` — absolute paths pass through unchecked; no path.resolve canonicalization, no containment check against directory/worktree before Bun.write at 553/704."
+        },
+        {
+          "label": "Local: .gitignore lockfile policy",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/.gitignore:19-21",
+          "summary": "bun.lock and pnpm-lock.yaml are explicitly git-ignored while CI/release run `bun install --frozen-lockfile`. The repo committed package-lock.json instead. The lockfile fix is a POLICY decision (npm vs Bun), not a simple 'commit bun.lock' — committing bun.lock requires un-ignoring it first."
+        },
+        {
+          "label": "Local: import guard substring heuristic",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:295-310 (findDroppedIdentifiers); index.test.ts:5-12,177-191,673-681",
+          "summary": "Guard treats an import as preserved if its identifier appears anywhere in merged text; test at 673-681 codifies the gap. Production helper is duplicated in tests as the oracle."
+        },
+        {
+          "label": "Approved agreement (this change)",
+          "locator": "fixImprovementFindings/agreement.md — SC1..SC8, AC1..AC8, Discovery Resolutions Needed",
+          "summary": "Objectives bind every finding; SC1 names absolute/../ /symlink escape; SC2 structural import check; SC3 no duplicated helper oracle; SC4 execute-path coverage; SC5 single lockfile policy; SC8 bun test + tsc --noEmit must pass."
+        },
+        {
+          "label": "Bun docs (Context7 /oven-sh/bun) via prep pack",
+          "locator": "docs/repo-improve-prep.md:79-82,110",
+          "summary": "bun ci / bun install --frozen-lockfile require a committed bun.lock; otherwise reproducibility depends on undefined behavior."
+        },
+        {
+          "label": "OpenAI apply_patch / structured patch standardization",
+          "locator": "https://developers.openai.com/api/docs/guides/tools-apply-patch",
+          "summary": "Industry moving correctness from fuzzy full-file merge toward typed patch ops + server-side diff validation; relevant as benchmark/follow-up, NOT in-scope replacement (agreement avoidance: do not replace Morph)."
+        }
+      ],
+      "architecture_assessment": "All five scout candidates tie to approved contract items and stay inside scope. The highest-leverage discovery is that OpenCode's documented execute context exposes worktree (and init exposes directory), so path confinement can be made structural against a canonical root via path.resolve + containment check — no new dependency, satisfies SC1 and Constraint 'structural over heuristic'. The lockfile fix is misframed in the prep pack: .gitignore:20 ignores bun.lock, so 'commit bun.lock' first requires un-ignoring it; the boring, lower-risk path is to standardize on the already-committed package-lock.json and switch CI/release to npm (satisfies SC5/AC5 with smallest blast radius). Two findings combine into one move: extracting pure helpers (SC3/Code Quality) is the prerequisite for direct execute-path + guard tests (SC4/SC2), so sequencing helper extraction first is a cross-cutting accelerator. Structural import comparison should parse import declarations before/after rather than substring-match, but a full AST platform is an explicit avoidance — minimal declaration-level parsing for existing supported syntaxes is the right floor.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "No constraint/security/release blocker. No contradictory evidence. All candidates contract-tied; routing favors auto-adopt for boring structural fixes, one user-surface for lockfile policy choice. INCONCLUSIVE on whether absolute-paths-inside-worktree should be allowed vs rejected — that is a user-value boundary decision left to orchestrator/user (agreement Discovery Resolution)."
+      },
+      "recommendation": "Auto-adopt into discovery agreement/design: (1) structural path confinement via path.resolve + containment against directory, with worktree from execute context as the confinement root when present; (2) helper-extraction-first sequencing so execute-path and import-guard tests import production code; (3) declaration-level (not full-AST) import-preservation comparison. SURFACE to user: package-manager policy — recommend npm + existing package-lock.json (boring, lockfile already committed, avoids un-ignoring bun.lock) vs un-ignore+commit bun.lock; and the SC1 sub-question of whether absolute paths inside the active worktree are allowed or rejected. DEFER as follow-up wisdom: benchmark morph_edit against structured apply_patch (out-of-scope replacement avoidance).",
+      "follow_ups": [
+        "ScoutCandidate 1 [adopt_now / auto-adopt]: Use OpenCode execute-context worktree + init directory as canonical confinement root; canonicalize target_filepath with path.resolve and reject paths escaping the root before any Bun.write. Evidence: opencode.ai/docs/plugins (context exposes worktree); index.ts:530-533,553,704. Contract: SC1/AC1, Constraint 'structural over heuristic'. Risk: low. Payoff: high. Rationale: closes HIGH security finding structurally with zero new deps; resolves agreement Discovery Resolution on boundary source.",
+        "ScoutCandidate 2 [design_around / auto-adopt]: Sequence helper extraction (path/imports/guards/morph-api modules) BEFORE writing tests so SC3 (no duplicated oracle), SC4 (execute-path coverage), and SC2 (import guard) all reuse one extraction. Evidence: index.ts:295-310 vs index.test.ts:5-12,177-191; agreement SC3/SC4. Contract: SC3/SC4/AC3/AC4. Risk: low. Payoff: high. Rationale: one structural move unblocks three findings; avoids over-fragmenting (keep plugin wiring in index.ts).",
+        "ScoutCandidate 3 [surface_to_user / user-surface]: Lockfile policy is a real fork, not a one-liner — .gitignore:20 ignores bun.lock while CI uses bun --frozen-lockfile and package-lock.json is committed. Recommend npm + package-lock.json (boring; lockfile already present) over un-ignoring/committing bun.lock. Evidence: .gitignore:19-21; .github/workflows/*.yml:22; prep pack:79-82. Contract: SC5/AC5. Risk: medium (changes CI verb). Payoff: high. Rationale: user-value/maintainer-preference tradeoff per agreement Discovery Resolution; do not auto-pick.",
+        "ScoutCandidate 4 [design_around / auto-adopt]: Make import preservation structural via declaration-level parse-and-compare (import source + local binding) of before/after, NOT whole-file substring. Cap at existing supported import syntaxes — full AST platform is an explicit avoidance. Evidence: index.ts:295-310; index.test.ts:673-681; agreement Avoidances. Contract: SC2/AC2. Risk: low-medium. Payoff: high. Rationale: closes HIGH reliability finding without crossing the no-full-AST avoidance line.",
+        "ScoutCandidate 5 [follow_up / inconclusive]: Defer structured-patch (apply_patch) interop/benchmark as wisdom/agenda — informs future direction but agreement forbids replacing Morph. Evidence: developers.openai.com/api/docs/guides/tools-apply-patch; prep pack:119,127. Contract: untied (avoidance-adjacent). Risk: n/a (not adopted). Payoff: low now. Rationale: valuable signal, out-of-scope for this change; record, do not adopt.",
+        "INCONCLUSIVE: whether morph_edit should ALLOW absolute paths inside the active worktree vs require project-relative only (SC1 sub-decision) — needs user/orchestrator decision; evidence does not settle the user-value boundary.",
+        "WARNING (packet): IN_SCOPE used in-scope prep + agreement context; all anchors present, no identity inference performed."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:design-leverage-scout"
+      },
+      "agent": "adv-researcher",
+      "topic": "Design leverage scout for fixImprovementFindings draft design",
+      "sources": [
+        {
+          "label": "OpenCode Custom Tools docs (ToolContext)",
+          "locator": "https://opencode.ai/docs/custom-tools/",
+          "summary": "execute(args, context) exposes context.directory (session cwd) and context.worktree (git worktree root). Mintlify mirror states worktree is 'Useful for generating stable relative paths with path.relative(worktree, absPath)' — directly endorses the design's confinement-root resolution."
+        },
+        {
+          "label": "Bun install/CI docs",
+          "locator": "https://github.com/oven-sh/bun/blob/main/docs/pm/cli/install.mdx",
+          "summary": "bun ci is EQUIVALENT to bun install --frozen-lockfile. 'To use bun ci or bun install --frozen-lockfile, you must commit bun.lock to version control.' Confirms commit-lockfile is the real fix; the bun ci swap is cosmetic."
+        },
+        {
+          "label": "Node.js Path Traversal Prevention Guide (Mammino/Casciaro)",
+          "locator": "https://nodejsdesignpatterns.com/blog/nodejs-path-traversal-security/",
+          "summary": "Canonical confinement: path.resolve() -> startsWith(root + path.sep) -> fs.realpath() for symlinks. path.normalize/join are NOT security tools. Matches design's path-confinement module exactly."
+        },
+        {
+          "label": "OpenReplay Path Traversal in Node.js",
+          "locator": "https://blog.openreplay.com/prevent-path-traversal-nodejs/",
+          "summary": "Second independent source: startsWith MUST include path.sep to stop /uploads-other bypass; symlink resolution via fs.realpath required for sensitive files."
+        },
+        {
+          "label": "Repo workflows + .gitignore (local evidence)",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/.github/workflows/ci.yml + .gitignore:20",
+          "summary": "Both ci.yml and release.yml already run 'bun install --frozen-lockfile' while .gitignore line 20 ignores bun.lock -> pre-existing broken CI invariant. package-lock.json present alongside planned bun.lock commit."
+        }
+      ],
+      "architecture_assessment": "Draft design is well-aligned with canonical practice on all three core dimensions and biased toward boring/proven over novel. Path confinement (context.worktree||plugin dir as root, path.resolve + relative/startsWith + realpath) is the by-the-book Node pattern, verified by two security sources and explicitly recommended by OpenCode docs for context.worktree. The module split (constants/imports/path-confinement/morph-api/execute) with injected deps is standard testability refactor, no over-engineering, declaration-level import parser keeps the no-full-AST constraint. Two leverage corrections surfaced: (1) the 'change workflows to bun ci' step is cosmetic — bun ci === bun install --frozen-lockfile; the only material fix is unignoring + committing bun.lock, which retroactively repairs an ALREADY-broken frozen-lockfile CI invariant (high payoff, the real win). (2) Dual lockfiles (committed package-lock.json + new bun.lock) is a maintainability smell worth an explicit decision rather than 'keep unless validator flags'.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "No security or contract blockers. Design refuses out-of-root writes (meets agreement), enforces no-write-before-confinement, no real network in unit tests. Verified externals: context.worktree/directory exist; frozen-lockfile requires committed bun.lock; canonical confinement = resolve+sep-prefix+realpath. Caveat: design says realpath only 'where feasible' and 'parent realpath for new files' — acceptable, but TOCTOU symlink-swap on write remains a residual risk the design correctly does not over-solve for a plugin scope."
+      },
+      "recommendation": "Proceed. Apply 5 scout corrections, highest payoff first: (1) Frame the lockfile task as 'commit bun.lock to repair existing broken --frozen-lockfile CI' (HIGH payoff, fixes latent bug) and treat the bun ci rename as optional/cosmetic — do not over-invest. (2) Make dual-lockfile an explicit decision: prefer removing package-lock.json when CI is bun-only (boring single source of truth) OR document why both stay. (3) Keep startsWith confinement check as `startsWith(root + path.sep) || resolved === root` — cite path.sep requirement so /root-sibling cannot bypass. (4) Resolve confinement root from context.worktree when present else context.directory (NOT plugin directory) — docs say worktree is git root and directory is session cwd; plugin-dir root would mis-scope edits. (5) Keep symlink/realpath best-effort as designed; do not chase full TOCTOU hardening (out of plugin scope, would violate simplicity).",
+      "follow_ups": [
+        "Confinement root precedence: design summary says 'context.worktree when present else plugin directory' — verify intended fallback is context.directory (session cwd), not the plugin install dir, to avoid mis-scoping edits.",
+        "Decide dual-lockfile fate (remove package-lock.json vs keep both) explicitly during planning rather than deferring to validator.",
+        "Optional: keep 'bun install --frozen-lockfile' verbatim in workflows; the bun ci swap adds no correctness and changes a working line."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:design-validation"
+      },
+      "agent": "adv-researcher",
+      "topic": "Design validation for fixImprovementFindings",
+      "sources": [
+        {
+          "label": "OpenCode plugins docs (Context7 /websites/opencode_ai_plugins)",
+          "locator": "https://opencode.ai/docs/plugins",
+          "summary": "Custom tools use tool({description,args,execute}); execute(args,context) where context exposes { directory, worktree }. Worktree may be undefined in examples. tool.execute.before hooks shown intercepting/restricting file paths (e.g. .env). Confirms design root precedence context.worktree ?? context.directory ?? fallback and execute(args,runtime) shape are documented."
+        },
+        {
+          "label": "Bun install/CI docs (Context7 /oven-sh/bun)",
+          "locator": "https://github.com/oven-sh/bun/blob/main/docs/pm/cli/install.mdx",
+          "summary": "bun ci == bun install --frozen-lockfile; installs exact versions from bun.lock and fails if package.json disagrees. Docs explicitly: 'To use bun ci or --frozen-lockfile, you must commit bun.lock to version control.' Confirms design's unignore+commit bun.lock+use bun ci is by-the-book."
+        },
+        {
+          "label": "Repo .gitignore line 20",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/.gitignore:20",
+          "summary": "bun.lock is currently gitignored while CI (.github/workflows/ci.yml:22) runs bun install --frozen-lockfile and only package-lock.json is committed. Confirms the DX HIGH finding and the design's lockfile fix premise."
+        },
+        {
+          "label": "Repo index.ts import guard",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:303-309",
+          "summary": "findDroppedIdentifiers uses mergedCode.includes(id) whole-file substring; flags only if identifier absent anywhere. Confirms the reliability HIGH finding and the design's switch to parsed import-declaration comparison."
+        },
+        {
+          "label": "Repo index.ts path resolution + writes",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:530-533,553,704",
+          "summary": "filepath = startsWith('/') ? absolute : `${directory}/...`; absolute paths accepted unchanged then written via Bun.write. Confirms security HIGH finding and the design's separator-boundary confinement."
+        },
+        {
+          "label": "Repo index.ts Morph timeout scope",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:378,388",
+          "summary": "clearTimeout fires after headers (line 378) then response.json() parses outside the abort window (line 388). Confirms reliability MEDIUM finding the design addresses by keeping timeout active through body parse."
+        }
+      ],
+      "architecture_assessment": "Design is evidence-aligned and boring-by-default. Every premise was verified against source: path confinement gap (index.ts:531), substring import guard (index.ts:306), timeout-after-headers (index.ts:378-388), and gitignored bun.lock vs frozen-lockfile CI (.gitignore:20 + ci.yml:22) all reproduce exactly. External claims hold: OpenCode docs confirm context.{directory,worktree} as the documented tool-execute context, and Bun docs confirm bun ci requires a committed bun.lock. The module split (constants/path-confinement/imports/morph-api/execute) with index.ts retained as registration+TUI hook is a conventional locality refactor (P04) that directly enables AC#3 (tests import production helpers instead of copying bodies). Separator-boundary containment (resolved===root || resolved.startsWith(root+path.sep)) is the standard prefix-escape-safe pattern and avoids the classic /root vs /rootEvil bug. Dependency-injected executeMorphEdit(args,runtime) is the right seam for AC#4 without real network/fs in unit tests. Declaration-diff import guard is the minimum-viable structural step (P33) without an AST-for-every-language platform (respects Avoidance #1). No spec exists (adv_spec list empty), so no spec-law conflict is possible.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "No conflicts. Two non-blocking cautions: (1) realpath best-effort on a not-yet-existing file requires resolving the nearest existing parent then re-containing the final resolved path — design notes this but implementation must apply containment to the post-realpath path, not the pre-realpath one, or a symlinked-parent escape is possible. (2) Design root precedence is context.worktree ?? context.directory ?? pluginDirectory; current code closes over `directory` (index.ts:533, the plugin-init directory), so the refactor should read root from the per-call context to match documented per-call worktree semantics and avoid stale-root confinement. Both are implementation-fidelity notes, not design defects."
+      },
+      "recommendation": "VALIDATED — proceed. The design solves all in-scope objectives with the simplest proven mechanisms (path.resolve + separator-boundary prefix check, parsed-declaration import diff, DI seam for execute, committed bun.lock + bun ci) and contradicts no spec (none exist). During implementation enforce two correctness details: apply containment to the post-realpath resolved path (including nearest-existing-parent realpath for new files) so symlinked parents cannot escape root, and source the confinement root from the per-call context (context.worktree ?? context.directory) rather than the init-time closure `directory`. Keep all four marker/truncation/dropped-import guards intact per Constraint #2, and ensure failure-kind enum strings and structured logs never embed MORPH_API_KEY/bearer values per AC#7. No release/tag actions (Constraint #4).",
+      "follow_ups": [
+        "Implementation: ensure realpath containment is applied to the final resolved path (and nearest-existing-parent for new files) to close symlinked-parent escape.",
+        "Implementation: read confinement root from per-call context (worktree ?? directory) not the init-time closure variable.",
+        "Optional: add a regression test asserting /root vs /rootEvil sibling-prefix is rejected by the separator-boundary check."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-6e05fe43d4c0",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-6e05fe43d4c0"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "index.ts",
+        "index.test.ts",
+        "src/constants.ts",
+        "src/diff.ts",
+        "src/imports.ts",
+        "src/normalize.ts",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "All 58 tests pass, 93 expect calls"
+        },
+        {
+          "command": "bun run typecheck",
+          "exit_code": 2,
+          "summary": "Pre-existing failure: bun-types not installed (node_modules missing); unrelated to this change"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Extracted helpers into four focused src/ modules: constants, diff, imports, normalize",
+          "why": "Keeps related behavior together and makes helpers independently importable for tests and consumers"
+        },
+        {
+          "what": "Used .js extension in relative imports between .ts files",
+          "why": "Required for ES module resolution with tsc/bundler; bun test confirms this works"
+        },
+        {
+          "what": "Did not extract callMorphApply or the MorphFastApply plugin body",
+          "why": "Those are runtime entry points tied to the OpenCode plugin API and outside the helper-surface scope"
+        },
+        {
+          "what": "Updated package.json files and tsconfig.json includes to ship src/",
+          "why": "Ensures extracted modules are packaged and type-checked with the project"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "Verified no other duplicated helper implementations in index.test.ts beyond the three removed (EXISTING_CODE_MARKER, extractImportedIdentifiers, findDroppedIdentifiers, normalizeCodeEditInput)",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Helper extraction complete. index.ts now imports constants/diff/imports/normalize from src/. index.test.ts imports production helpers and no longer duplicates implementations. 58 tests pass. Typecheck fails only because bun-types is missing from node_modules (pre-existing).",
+        "suggested_next_action": "Run full test suite if needed, or proceed to dependent tasks. Consider `bun install` to resolve the pre-existing typecheck issue."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run typecheck"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-11f8596cb0e7",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-11f8596cb0e7"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "src/path-confinement.ts",
+        "index.test.ts",
+        "index.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "70 tests pass, 0 fail, 117 expect calls"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Used path.resolve for both relative and absolute target paths",
+          "why": "path.resolve handles both cases uniformly, normalizes separators, and collapses .. segments so a single code path covers relative and absolute inputs"
+        },
+        {
+          "what": "Default targetExists to false for the initial execute resolution",
+          "why": "findNearestExistingParent uses existsSync which follows symlinks; an existing symlink target outside root is therefore caught even in default mode, and the parent-realpath check also catches symlinked directories"
+        },
+        {
+          "what": "Reconstruct effective path from canonical parent for new targets",
+          "why": "When a parent directory is a symlink inside root, writes should target the canonical location to avoid creating divergent paths; path.relative + path.resolve achieves this"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "Replaced naive path resolution in index.ts execute (const filepath = target_filepath.startsWith('/') ? ... ) with resolveTargetPath call; all Bun.file, file.exists, file.text, and Bun.write operations now use the confined filepath",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Path confinement resolver implemented and integrated. All file access in morph_edit execute now routes through resolveTargetPath using context.worktree ?? context.directory ?? directory as root. 70 tests pass including 12 new path-confinement tests covering absolute out-of-root, ../ escape, sibling-prefix (/root vs /rootEvil), allowed absolute-inside-root, and symlink/nearest-parent behavior.",
+        "suggested_next_action": "Proceed to next task; path confinement is complete and verified"
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-16508fc77ef1",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-16508fc77ef1"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "src/imports.ts",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "87 tests pass, 0 fail, 147 expect() calls"
+        },
+        {
+          "command": "bun test index.test.ts --grep \"extractImportEntries|findDroppedIdentifiers|extractImportedIdentifiers\"",
+          "exit_code": 0,
+          "summary": "41 import-specific tests pass, 0 fail, 67 expect() calls"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Added ImportEntry type with kind/source/bindings instead of flat identifier strings",
+          "why": "Provides structured declaration-level comparison rather than fragile whole-file substring matching"
+        },
+        {
+          "what": "Refactored extractImportedIdentifiers to delegate to extractImportEntries",
+          "why": "Preserves backward compatibility for existing consumers while centralizing parsing logic"
+        },
+        {
+          "what": "Rewrote findDroppedIdentifiers to compare import declarations instead of identifier substrings",
+          "why": "Fixes the RED regression where removed import bindings that are still used elsewhere were incorrectly not flagged"
+        },
+        {
+          "what": "Used JSON.stringify key for entry deduplication",
+          "why": "Simple, deterministic way to deduplicate identical import declarations without adding new dependencies"
+        },
+        {
+          "what": "Updated the existing test 'does not flag identifiers that are used but not imported' to expect new behavior",
+          "why": "The old behavior was the bug; declaration-level comparison correctly flags removed imports regardless of usage elsewhere"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "Verified existing extractImportedIdentifiers tests still pass; all language coverage (Python, TS/JS, Go, Rust, Java, C/C++, C#) preserved in both old and new APIs",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Declaration-level import comparison is now implemented. findDroppedIdentifiers no longer uses whole-file substring matching; it parses import declarations in both original and merged code and compares bindings. This correctly catches the RED regression where Morph drops an import but the identifier still appears in usage elsewhere. 87 tests pass.",
+        "suggested_next_action": "Review the diff in src/imports.ts and index.test.ts, then proceed to the next task or gate"
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts --grep \"extractImportEntries|findDroppedIdentifiers|extractImportedIdentifiers\""
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-90834e8b24e3",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-90834e8b24e3"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        ".gitignore",
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        "bun.lock",
+        "package-lock.json"
+      ],
+      "verification": [
+        {
+          "command": "bun ci",
+          "exit_code": 0,
+          "summary": "Lockfile integrity verified — 31 installs across 37 packages, no changes"
+        },
+        {
+          "command": "git status --short",
+          "exit_code": 0,
+          "summary": "Expected modifications only: ci.yml, release.yml, .gitignore, deleted package-lock.json, new untracked bun.lock"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Deleted package-lock.json",
+          "why": "No repo evidence (e.g., dual-lockfile requirement, npm-publish need) indicated it must stay; Bun is the chosen lockfile policy."
+        },
+        {
+          "what": "Updated .gitignore comment to clarify bun.lock is tracked",
+          "why": "Keeps the ignore list honest and documents the policy decision."
+        },
+        {
+          "what": "Switched both CI and release workflows to `bun ci`",
+          "why": "`bun ci` is the Bun-native frozen-lockfile install path; replaces `bun install --frozen-lockfile` with the idiomatic command."
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "none",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Bun lockfile policy implemented: bun.lock generated, package-lock.json removed, .gitignore updated, both CI and release workflows switched to `bun ci`. Lockfile passes `bun ci` verification.",
+        "suggested_next_action": "Run full CI workflow validation or proceed to next task."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun ci"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: git status --short"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-c8f27b165f42",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-c8f27b165f42"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "src/execute.ts",
+        "index.ts",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "All 99 tests pass (89 original + 10 new no-network execute tests)"
+        },
+        {
+          "command": "bun run tsc --noEmit",
+          "exit_code": 1,
+          "summary": "Pre-existing TypeScript errors in src/imports.ts only (4 filter-predicate type issues); no new errors introduced by this change"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Mocked resolveTargetPath in test runtime to avoid filesystem dependency",
+          "why": "Real resolveTargetPath does existsSync/realpathSync which fails when /project/src does not exist on disk; mocking keeps tests pure no-network"
+        },
+        {
+          "what": "Removed extractImportedIdentifiers from index.ts imports",
+          "why": "It was unused in index.ts after extraction; only findDroppedIdentifiers is needed"
+        },
+        {
+          "what": "Preserved callMorphApply in index.ts as the API layer",
+          "why": "It is a natural boundary between plugin infrastructure and business logic; injected into runtime for testability"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "None — all changes were localized to the execute extraction and its tests",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "executeMorphEdit extracted to src/execute.ts with fully injected runtime (fs/api/log/time/context/config). index.ts execute method is now a thin delegate. 10 new no-network tests cover: missing API key, readonly-agent block (plan/explore vs build), missing marker refusal, marker leakage, catastrophic truncation, dropped imports, write failure, and mocked success flow including new-file creation. All 99 tests pass.",
+        "suggested_next_action": "Proceed to next task (tk-cca411fa9a20 owns API timeout/failure-kind enhancements). No action needed on this task."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-cca411fa9a20",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-cca411fa9a20"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "src/imports.ts",
+        "index.ts",
+        "src/execute.ts",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "112 tests pass, 0 fail, 205 expect calls"
+        },
+        {
+          "command": "bun run tsc --noEmit",
+          "exit_code": 0,
+          "summary": "TypeScript typecheck passes with no errors"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Added optional options parameter to callMorphApply for testability",
+          "why": "Allows tests to inject short timeouts and fake keys without changing the existing executeMorphEdit call site or relying on environment variables"
+        },
+        {
+          "what": "Used !!s in filter type predicates to fix TS2322",
+          "why": "Expression s && s.length > 0 returned string | boolean; !!s && s.length > 0 returns boolean while preserving the s is string narrowing"
+        },
+        {
+          "what": "Cast mock fetch assignments through unknown as typeof fetch",
+          "why": "Bun's fetch type includes a preconnect property not present on plain arrow functions; casting through unknown satisfies the type checker in tests"
+        },
+        {
+          "what": "Added explicit JSON parse error handling with api_parse_error kind",
+          "why": "Previously invalid JSON fell through to the generic catch block as api_request_failed; dedicated kind improves classification accuracy"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "Fixed same filter predicate pattern in 4 locations in src/imports.ts (lines 90, 105, 126, 181)",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Morph API timeout now covers full response lifecycle (fetch + error body read + JSON body parse). callMorphApply is exported with FailureKind classification and secret scrubbing. executeMorphEdit scrubs API errors before returning them. 4 pre-existing type errors in imports.ts fixed. 112 tests pass, typecheck clean.",
+        "suggested_next_action": "Run full CI suite (bun test && tsc --noEmit) to confirm no regressions before proceeding to next task."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "task_id": "tk-1b18bc9e1b77",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-1b18bc9e1b77"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "README.md",
+        "CHANGELOG.md",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "All 113 tests pass, 211 expect() calls"
+        },
+        {
+          "command": "bun run tsc --noEmit",
+          "exit_code": 0,
+          "summary": "TypeScript type check passes with no errors"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Included dropped imports guard in README Safety guards section",
+          "why": "The guard shipped in v1.9.0 but was missing from README user-facing docs; adding it closes the docs/behavior gap"
+        },
+        {
+          "what": "Used negative + positive pin assertions in test",
+          "why": "Asserting `#v1.8.2` is absent and `#v1.9.0` is present prevents future stale-pin regressions"
+        },
+        {
+          "what": "Left instructions/morph-tools.md unchanged",
+          "why": "The file's tool-selection policy is current and accurate; no behavior changes required there"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "none",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "README stale pin fixed (v1.8.2 → v1.9.0). Safety guards section expanded with dropped imports guard, path confinement, and secret scrubbing. Bun lockfile policy noted in Contributing. CHANGELOG [Unreleased] entry added. Tests updated and passing (113/113). TypeScript clean.",
+        "suggested_next_action": "Proceed to next task or archive change if all tasks complete"
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run tsc --noEmit"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixImprovementFindings",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixImprovementFindings",
+      "scope": {
+        "kind": "change",
+        "scope_key": "review:acceptance"
+      },
+      "agent": "adv-reviewer",
+      "phase": "review",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [
+        {
+          "id": "review-praise-1",
+          "label": "praise",
+          "file": "src/execute.ts",
+          "line": 68,
+          "what": "Execution behavior is dependency-injected and directly testable without network access.",
+          "why": "Covers agreement AC4 while keeping OpenCode plugin wrapper thin.",
+          "fix": "n/a"
+        },
+        {
+          "id": "review-praise-2",
+          "label": "praise",
+          "file": "src/path-confinement.ts",
+          "line": 62,
+          "what": "Target path resolution checks normalized containment and symlink escape cases before file access.",
+          "why": "Addresses path confinement and out-of-root write safety required by SC1/AC1.",
+          "fix": "n/a"
+        }
+      ],
+      "changes_made": [
+        {
+          "file": "src/imports.ts",
+          "summary": "Hardened declaration-level import parsing for TypeScript type-only imports, combined default+named imports, and CommonJS destructuring aliases as local bindings. This closes a guard gap found during review without changing the contract boundary.",
+          "verification": "Added regression tests in index.test.ts. Initial targeted run failed with 7 expected failures; after fix, `bun test index.test.ts` passed 120 tests / 0 fail / 222 expect calls. `bun run ci && bun ci` passed."
+        },
+        {
+          "file": "index.test.ts",
+          "summary": "Added regression coverage for local binding preservation in CommonJS destructuring aliases, TypeScript combined default+named imports, type-only imports, and dropped destructure aliases.",
+          "verification": "`bun test index.test.ts` passed 120 tests / 0 fail / 222 expect calls; `bun run ci && bun ci` passed."
+        },
+        {
+          "file": "CHANGELOG.md",
+          "summary": "Expanded Unreleased changelog to document path confinement, no-network execute coverage, secret-safe failure classification, Bun lockfile policy, and import guard hardening.",
+          "verification": "`git diff --check` passed; `bun run ci && bun ci` passed."
+        },
+        {
+          "file": ".gitignore",
+          "summary": "Aligned lockfile ignore policy with README/design: Bun lockfile is authoritative and tracked; package-lock.json and pnpm-lock.yaml are ignored to avoid dual lockfiles.",
+          "verification": "`lgrep_search_text` confirmed README and .gitignore now both state package-lock.json ignore policy; `git diff --check` passed; `bun run ci && bun ci` passed."
+        }
+      ],
+      "wisdom_candidates": [
+        {
+          "type": "gotcha",
+          "content": "Declaration-level JS import preservation must treat CommonJS destructuring aliases as local bindings (`{ exported: local }` => `local`), and must include TypeScript `import type` plus combined default+named imports; otherwise the guard can miss dropped local bindings while tests for simple named imports still pass."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "Path preflight for changed files: all expected files present; package-lock.json deleted",
+          "git diff --check trunk...HEAD (pass)",
+          "bun test index.test.ts (red before fix: 113 pass, 7 fail)",
+          "bun test index.test.ts (green after fix: 120 pass, 0 fail, 222 expect calls)",
+          "bun run ci && bun ci (pass: bun test 120 pass, 0 fail, tsc --noEmit passed, bun ci checked 31 installs across 37 packages no changes)",
+          "lgrep_search_text function findDroppedIdentifiers / resolveTargetPath (single production definitions only)",
+          "lgrep_search_text #v1.8.2 (only README regression test assertion remains)",
+          "secret-token scan via grep (only env var names and fake test/example placeholders; no real secret values found)"
+        ],
+        "results": "pass",
+        "evidence": "Reviewed changed files versus trunk, agreement/design artifacts, workflows, lockfile policy, docs/changelog, path confinement, import preservation, execute no-network tests, secret scrubbing, and helper duplication. Applied four scoped hardening fixes. Final verification passed with no blockers."
+      },
+      "scope_drift": null,
+      "risks": [
+        "Review fixes are uncommitted in the worktree and should be included by orchestrator before acceptance/release evidence is finalized.",
+        "No browser/visual verification performed because agreement visual_surface=false and change is plugin/test/docs only."
+      ],
+      "required_main_agent_actions": [
+        "Inspect/stage the reviewer remediation files (.gitignore, CHANGELOG.md, index.test.ts, src/imports.ts) with the rest of acceptance evidence.",
+        "If orchestrator maintains a contract review matrix, record SC1-SC8/AC1-AC8 as covered by passing `bun run ci && bun ci`, path/import/no-network/doc/secret review evidence, and reviewer remediation evidence."
+      ],
+      "consumer_warnings": [
+        {
+          "kind": "verification_mismatch",
+          "message": "adv_run_test was attempted with independent scope key `reviewer:acceptance-review` and failed because it expects a task id; verification was rerun with bash in the provided working directory and passed."
+        }
+      ]
+    }
+  ],
+  "deltas": {},
+  "wisdom": [
+    {
+      "id": "ws-hvQmfw",
+      "type": "gotcha",
+      "content": "When extracting TypeScript helper modules in this ESM/Bun plugin, relative imports between `.ts` source files needed `.js` specifiers for `tsc`/bundler resolution while still passing `bun test`.",
+      "source_task": "tk-6e05fe43d4c0",
+      "recorded_at": "2026-06-06T23:22:29.093Z"
+    },
+    {
+      "id": "ws-HZ98aS",
+      "type": "pattern",
+      "content": "For write confinement in this OpenCode plugin, resolve against per-call `context.worktree ?? context.directory`, use `path.resolve`, enforce `resolved === root || resolved.startsWith(root + path.sep)`, and realpath existing targets / nearest existing parent for new targets before any Bun file access.",
+      "source_task": "tk-11f8596cb0e7",
+      "recorded_at": "2026-06-06T23:29:00.156Z"
+    },
+    {
+      "id": "ws-VPjgzg",
+      "type": "pattern",
+      "content": "Import-preservation guards should compare parsed import declaration entries between original and merged code, not search for binding names in whole-file text; usage of a dropped binding can otherwise mask the missing import.",
+      "source_task": "tk-16508fc77ef1",
+      "recorded_at": "2026-06-06T23:35:44.670Z"
+    },
+    {
+      "id": "ws-8R2exX",
+      "type": "success",
+      "content": "Extracting `executeMorphEdit(args, runtime)` with injected fs/api/log/time/context/config dependencies enabled full no-network coverage of tool execution while keeping the OpenCode plugin wrapper thin and stable.",
+      "source_task": "tk-c8f27b165f42",
+      "recorded_at": "2026-06-06T23:45:32.918Z"
+    },
+    {
+      "id": "ws-hj6Yov",
+      "type": "gotcha",
+      "content": "With strict TypeScript, `.filter((s) => s && s.length > 0)` can infer `string | boolean` rather than boolean; use explicit boolean predicates such as `!!s && s.length > 0` to keep helper modules typecheck-clean.",
+      "source_task": "tk-cca411fa9a20",
+      "recorded_at": "2026-06-06T23:58:37.591Z"
+    },
+    {
+      "id": "ws-ejMYRs",
+      "type": "success",
+      "content": "Docs freshness can be guarded with tests: asserting stale version pins are absent and current pins/safety sections are present catches README drift during behavior changes.",
+      "source_task": "tk-1b18bc9e1b77",
+      "recorded_at": "2026-06-07T00:04:34.489Z"
+    },
+    {
+      "id": "ws-LKGo2B",
+      "type": "success",
+      "content": "After switching to Bun lockfile policy, final verification should include both `bun ci` (lockfile/install invariant) and `bun run ci` (test + typecheck) to prove dependency and code correctness separately.",
+      "source_task": "tk-3cd7f5425724",
+      "recorded_at": "2026-06-07T00:05:35.669Z"
+    }
+  ],
+  "gates": {
+    "proposal": {
+      "status": "done",
+      "completed_at": "2026-06-06T22:35:28.465Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved problem framing and proposal creation with reply: 'approve'. B/F/S ambiguity scan: no CRITICAL findings. Boundaries present: Scope includes In Scope, Out of Scope, Must Not. Functional scope present: User Outcomes are implementation-free. Completion-signal vagueness acceptable at proposal stage because discovery agenda names unresolved questions and proposal defers engineering AC/SC to discovery.",
+      "artifact_evidence": {
+        "kind": "proposal",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/proposal.md",
+        "content_hash": "de17774c0c43a1ba8943b9de73588d50a0e293cbf44689d848106df53972fccf",
+        "non_whitespace_chars": 5492,
+        "checked_at": "2026-06-06T22:34:55.914Z"
+      }
+    },
+    "discovery": {
+      "status": "done",
+      "completed_at": "2026-06-06T22:49:27.004Z",
+      "completed_by": "agent",
+      "approval_evidence": "Discovery completed after user approved criteria/agreement with reply: 'approve'. Agreement persisted and ChangeContract minted with 30 items: SC1-SC8, AC1-AC8, C1-C6, DONT1-DONT4, OOS1-OOS4. Single HIGH ambiguity (path absolute-inside-root behavior) explicitly deferred by user to design.",
+      "artifact_evidence": {
+        "kind": "agreement",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/agreement.md",
+        "content_hash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "non_whitespace_chars": 4160,
+        "checked_at": "2026-06-06T22:34:55.915Z"
+      }
+    },
+    "design": {
+      "status": "done",
+      "completed_at": "2026-06-06T23:07:42.902Z",
+      "completed_by": "agent",
+      "approval_evidence": "Design completed. design.md persisted with architecture, decisions, implementation strategy, design-derived criteria, leverage scout, and independent validator result. Validator verdict: VALIDATED. No unresolved conflict or contract-compromise risk.",
+      "artifact_evidence": {
+        "kind": "design",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/design.md",
+        "content_hash": "66e963deeef33a4ee97579ade245dcb36d0fbc65692912c5368bf26271b143db",
+        "non_whitespace_chars": 11400,
+        "checked_at": "2026-06-06T22:34:55.916Z"
+      }
+    },
+    "planning": {
+      "status": "done",
+      "completed_at": "2026-06-06T23:13:15.258Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved prep task graph with reply: 'approve'. Eight tasks cover SC1-SC8 and AC1-AC8 with contract refs and dependencies."
+    },
+    "execution": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:05:56.299Z",
+      "completed_by": "agent",
+      "approval_evidence": "Execution completed: all 8 tasks done with checkpoints. Final verification passed: bun ci; bun run ci (bun test 113 pass, 0 fail, 211 expect calls; tsc --noEmit passed). Worktree clean at HEAD 6037fe2b14860d4a176b56ef3600d621d3a6a78f."
+    },
+    "acceptance": {
+      "status": "done",
+      "completed_at": "2026-06-07T00:16:03.954Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved acceptance with reply: 'approve'. Acceptance evidence: reviewer verdict READY; bun ci passed; bun run ci passed (bun test 120 pass, 0 fail, 222 expect calls; tsc --noEmit passed); git diff --check passed; contract review matrix 30/30 pass/respected/not-applicable; no remaining concerns.",
+      "artifact_evidence": {
+        "kind": "acceptance",
+        "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/executive-summary.md",
+        "content_hash": "7078017ef7a4cd70c1f0c72d146b195f7e18e5d5f3d7ad5af22a5b7aba213edb",
+        "non_whitespace_chars": 1277,
+        "checked_at": "2026-06-06T22:34:55.917Z"
+      }
+    },
+    "release": {
+      "status": "pending"
+    }
+  },
+  "reentry_history": [],
+  "origin": {
+    "kind": "adhoc"
+  },
+  "contract": {
+    "version": 1,
+    "rigor": "standard",
+    "source": {
+      "artifact": "agreement",
+      "contentHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+      "approvedAt": "2026-06-06T22:49:20.462Z"
+    },
+    "items": [
+      {
+        "id": "SC1",
+        "kind": "success_criterion",
+        "text": "`morph_edit` refuses out-of-root writes with a clear error and no write.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC2",
+        "kind": "success_criterion",
+        "text": "Import preservation detects removed required bindings even when identifiers still appear elsewhere.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC3",
+        "kind": "success_criterion",
+        "text": "Tests exercise production helper code directly; no duplicated safety helper oracle remains.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC4",
+        "kind": "success_criterion",
+        "text": "`morph_edit` execution path has direct no-network test coverage.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC5",
+        "kind": "success_criterion",
+        "text": "CI/release install commands and committed lockfile policy match Bun.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC6",
+        "kind": "success_criterion",
+        "text": "README/instructions/changelog reflect current behavior and version guidance.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC7",
+        "kind": "success_criterion",
+        "text": "Failure diagnostics include non-secret reason classification.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC8",
+        "kind": "success_criterion",
+        "text": "Repo-approved tests and typecheck pass after dependencies are installed.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "AC1",
+        "kind": "acceptance_criterion",
+        "text": "Out-of-root path test passes: no file written, error returned.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC2",
+        "kind": "acceptance_criterion",
+        "text": "Import-removal test passes when identifier remains used elsewhere but import binding is gone.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC3",
+        "kind": "acceptance_criterion",
+        "text": "Static/test check proves `index.test.ts` no longer copies import-extraction or dropped-import helper bodies.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC4",
+        "kind": "acceptance_criterion",
+        "text": "Execute-path tests cover missing API key, readonly block, missing markers, unsafe Morph output, and mocked success.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC5",
+        "kind": "acceptance_criterion",
+        "text": "Bun workflow uses committed `bun.lock`; `.gitignore` no longer blocks it.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC6",
+        "kind": "acceptance_criterion",
+        "text": "README stale `#v1.8.2` pin is fixed or clearly labeled historical.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC7",
+        "kind": "acceptance_criterion",
+        "text": "Logs/errors never include `MORPH_API_KEY` or bearer token values.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC8",
+        "kind": "acceptance_criterion",
+        "text": "Final verification includes passing `bun test` and `tsc --noEmit` or approved equivalent.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "C1",
+        "kind": "constraint",
+        "text": "Do not replace Morph Fast Apply or remove the `morph_edit` tool.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C2",
+        "kind": "constraint",
+        "text": "Do not weaken existing marker leakage, truncation, or dropped-import guard behavior.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C3",
+        "kind": "constraint",
+        "text": "Do not expose secrets in logs, tests, diffs, or errors.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C4",
+        "kind": "constraint",
+        "text": "Do not create release tags or publish packages.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C5",
+        "kind": "constraint",
+        "text": "Do not expand into unrelated feature work.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C6",
+        "kind": "constraint",
+        "text": "Defer exact behavior for absolute paths inside the allowed root to design; discovery only fixes the out-of-root safety boundary.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "DONT1",
+        "kind": "avoidance",
+        "text": "Avoid building a full AST editing platform for every language.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT2",
+        "kind": "avoidance",
+        "text": "Avoid migrating this change to structured patch tooling or replacing Morph.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT3",
+        "kind": "avoidance",
+        "text": "Avoid changing OpenCode global configuration outside this repo.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT4",
+        "kind": "avoidance",
+        "text": "Avoid release automation redesign beyond what is needed for Bun lockfile/install consistency.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "OOS1",
+        "kind": "out_of_scope",
+        "text": "Replacing Morph Fast Apply with another edit engine.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS2",
+        "kind": "out_of_scope",
+        "text": "Publishing a release, creating tags, or changing package distribution outside source/workflow/docs alignment.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS3",
+        "kind": "out_of_scope",
+        "text": "New product commitments beyond fixing the improvement findings.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS4",
+        "kind": "out_of_scope",
+        "text": "Broad competitive benchmarking beyond using prior research as design context.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      }
+    ],
+    "amendments": [],
+    "reviewMatrix": {
+      "reviewedAt": "2026-06-07T00:14:36.358Z",
+      "rows": [
+        {
+          "contractId": "SC1",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Path confinement implemented and verified by path safety tests; final `bun run ci` passed with 120 tests.",
+          "notes": "Out-of-root writes refused before file access."
+        },
+        {
+          "contractId": "SC2",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Declaration-level import guard tests pass; final `bun run ci` passed.",
+          "notes": "Removed substring heuristic."
+        },
+        {
+          "contractId": "SC3",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "Tests import production helper modules; helper duplication scan/reviewer report READY.",
+          "notes": "No copied helper oracle remains."
+        },
+        {
+          "contractId": "SC4",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "No-network execute tests included; final `bun run ci` passed.",
+          "notes": "Covers missing API key, readonly block, markers, guards, mocked success."
+        },
+        {
+          "contractId": "SC5",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "`bun.lock` committed, `package-lock.json` removed, workflows use `bun ci`; `bun ci` passed.",
+          "notes": "Single Bun lockfile policy."
+        },
+        {
+          "contractId": "SC6",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "README/CHANGELOG updated; docs tests passed in final `bun run ci`.",
+          "notes": "Instructions unchanged because current."
+        },
+        {
+          "contractId": "SC7",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Secret scrubbing/failure kind tests pass; lgrep scan found only env names/placeholders/test tokens.",
+          "notes": "No real secret exposure found."
+        },
+        {
+          "contractId": "SC8",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Final `bun run ci` passed: 120 pass, 0 fail, 222 expect calls; `tsc --noEmit` passed.",
+          "notes": "`bun ci` also passed."
+        },
+        {
+          "contractId": "AC1",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Path safety tests pass in final suite.",
+          "notes": "No write on out-of-root."
+        },
+        {
+          "contractId": "AC2",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Import-removal regression passes in final suite.",
+          "notes": "Identifier usage no longer masks missing import."
+        },
+        {
+          "contractId": "AC3",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "Reviewer helper duplication scan: production helper definitions only; tests import src helpers.",
+          "notes": "AC3 satisfied."
+        },
+        {
+          "contractId": "AC4",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "No-network execute tests pass in final suite.",
+          "notes": "Covers required cases."
+        },
+        {
+          "contractId": "AC5",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "`.gitignore` no longer blocks `bun.lock`; workflows use `bun ci`; `bun.lock` present; `package-lock.json` removed.",
+          "notes": "Bun policy consistent."
+        },
+        {
+          "contractId": "AC6",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "README pin tests pass; README uses v1.9.0 / no stale v1.8.2.",
+          "notes": "Docs current."
+        },
+        {
+          "contractId": "AC7",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Secret scrubbing tests pass; scan found only fake placeholders and env var names.",
+          "notes": "No bearer/API secrets leaked."
+        },
+        {
+          "contractId": "AC8",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Final `bun run ci` and `bun ci` both passed.",
+          "notes": "Repo-approved verification complete."
+        },
+        {
+          "contractId": "C1",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "`morph_edit` tool and Morph API integration preserved in index.ts/reviewer READY.",
+          "notes": ""
+        },
+        {
+          "contractId": "C2",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "test",
+          "evidence": "Marker leakage, truncation, dropped-import tests pass in final suite.",
+          "notes": "Guards strengthened, not weakened."
+        },
+        {
+          "contractId": "C3",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "Secret scan found only env names/placeholders/test tokens; scrubbing tests pass.",
+          "notes": ""
+        },
+        {
+          "contractId": "C4",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No release/tag/publish commands run; only source/docs/workflows changed.",
+          "notes": ""
+        },
+        {
+          "contractId": "C5",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Changes limited to improvement findings: source helpers, tests, lockfile/workflows, docs.",
+          "notes": ""
+        },
+        {
+          "contractId": "C6",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Design resolved absolute-inside-root behavior; implementation allows only canonicalized in-root absolute paths and rejects out-of-root.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT1",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Morph Fast Apply and `morph_edit` retained.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT2",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No structured patch migration; declaration-level parser only, no full AST editing platform.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT3",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No OpenCode global config files changed.",
+          "notes": ""
+        },
+        {
+          "contractId": "DONT4",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Release workflow only install command changed for Bun lockfile consistency; no redesign beyond scope.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS1",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "Morph replacement not attempted.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS2",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "No publish/tag/distribution action performed.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS3",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "No new product commitments added.",
+          "notes": ""
+        },
+        {
+          "contractId": "OOS4",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "not_applicable",
+          "evidence": "No broad competitive benchmark performed.",
+          "notes": ""
+        }
+      ]
+    }
+  },
+  "acceptanceCriteria": [
+    "Out-of-root path test passes: no file written, error returned.",
+    "Import-removal test passes when identifier remains used elsewhere but import binding is gone.",
+    "Static/test check proves `index.test.ts` no longer copies import-extraction or dropped-import helper bodies.",
+    "Execute-path tests cover missing API key, readonly block, missing markers, unsafe Morph output, and mocked success.",
+    "Bun workflow uses committed `bun.lock`; `.gitignore` no longer blocks it.",
+    "README stale `#v1.8.2` pin is fixed or clearly labeled historical.",
+    "Logs/errors never include `MORPH_API_KEY` or bearer token values.",
+    "Final verification includes passing `bun test` and `tsc --noEmit` or approved equivalent."
+  ],
+  "documents": {
+    "proposal": "# Proposal: Fix improvement findings\n\n## Why\n\nThe OpenCode Morph Fast Apply plugin has a set of evidence-backed improvement findings covering write-boundary safety, merge-result correctness, test reliability, CI reproducibility, documentation freshness, observability, and maintainability. The desired outcome is to address all findings from `docs/repo-improve-prep.md` in one tracked change while preserving the plugin's core purpose: providing `morph_edit` as an OpenCode tool backed by Morph Fast Apply.\n\n## What Changes\n\nThis change will close the improvement findings identified in the repo-wide improvement pack:\n\n- Strengthen file-write safety for `morph_edit` so tool writes stay within the intended project/worktree boundary.\n- Replace heuristic import-preservation checks with a more structural guard for supported import syntaxes.\n- Make safety-critical helper logic directly testable from production code rather than duplicated in tests.\n- Add direct coverage around the `morph_edit` execution path and failure modes.\n- Align package-manager lockfile policy with CI/release workflow behavior.\n- Refresh stale install/version documentation.\n- Improve diagnostic signal for tool failures without exposing secrets.\n- Improve module locality where needed to keep safety, parsing, API, and plugin wiring understandable.\n\n## User Outcomes\n\n- Users can run `morph_edit` with stronger protection against writes outside the active project/worktree.\n- Users get safer handling when Morph returns output that changes imports or omits required bindings.\n- Maintainers can trust tests to exercise production helper behavior, not duplicated copies.\n- CI/release behavior reflects the lockfile policy present in the repository.\n- Installation docs point users at current, coherent setup guidance.\n- Failure reports contain enough non-secret context for maintainers to diagnose guard/API/tool issues.\n\n## Scope\n\n### In Scope\n\n- All findings recorded in `docs/repo-improve-prep.md` under Security, Reliability, Testing, Observability, Developer Experience, and Code Quality.\n- Local source, tests, docs, package metadata, and GitHub Actions workflow changes needed to close those findings.\n- Discovery of the minimum safe package-manager/lockfile policy for this repo.\n- Discovery of the correct OpenCode plugin path boundary source (`directory`, `context.worktree`, or both).\n\n### Out of Scope\n\n- Replacing Morph Fast Apply with a different edit engine.\n- Building a full AST editing platform for every supported language.\n- Changing the product name or public tool name `morph_edit`.\n- Publishing a release or creating GitHub tags.\n- Creating unrelated features beyond the improvement findings.\n\n### Must Not\n\n- Must not weaken existing marker leakage, truncation, or dropped-import safety behavior.\n- Must not expose `MORPH_API_KEY` or any secret value in logs, test output, or error messages.\n- Must not silently allow writes outside the intended project/worktree boundary.\n- Must not remove current README/instruction guidance without replacing it with equivalent or clearer guidance.\n\n## Affected Code\n\n- `index.ts` — plugin entrypoint, tool execution, Morph API call, write path, safety guards, TUI hook.\n- `index.test.ts` — current helper and behavior coverage.\n- `instructions/morph-tools.md` — packaged always-on tool-selection guidance.\n- `README.md` and `CHANGELOG.md` — user-facing install/version guidance.\n- `package.json`, lockfile policy, `.gitignore` — package-manager alignment.\n- `.github/workflows/ci.yml`, `.github/workflows/release.yml` — CI/release install and verification flow.\n- `docs/repo-improve-prep.md` — source research pack for discovery context.\n\n## Related Repositories\n\nSingle-repo change: `opencode-morph-fast-apply`.\n\nNo product-linked multi-repo scope detected in `project.json`.\n\n## Constraints\n\n- Preserve current plugin purpose and `morph_edit` tool identity.\n- Prefer structural correctness over heuristic inference for path boundaries and import preservation.\n- Keep tests close to production logic and avoid test-only copies of safety-critical helpers.\n- Keep diagnostics useful but non-secret.\n- Keep the solution proportionate to this small plugin package.\n\n## Impact\n\nPrimary impact is increased safety and maintainability for users and maintainers of the OpenCode plugin. The change reduces risk of out-of-project writes, broken merged files, untested execution behavior, CI lockfile surprises, and stale installation guidance.\n\n## Context\n\nThe repo-wide improvement scan persisted at `docs/repo-improve-prep.md` found four high-severity gaps and several medium/low gaps. No overlapping active ADV changes, agenda items, or specs were found. `project.json` has no `product` linkage.\n\nQuick checks resolved before proposal creation:\n\n- `context.worktree` is not referenced in current repo source; only the research pack mentions it as an open question.\n- `.gitignore:19-21` explicitly ignores `bun.lock` and `pnpm-lock.yaml`, while workflows use Bun frozen install.\n- `findDroppedIdentifiers` exists both in production (`index.ts`) and duplicated tests (`index.test.ts`).\n- No matching specs exist for the affected capability.\n\n## Discovery Agenda\n\nCodebase unknowns to resolve in discovery:\n\n- Which boundary source is correct and stable for OpenCode plugin execution: `directory`, `context.worktree`, or both?\n- Which pure helper split gives direct testability without over-fragmenting this small plugin?\n- Which direct execution-path tests are feasible without invoking the real Morph API?\n\nEcosystem unknowns to resolve in discovery:\n\n- Current OpenCode plugin context guarantees for `directory` and `worktree`.\n- Current Bun lockfile expectations for packages installed through OpenCode plugin workflows.\n- Whether Morph `auto` model should remain only a documented option or affect default/fallback behavior.\n\nDomain unknowns to resolve in discovery:\n\n- Whether maintainers prefer Bun-native lockfile policy or npm lockfile policy for this package.\n- Whether absolute paths inside the active worktree should be allowed or rejected in favor of project-relative paths only.\n\nIntegration unknowns to resolve in discovery:\n\n- Whether path confinement must account for symlinked worktrees or OpenCode plugin installation under `node_modules`.\n- Whether CI/release changes require updates to README installation commands or changelog policy.\n\n## Discovery Findings\n\n### Current State\n\n- OpenCode plugin docs confirm custom tool `execute(args, context)` receives `directory` and `worktree`; current `index.ts` uses `context.agent` but does not use `context.worktree` for path confinement.\n- `index.ts:531-533` lets absolute `target_filepath` pass through unchanged and writes at `index.ts:553` / `index.ts:704`.\n- `index.ts:295-310` detects dropped imports by checking whether imported identifiers appear anywhere in merged code; `index.test.ts:673-681` codifies that imports may be removed while identifiers remain in use.\n- `index.test.ts:5-12` states internals are duplicated for testing; duplicated helper body appears at `index.test.ts:177-191`.\n- `.github/workflows/ci.yml:22` and `.github/workflows/release.yml:22` use `bun install --frozen-lockfile`; `.gitignore:20` ignores `bun.lock`; `package-lock.json` is committed.\n- `README.md:48` pins `#v1.8.2` while package/changelog show `1.9.0`.\n\n### Prior Research Extended\n\n- Extends `docs/repo-improve-prep.md`, especially `LBP / Reference Comparison`, `Competitors & Alternatives`, `Emerging Patterns`, and `Applicability to This Repo`.\n- New finding: `.gitignore:20` actively ignores `bun.lock`, so the lockfile issue is not only missing file state; repository policy currently prevents the Bun frozen-lockfile fix.\n- New finding: OpenCode docs show custom tool `execute` context includes `worktree`, directly resolving one discovery unknown.\n\n### Conflict Scan\n\n- `adv_change_list includeArchived:true`: only this in-flight change found; no related archived changes returned.\n- `adv_change_validate`: passed; expected pre-prep warnings `NO_TASKS` and `NO_DELTAS` only.\n- `adv_agenda_list`: no pending agenda before scout; scout-created follow-ups were canceled because discovery findings are integrated here instead of agenda side effects.\n\n### Edge Cases\n\n- Path confinement: absolute path outside root; `../` traversal outside root; symlink escape; absolute path inside worktree but outside `directory`.\n- Import guard: import removed while identifier remains used; alias import changed or removed; namespace/default imports; multiline Python import block.\n- Tests/helper locality: copied test helper diverges from production; test passes against stale helper; helper extraction accidentally changes plugin export shape.\n- Execute-path behavior: missing API key; readonly agent block; no-marker full replacement refusal; unsafe Morph output refusal; successful write/diff without real network.\n- Lockfile policy: committed `package-lock.json` with Bun install; ignored `bun.lock`; release workflow drift from CI workflow.\n- Diagnostics: logs include useful reason but not structured kind; errors must not include bearer token/API key; truncated diff should still show reason.\n\n### Open Design Questions\n\n- Path input policy: trust model joint; blast radius is user workflow compatibility and write safety; alternatives are relative-only, allow absolute-inside-root, or design-deferred. User chose: defer to design.\n- Lockfile policy: trust model user/maintainer; blast radius is CI/release reproducibility; alternatives are Bun lockfile or npm lockfile. User chose: Bun lockfile.\n- Helper split: trust model agent; blast radius is maintainability/testability; alternatives are one helpers module vs focused local modules. Recommendation: focused local modules only where tests need direct imports.\n- Import preservation mechanism: trust model agent; blast radius is false positives/negatives in guard behavior; alternatives are declaration-level compare, full AST, or substring. Recommendation: declaration-level compare; reject full AST platform.\n\n### Draft Spec Delta Shapes\n\n- `rq-morphPathConfinement01`: Given an out-of-root `target_filepath`, When `morph_edit` resolves the path, Then it returns an error and performs no write.\n- `rq-morphImportGuard01`: Given a merged output removes an imported binding, When the binding is required by original imports, Then the guard blocks the write even if the identifier appears elsewhere.\n- `rq-morphHelperTestability01`: Given safety-critical helper logic, When tests exercise it, Then tests import/execute production helpers rather than copied implementations.\n- `rq-morphLockfileConsistency01`: Given CI/release installs dependencies, When workflows run, Then install command and committed lockfile policy match.\n- `rq-morphFailureDiagnostics01`: Given a guard/API/write failure, When the tool reports/logs it, Then non-secret failure classification is included.\n\n### Related Pattern Scan\n\n- Write pattern: only two `Bun.write` calls found, both in `index.ts` and both governed by the same unresolved `filepath`.\n- Path argument pattern: `target_filepath` only flows through `index.ts` tool schema/execution and README example.\n- Import-helper pattern: production and duplicated test copies are the only `findDroppedIdentifiers` instances.\n- Lockfile pattern: workflow frozen installs and `.gitignore` lockfile policy are the only related repository patterns found.\n\n### LBP Check\n\nLikely direction matches long-term best practice:\n\n- Use OpenCode `directory`/`worktree` context for least-privilege path confinement.\n- Use declaration-level import comparisons instead of substring heuristics.\n- Extract production helpers before tests to avoid copied oracle drift.\n- Use Bun lockfile policy because user chose Bun; implementation must unignore/commit `bun.lock` and align workflows with `bun ci`/frozen behavior.\n- Do not replace Morph or adopt structured patch tooling in this change; external alternatives remain future reference only.\n\n### Discovery Opportunity Scout\n\nScout: run. Broad safety/reliability/ecosystem scope triggered scout.\n\n- Candidates considered: 5.\n- Auto-adopted: path confinement, helper-extraction-first sequencing, declaration-level import compare.\n- Surfaced to user: lockfile policy; absolute-path behavior.\n- User decisions: Bun lockfile; path behavior deferred to design.\n- Inconclusive/follow-up: structured patch benchmark deferred out of scope.\n\n### AMBIGUITY ANALYSIS\n\nM1 HIGH Missing Information\n  Evidence: \"Whether absolute paths inside the active worktree should be allowed or rejected in favor of project-relative paths only.\"\n  Reason: unclear because user deferred path input behavior to design; agreement must carry this as a deferred design decision.\n\nCoverage: B:C F:C S:C M:P\n\nTrigger evaluation: single HIGH only; advisory. Discovery can continue because the user explicitly deferred the path-behavior choice to design.",
+    "problemStatement": "The OpenCode Morph Fast Apply plugin has multiple evidence-backed improvement findings across safety, reliability, testing, CI, documentation, observability, and maintainability. The change should fix all findings from `docs/repo-improve-prep.md` while preserving the plugin's core `morph_edit` behavior and avoiding a product pivot away from Morph Fast Apply.",
+    "agreement": "# Agreement\n\n## Objectives\n\n1. Close all findings from `docs/repo-improve-prep.md` unless implementation-time evidence proves a finding is obsolete, duplicate, or intentionally superseded by this agreement.\n2. Preserve the public `morph_edit` tool identity and Morph Fast Apply integration.\n3. Strengthen write-boundary and merge-result correctness structurally where feasible.\n4. Remove duplicated test-oracle patterns by making production safety helpers directly testable.\n5. Align CI/release install behavior with the user-approved Bun lockfile policy.\n6. Refresh README/instruction/changelog documentation affected by the fixes.\n7. Improve failure diagnostics with useful non-secret reason classification.\n\n## Success Criteria\n\n1. `morph_edit` refuses out-of-root writes with a clear error and no write.\n2. Import preservation detects removed required bindings even when identifiers still appear elsewhere.\n3. Tests exercise production helper code directly; no duplicated safety helper oracle remains.\n4. `morph_edit` execution path has direct no-network test coverage.\n5. CI/release install commands and committed lockfile policy match Bun.\n6. README/instructions/changelog reflect current behavior and version guidance.\n7. Failure diagnostics include non-secret reason classification.\n8. Repo-approved tests and typecheck pass after dependencies are installed.\n\n## Acceptance Criteria\n\n1. Out-of-root path test passes: no file written, error returned.\n2. Import-removal test passes when identifier remains used elsewhere but import binding is gone.\n3. Static/test check proves `index.test.ts` no longer copies import-extraction or dropped-import helper bodies.\n4. Execute-path tests cover missing API key, readonly block, missing markers, unsafe Morph output, and mocked success.\n5. Bun workflow uses committed `bun.lock`; `.gitignore` no longer blocks it.\n6. README stale `#v1.8.2` pin is fixed or clearly labeled historical.\n7. Logs/errors never include `MORPH_API_KEY` or bearer token values.\n8. Final verification includes passing `bun test` and `tsc --noEmit` or approved equivalent.\n\n## Constraints\n\n1. Do not replace Morph Fast Apply or remove the `morph_edit` tool.\n2. Do not weaken existing marker leakage, truncation, or dropped-import guard behavior.\n3. Do not expose secrets in logs, tests, diffs, or errors.\n4. Do not create release tags or publish packages.\n5. Do not expand into unrelated feature work.\n6. Defer exact behavior for absolute paths inside the allowed root to design; discovery only fixes the out-of-root safety boundary.\n\n## Avoidances\n\n1. Avoid building a full AST editing platform for every language.\n2. Avoid migrating this change to structured patch tooling or replacing Morph.\n3. Avoid changing OpenCode global configuration outside this repo.\n4. Avoid release automation redesign beyond what is needed for Bun lockfile/install consistency.\n\n## Out of Scope\n\n1. Replacing Morph Fast Apply with another edit engine.\n2. Publishing a release, creating tags, or changing package distribution outside source/workflow/docs alignment.\n3. New product commitments beyond fixing the improvement findings.\n4. Broad competitive benchmarking beyond using prior research as design context.\n\n## Preview Applicability\n\n`visual_surface: false`\n\nRationale: this change affects plugin/tool behavior, tests, CI, and documentation. It does not affect browser-visible UI or rendered visual output.\n\n## Decisions\n\n### User Decisions\n\n1. Question: What path input behavior should `morph_edit` allow after confinement?\n   - User choice: Defer to design.\n   - Why it matters: determines whether absolute paths inside the allowed root remain supported or project-relative paths become the only accepted form.\n\n2. Question: Which install/lockfile direction should this repo use?\n   - User choice: Bun lockfile.\n   - Why it matters: CI/release workflows currently use Bun frozen install while `bun.lock` is ignored.\n\n3. Question: Should this change update release notes/docs for the fixes?\n   - User choice: Docs + changelog.\n   - Why it matters: docs must reflect safety and workflow behavior without publishing or tagging a release.\n\n### Agent Decisions (LBP)\n\n1. Use OpenCode plugin `directory` and `worktree` context evidence as the design basis for path confinement.\n2. Use declaration-level import comparison rather than whole-file substring matching.\n3. Extract production helpers before adding direct behavior tests, so tests exercise the same logic the tool uses.\n4. Keep structured patch / FastEdit-style alternatives as future reference only; they are outside this Morph-preserving change.\n\n## Deferred Questions\n\n1. Deferred by user: exact behavior for absolute paths inside the allowed root. Design must decide between relative-only and absolute-inside-root support.\n\n## Sign-Off\n\nUser approved discovery criteria and agreement with reply: `approve`.",
+    "design": "# Design\n\n## Architecture Overview\n\nFix the improvement findings by turning the current monolithic plugin implementation into a small set of production-importable modules, then making `index.ts` the OpenCode plugin registration layer.\n\nCore shape:\n\n- `index.ts` remains the default OpenCode plugin export and TUI `tool.execute.after` hook owner.\n- New local modules hold pure/testable behavior:\n  - `src/constants.ts` — marker string, version/model/env constants where practical.\n  - `src/path-confinement.ts` — root selection and canonical target path resolution.\n  - `src/imports.ts` — declaration-level import extraction and dropped-import detection.\n  - `src/morph-api.ts` — Morph Apply API request/timeout/error handling.\n  - `src/execute.ts` — `executeMorphEdit` orchestration with injected dependencies.\n  - `src/diff.ts` or equivalent — unified diff/stat helpers if extraction keeps locality clear.\n- Tests import production modules instead of duplicating helper implementations.\n- CI/release switch to a Bun-only lockfile policy: unignore and commit `bun.lock`; remove stale `package-lock.json` unless implementation-time evidence shows package distribution requires it.\n\nThis design preserves `morph_edit` and Morph Fast Apply while moving correctness checks to deterministic boundaries: path confinement, import declaration comparison, dependency injection, and typed failure classification.\n\n## Key Decisions\n\n### 1. Use `context.worktree ?? context.directory` as allowed edit root\n\nOpenCode custom tool docs show `execute(args, context)` receives `directory` and `worktree`. The resolver should prefer `context.worktree` when present, then `context.directory`. The plugin init `directory` may remain a fallback only if execute context lacks both, but it must not be the primary confinement source.\n\nRationale:\n\n- `worktree` is the safest root for isolated edits.\n- `directory` is documented tool execution context.\n- The current implementation uses plugin init `directory` and accepts absolute paths unchanged.\n\nDesign choice for deferred path behavior: allow absolute paths only when canonicalized inside the allowed root; reject all out-of-root paths. This preserves compatibility while satisfying the approved safety boundary.\n\n### 2. Path confinement before any read or write\n\nAll file access flows through a resolver:\n\n1. Determine root: `context.worktree ?? context.directory ?? pluginDirectory`.\n2. Canonicalize root with `path.resolve` and, where available, `realpath`.\n3. Resolve target:\n   - relative input: `path.resolve(root, target_filepath)`\n   - absolute input: `path.resolve(target_filepath)`\n4. Verify containment: `resolved === root || resolved.startsWith(root + path.sep)` after canonicalization.\n5. For existing targets, verify realpath containment.\n6. For new targets, verify the nearest existing parent directory realpath is inside root.\n7. Only then call `Bun.file`, `file.exists`, or `Bun.write`.\n\nOut-of-root errors must be returned before API-key checks, file reads, API calls, or writes.\n\n### 3. Declaration-level import preservation, not substring matching\n\nReplace `findDroppedIdentifiers` substring behavior with declaration comparison:\n\n- Parse supported import/require/include/use/using forms into stable declaration entries.\n- Entry should include local binding plus enough declaration context to distinguish imports from incidental usage.\n- Compare original declaration entries to merged declaration entries.\n- Return dropped local bindings when original required imports are absent from merged import declarations.\n\nThis deliberately remains declaration-level parsing, not a full AST platform.\n\n### 4. Extract executable behavior behind injected dependencies\n\nCreate `executeMorphEdit(args, runtime)` with injected dependencies for:\n\n- file read/write/existence/realpath\n- Morph API call\n- logger\n- current time/duration measurement\n- OpenCode execution context\n- environment/config values\n\nThe OpenCode tool wrapper should be thin: normalize args, pass context/runtime, return the result string.\n\nThis enables no-network unit tests for missing API key, readonly block, missing marker refusal, guard refusals, and successful write/diff flow.\n\n### 5. Keep Morph API timeout active through body parsing\n\nCurrent timeout clears after response headers. Move timeout scope so it covers fetch, error body read, and JSON body parse. Return typed failure kinds for timeout, HTTP error, malformed response, empty response, and network error.\n\n### 6. Non-secret failure classification\n\nIntroduce stable failure kind strings, for example:\n\n- `path_outside_root`\n- `readonly_agent_blocked`\n- `missing_api_key`\n- `file_not_found_with_markers`\n- `missing_markers`\n- `morph_api_failed`\n- `marker_leakage`\n- `catastrophic_truncation`\n- `dropped_imports`\n- `write_failed`\n\nReturned text can stay user-friendly; logs/metadata should include failure kind and safe target display path. Never include `MORPH_API_KEY`, bearer tokens, or raw authorization headers.\n\n### 7. Bun-only lockfile policy\n\nUser chose Bun lockfile. Design consequence:\n\n- Remove `bun.lock` from `.gitignore`.\n- Generate and commit `bun.lock`.\n- Use `bun ci` in CI/release for explicit frozen-lockfile intent; `bun install --frozen-lockfile` is equivalent but Bun docs recommend `bun ci` for CI/CD.\n- Remove `package-lock.json` unless implementation-time evidence shows it is needed. Avoid dual authoritative lockfiles.\n\n### 8. Documentation + changelog update, no release\n\nUpdate README/instructions/changelog to document current behavior and safety guarantees. Fix or relabel the stale `#v1.8.2` README pin. Add a changelog entry for unreleased changes or the next planned version without tagging/publishing.\n\n## ADR Drafts\n\nNo ADR draft required.\n\nRationale: decisions are important but not all three ADR criteria are met. They are local package implementation choices, not hard-to-reverse platform commitments with broad consumer impact.\n\n## Implementation Strategy\n\nSequence matters:\n\n1. Add module seams first without behavior change.\n   - Move constants/diff/normalization/import helpers into importable modules.\n   - Update tests to import production helpers.\n   - Preserve current test pass before behavior changes where feasible.\n\n2. Add path-confinement tests and resolver.\n   - Start RED for absolute out-of-root, `../` escape, and symlink/parent-realpath case where supported.\n   - Implement resolver and route both new-file and existing-file paths through it.\n   - Keep allowed absolute-inside-root support only after containment passes.\n\n3. Replace import guard.\n   - Add RED test: imported binding removed while identifier remains used elsewhere.\n   - Implement declaration-level comparison.\n   - Keep existing language coverage already represented by tests.\n\n4. Extract execute orchestration.\n   - Introduce injected runtime/dependency object.\n   - Add no-network tests for agreement AC4 cases.\n   - Keep OpenCode tool wrapper thin and stable.\n\n5. Improve Morph API timeout and failure kinds.\n   - Ensure timeout wraps body parsing.\n   - Add safe failure-kind metadata/logging.\n   - Add tests for secret non-leakage where practical.\n\n6. Align Bun lockfile/workflows.\n   - Remove `bun.lock` ignore rule.\n   - Generate/commit `bun.lock`.\n   - Switch workflow install steps to `bun ci`.\n   - Remove `package-lock.json` unless evidence supports keeping both.\n\n7. Update docs and changelog.\n   - Fix stale README pin.\n   - Document confinement behavior, fallback guidance, and lockfile policy if relevant.\n   - Add changelog entry; do not tag or publish.\n\n8. Verify.\n   - Run `bun test`.\n   - Run `tsc --noEmit` or repo-approved equivalent after dependency install.\n\n## LBP Analysis\n\n- Path confinement through canonical root resolution is the long-term safe boundary. It avoids relying on LLM behavior or caller discipline.\n- Declaration-level import comparison is the minimum structural correctness needed for the known Morph failure mode without crossing the explicit avoidance against a full AST editing platform.\n- Dependency-injected execution logic is the simplest way to test tool behavior without real Morph calls or filesystem side effects.\n- Bun-only lockfile policy matches the user's choice and Bun's documented reproducible install flow.\n- Keeping structured patch / FastEdit alternatives as future reference respects the product boundary: this package is a Morph Fast Apply plugin, not a replacement edit engine.\n\n## Affected Components\n\n- `index.ts`: plugin registration, wrapper call into `executeMorphEdit`, TUI output metadata parsing.\n- `src/*`: new local modules for constants, path confinement, imports, Morph API, execute orchestration, diff/stat helpers.\n- `index.test.ts` and/or new colocated test files: direct production-helper and execute-path tests.\n- `.gitignore`: remove `bun.lock` ignore.\n- `bun.lock`: add committed Bun lockfile.\n- `package-lock.json`: remove unless implementation evidence says otherwise.\n- `.github/workflows/ci.yml`, `.github/workflows/release.yml`: use Bun lockfile install flow.\n- `README.md`, `instructions/morph-tools.md`, `CHANGELOG.md`: update guidance and notes.\n\n## Design-Derived Criteria\n\nThese are technical criteria derived from the chosen architecture; they do not add user-facing acceptance scope.\n\n1. No code path may call `Bun.file`, `file.exists`, `file.text`, or `Bun.write` for `target_filepath` until path confinement returns an allowed path.\n2. Path containment must check `resolved === root || resolved.startsWith(root + path.sep)`; plain string prefix without separator boundary is not sufficient.\n3. Existing targets must use realpath containment when available; new targets must realpath the nearest existing parent when available.\n4. Unit tests for `executeMorphEdit` must not perform real Morph network calls.\n5. Failure kind values must be stable enum-like strings and must not contain user secrets or raw API error authorization data.\n6. Import-preservation tests must include at least one case where the local binding still appears outside import declarations.\n7. Lockfile implementation must leave exactly one authoritative committed package-manager lockfile unless implementation evidence justifies an exception.\n\n## Risks / Mitigations\n\n- Risk: path confinement accidentally rejects legitimate in-root absolute paths.\n  - Mitigation: design allows absolute-inside-root after canonical containment; tests cover both reject and allow paths.\n\n- Risk: symlink handling creates complexity or TOCTOU false confidence.\n  - Mitigation: use best-effort realpath containment for existing paths and nearest existing parent; do not attempt full TOCTOU hardening beyond this package scope.\n\n- Risk: declaration parser misses uncommon import syntax.\n  - Mitigation: preserve existing covered syntax, add regression for known failure, and avoid claiming full language parsing.\n\n- Risk: module split over-fragments small package.\n  - Mitigation: split only around testable boundaries; keep OpenCode plugin wiring in `index.ts`.\n\n- Risk: removing `package-lock.json` surprises npm users.\n  - Mitigation: package consumers do not use repository lockfile; implementation may keep it only if evidence shows release/install process depends on it.\n\n- Risk: workflow change from `bun install --frozen-lockfile` to `bun ci` is cosmetic.\n  - Mitigation: correctness is committed `bun.lock`; `bun ci` is chosen for clearer CI intent per Bun docs.\n\n## Design Leverage Scout\n\nScout attempted with `adv-researcher` in design mode.\n\n- Candidates considered: 5 corrections / leverage points.\n- Auto-adopted: root precedence correction (`context.worktree ?? context.directory`), containment check shape (`resolved === root || startsWith(root + path.sep)`), best-effort realpath scope, explicit dual-lockfile policy, and lockfile task framing around committed `bun.lock`.\n- Surfaced to user: none; user already selected Bun lockfile and deferred path behavior to design.\n- Inconclusive/skipped: none blocking.\n\nScout result: VALIDATED. It cautioned that `bun ci` is equivalent to `bun install --frozen-lockfile`; design keeps `bun ci` for explicit CI semantics while treating committed `bun.lock` as the correctness requirement.\n\n## Validator Result\n\nValidator verdict: VALIDATED.\n\nFindings:\n\n- Correctness: path gap, import guard weakness, timeout gap, and lockfile contradiction are real in local source; design directly addresses them.\n- Simplicity: design uses simplest proven mechanisms: small module split, dependency injection for tests, canonical path containment, declaration-level import diff.\n- Spec-law compliance: no existing specs; no contradiction found.\n- Alternatives: no significant viable alternative overlooked. Structured patch/FastEdit alternatives remain out of scope by agreement.\n\nImplementation fidelity notes from validator:\n\n- Apply containment to the post-realpath path and nearest-existing-parent for new files to block symlinked-parent escape.\n- Source confinement root from per-call context (`worktree ?? directory`), not init-time closure `directory`.\n- Add sibling-prefix regression (`/root` vs `/rootEvil`) for separator-boundary containment where practical.\n\nRecommendation: proceed. Design preserves Morph, respects all constraints/avoidances, and has no unresolved conflict or contract-compromise risk.\n",
+    "executiveSummary": "# Executive Summary\n\n`fixImprovementFindings` closes the repo-wide improvement findings from `docs/repo-improve-prep.md` while preserving the `morph_edit` tool and Morph Fast Apply integration.\n\n## What Changed\n\n- Split production helper logic into importable `src/` modules and removed duplicated helper implementations from tests.\n- Added path confinement for `morph_edit` using per-call OpenCode `worktree` / `directory` context, canonical containment checks, and realpath/parent checks before any file read or write.\n- Replaced import-preservation substring checks with declaration-level import comparison.\n- Extracted `executeMorphEdit` behind injected dependencies and added no-network execution-path tests.\n- Extended Morph API failure handling with full-lifecycle timeout coverage, stable failure kinds, and secret scrubbing.\n- Switched the repo to a Bun lockfile policy with committed `bun.lock`, `bun ci` workflows, and no `package-lock.json`.\n- Updated README and CHANGELOG to reflect current version, safety behavior, and lockfile policy.\n- Acceptance reviewer hardening added additional import tests/cleanup and passed review.\n\n## Verification\n\n- `bun ci` passed.\n- `bun run ci` passed: `bun test` 120 pass, 0 fail, 222 expect calls; `tsc --noEmit` passed.\n- `git diff --check` passed.\n- Contract review matrix: 30/30 pass/respected/not-applicable; 0 failing rows.\n- Reviewer verdict: READY.\n\n## Remaining Concerns\n\nNone identified for the approved agreement scope.",
+    "acceptance": "# Acceptance\n\nReviewed at: 2026-06-07T00:14:36.358Z\n\n## Contract Review Matrix\n\n| ID | Kind | Requirement | Status | Evidence |\n|---|---|---|---|---|\n| SC1 | success_criterion | `morph_edit` refuses out-of-root writes with a clear error and no write. | pass | Path confinement implemented and verified by path safety tests; final `bun run ci` passed with 120 tests. |\n| SC2 | success_criterion | Import preservation detects removed required bindings even when identifiers still appear elsewhere. | pass | Declaration-level import guard tests pass; final `bun run ci` passed. |\n| SC3 | success_criterion | Tests exercise production helper code directly; no duplicated safety helper oracle remains. | pass | Tests import production helper modules; helper duplication scan/reviewer report READY. |\n| SC4 | success_criterion | `morph_edit` execution path has direct no-network test coverage. | pass | No-network execute tests included; final `bun run ci` passed. |\n| SC5 | success_criterion | CI/release install commands and committed lockfile policy match Bun. | pass | `bun.lock` committed, `package-lock.json` removed, workflows use `bun ci`; `bun ci` passed. |\n| SC6 | success_criterion | README/instructions/changelog reflect current behavior and version guidance. | pass | README/CHANGELOG updated; docs tests passed in final `bun run ci`. |\n| SC7 | success_criterion | Failure diagnostics include non-secret reason classification. | pass | Secret scrubbing/failure kind tests pass; lgrep scan found only env names/placeholders/test tokens. |\n| SC8 | success_criterion | Repo-approved tests and typecheck pass after dependencies are installed. | pass | Final `bun run ci` passed: 120 pass, 0 fail, 222 expect calls; `tsc --noEmit` passed. |\n| AC1 | acceptance_criterion | Out-of-root path test passes: no file written, error returned. | pass | Path safety tests pass in final suite. |\n| AC2 | acceptance_criterion | Import-removal test passes when identifier remains used elsewhere but import binding is gone. | pass | Import-removal regression passes in final suite. |\n| AC3 | acceptance_criterion | Static/test check proves `index.test.ts` no longer copies import-extraction or dropped-import helper bodies. | pass | Reviewer helper duplication scan: production helper definitions only; tests import src helpers. |\n| AC4 | acceptance_criterion | Execute-path tests cover missing API key, readonly block, missing markers, unsafe Morph output, and mocked success. | pass | No-network execute tests pass in final suite. |\n| AC5 | acceptance_criterion | Bun workflow uses committed `bun.lock`; `.gitignore` no longer blocks it. | pass | `.gitignore` no longer blocks `bun.lock`; workflows use `bun ci`; `bun.lock` present; `package-lock.json` removed. |\n| AC6 | acceptance_criterion | README stale `#v1.8.2` pin is fixed or clearly labeled historical. | pass | README pin tests pass; README uses v1.9.0 / no stale v1.8.2. |\n| AC7 | acceptance_criterion | Logs/errors never include `MORPH_API_KEY` or bearer token values. | pass | Secret scrubbing tests pass; scan found only fake placeholders and env var names. |\n| AC8 | acceptance_criterion | Final verification includes passing `bun test` and `tsc --noEmit` or approved equivalent. | pass | Final `bun run ci` and `bun ci` both passed. |\n| C1 | constraint | Do not replace Morph Fast Apply or remove the `morph_edit` tool. | respected | `morph_edit` tool and Morph API integration preserved in index.ts/reviewer READY. |\n| C2 | constraint | Do not weaken existing marker leakage, truncation, or dropped-import guard behavior. | respected | Marker leakage, truncation, dropped-import tests pass in final suite. |\n| C3 | constraint | Do not expose secrets in logs, tests, diffs, or errors. | respected | Secret scan found only env names/placeholders/test tokens; scrubbing tests pass. |\n| C4 | constraint | Do not create release tags or publish packages. | respected | No release/tag/publish commands run; only source/docs/workflows changed. |\n| C5 | constraint | Do not expand into unrelated feature work. | respected | Changes limited to improvement findings: source helpers, tests, lockfile/workflows, docs. |\n| C6 | constraint | Defer exact behavior for absolute paths inside the allowed root to design; discovery only fixes the out-of-root safety boundary. | respected | Design resolved absolute-inside-root behavior; implementation allows only canonicalized in-root absolute paths and rejects out-of-root. |\n| DONT1 | avoidance | Avoid building a full AST editing platform for every language. | respected | Morph Fast Apply and `morph_edit` retained. |\n| DONT2 | avoidance | Avoid migrating this change to structured patch tooling or replacing Morph. | respected | No structured patch migration; declaration-level parser only, no full AST editing platform. |\n| DONT3 | avoidance | Avoid changing OpenCode global configuration outside this repo. | respected | No OpenCode global config files changed. |\n| DONT4 | avoidance | Avoid release automation redesign beyond what is needed for Bun lockfile/install consistency. | respected | Release workflow only install command changed for Bun lockfile consistency; no redesign beyond scope. |\n| OOS1 | out_of_scope | Replacing Morph Fast Apply with another edit engine. | not_applicable | Morph replacement not attempted. |\n| OOS2 | out_of_scope | Publishing a release, creating tags, or changing package distribution outside source/workflow/docs alignment. | not_applicable | No publish/tag/distribution action performed. |\n| OOS3 | out_of_scope | New product commitments beyond fixing the improvement findings. | not_applicable | No new product commitments added. |\n| OOS4 | out_of_scope | Broad competitive benchmarking beyond using prior research as design context. | not_applicable | No broad competitive benchmark performed. |\n\n"
+  },
+  "artifacts": {
+    "proposal": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/proposal.md",
+      "updatedAt": "2026-06-06T22:42:16.571Z",
+      "contentHash": "f297182655808e5d643fd06fc0ec3fdade7f267a56ad3c7bab3e8ec4d4d553d3"
+    },
+    "problemStatement": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/problem-statement.md",
+      "updatedAt": "2026-06-06T22:35:20.502Z",
+      "contentHash": "2a0e6d2091d786ae859894460fc6b94735a609211abaa49f4fa800db1622835e"
+    },
+    "agreement": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/agreement.md",
+      "updatedAt": "2026-06-06T22:49:15.229Z",
+      "contentHash": "c822923c41f6788fedd062a275f3cf5a0040cf08afc8375b344a6decd3f0eb57"
+    },
+    "design": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/design.md",
+      "updatedAt": "2026-06-06T23:07:35.354Z",
+      "contentHash": "66e963deeef33a4ee97579ade245dcb36d0fbc65692912c5368bf26271b143db"
+    },
+    "executiveSummary": {
+      "path": "/home/jon/.local/share/opencode-projects/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/opencode/plugins/advance/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/changes/fixImprovementFindings/executive-summary.md",
+      "updatedAt": "2026-06-07T00:15:03.199Z",
+      "contentHash": "7078017ef7a4cd70c1f0c72d146b195f7e18e5d5f3d7ad5af22a5b7aba213edb"
+    }
+  },
+  "lastSignalAt": "2026-06-07T00:16:03.954Z",
+  "adv_project_id": "a4b8e1b703f8294bb83a820749df6ec98b9a5f61",
+  "worktree_auto_managed": true
+}
