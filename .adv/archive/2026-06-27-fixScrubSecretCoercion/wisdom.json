@@ -1,0 +1,12 @@
+{
+  "entries": [
+    {
+      "id": "ws-ISG1_i",
+      "type": "gotcha",
+      "content": "Fresh ADV worktrees may not have ignored dependencies installed; `bun test` can fail with missing package errors (e.g. `Cannot find package 'diff'`) until `bun install` runs in the worktree. Classify as environment setup before treating test output as product RED/GREEN evidence.",
+      "source_task": "tk-3613996b3ef9",
+      "recorded_at": "2026-06-27T23:20:12.331Z"
+    }
+  ],
+  "count": 1
+}

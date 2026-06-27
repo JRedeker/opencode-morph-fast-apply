@@ -1,0 +1,1407 @@
+{
+  "id": "fixScrubSecretCoercion",
+  "title": "Fix scrub secret coercion",
+  "status": "archived",
+  "lifecycleState": "open",
+  "created_at": "2026-06-27T22:52:51.983Z",
+  "tasks": [
+    {
+      "id": "tk-81646c464654",
+      "title": "Add failing regression coverage for scrubSecrets and key-config docs",
+      "type": "code",
+      "section": "Testing",
+      "status": "done",
+      "priority": 0,
+      "created_at": "2026-06-27T23:08:09.281Z",
+      "deps": [],
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "implements": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9",
+          "AC10",
+          "AC11",
+          "AC12",
+          "AC13",
+          "AC14",
+          "AC15",
+          "AC16",
+          "AC17",
+          "AC18",
+          "AC19",
+          "AC20",
+          "AC21",
+          "AC22",
+          "AC23",
+          "AC24"
+        ],
+        "verifies": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9",
+          "AC10",
+          "AC11",
+          "AC12",
+          "AC13",
+          "AC14",
+          "AC15",
+          "AC16",
+          "AC17",
+          "AC18",
+          "AC19",
+          "AC20",
+          "AC21",
+          "AC22",
+          "AC23",
+          "AC24"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5"
+        ],
+        "not_applicable_reason": ""
+      },
+      "evidence_policy": "test",
+      "assignedTo": "agent",
+      "started_at": "2026-06-27T23:14:03.009Z",
+      "verification": "RED evidence: adv_run_test tr_mqwza2ka_9fc4fa7f ran `bun test index.test.ts`; failed on new scrubSecrets non-string/docs regressions as expected after dependency setup.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Extended index.test.ts with README assertions for OpenCode process environment/restart guidance and scrubSecrets regressions for Error, nullish, number, non-string apiKey no-coercion, and combined explicit-key + Bearer redaction. Recorded RED evidence with bun test index.test.ts failing on new cases.",
+      "filesTouched": [
+        "index.test.ts"
+      ],
+      "touched_files": [
+        "index.test.ts"
+      ],
+      "checkpointSha": "b035f49f336e8f2b8802c81afcccde2b9e3f87aa",
+      "completedAt": "2026-06-27T23:15:42.090Z",
+      "completed_at": "2026-06-27T23:15:42.090Z",
+      "notes": "Added RED regression coverage for scrubSecrets runtime coercion and README key-process guidance. Red test failed as expected on current implementation/docs after dependency setup.",
+      "error_recovery": {
+        "last_error": "Initial red test could not load dependency `diff` because worktree dependencies were absent.",
+        "retry_count": 1,
+        "max_retries": 3,
+        "error_class": "ENVIRONMENTAL",
+        "next_strategy": "Dependencies installed with `bun install`; rerun produced expected RED failures.",
+        "attempts": [
+          {
+            "attempt_number": 1,
+            "error": "Cannot find package 'diff' from worktree src/diff.ts",
+            "diagnosis": "New ADV worktree did not have dependencies installed.",
+            "fix_tried": "Ran `bun install` in worktree.",
+            "strategy_label": "install-worktree-dependencies",
+            "outcome": "succeeded",
+            "attempted_at": "2026-06-27T23:15:00.000Z"
+          }
+        ]
+      },
+      "updatedAt": "2026-06-27T23:16:02.718Z"
+    },
+    {
+      "id": "tk-6771b40f4243",
+      "title": "Implement total scrubSecrets normalization and caller audit",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 1,
+      "created_at": "2026-06-27T23:08:29.203Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-81646c464654"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9",
+          "AC10",
+          "AC11",
+          "AC12",
+          "AC13",
+          "AC14",
+          "AC15",
+          "AC16",
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5"
+        ],
+        "verifies": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9",
+          "AC10",
+          "AC11",
+          "AC12",
+          "AC13",
+          "AC14",
+          "AC15",
+          "AC16"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5",
+          "OOS1",
+          "OOS2",
+          "OOS3",
+          "OOS4"
+        ],
+        "not_applicable_reason": ""
+      },
+      "evidence_policy": "test",
+      "assignedTo": "agent",
+      "started_at": "2026-06-27T23:16:21.601Z",
+      "verification": "GREEN evidence: adv_run_test tr_mqwzbxiy_4c5fb25d ran `bun test index.test.ts -t scrubSecrets`; 7 scrubSecrets tests passed.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Changed scrubSecrets signature to `(message: unknown, apiKey?: unknown): string`; normalizes strings, Error.message, null/undefined, and other values before string operations; redacts explicit API keys only when apiKey is a non-empty string; preserved Bearer token regex and callers. Targeted scrubSecrets tests pass.",
+      "filesTouched": [
+        "index.ts"
+      ],
+      "touched_files": [
+        "index.ts"
+      ],
+      "checkpointSha": "e6c3ecfc308e99eed2b2e9258f49aa4a95a3f0ed",
+      "completedAt": "2026-06-27T23:17:05.334Z",
+      "completed_at": "2026-06-27T23:17:05.334Z",
+      "notes": "Implemented total runtime normalization for scrubSecrets and verified scrubSecrets regressions green.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-27T23:17:21.051Z"
+    },
+    {
+      "id": "tk-69ea289aeab6",
+      "title": "Clarify Morph API key setup documentation",
+      "type": "docs",
+      "section": "Documentation",
+      "status": "done",
+      "priority": 2,
+      "created_at": "2026-06-27T23:08:49.073Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-81646c464654"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "not_applicable"
+      },
+      "contract_refs": {
+        "implements": [
+          "AC17",
+          "AC18",
+          "AC19",
+          "AC20",
+          "AC21",
+          "AC22",
+          "AC23",
+          "AC24"
+        ],
+        "verifies": [
+          "AC17",
+          "AC18",
+          "AC19",
+          "AC20",
+          "AC21",
+          "AC22",
+          "AC23",
+          "AC24"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5",
+          "OOS1",
+          "OOS2",
+          "OOS3",
+          "OOS4"
+        ],
+        "not_applicable_reason": ""
+      },
+      "evidence_policy": "static_check",
+      "assignedTo": "agent",
+      "started_at": "2026-06-27T23:17:39.327Z",
+      "verification": "Docs verification: adv_run_test tr_mqwzdmem_e2ff5b2c ran `bun test index.test.ts -t \"packaged tool-selection instructions\"`; 4 docs/instruction tests passed.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Updated README to state MORPH_API_KEY must be present in the environment that starts OpenCode, that the plugin reads it from the OpenCode process environment at load time, and that already-running sessions need OpenCode restart after key changes. Targeted docs tests pass.",
+      "filesTouched": [
+        "README.md"
+      ],
+      "touched_files": [
+        "README.md"
+      ],
+      "checkpointSha": "0c1517ec28543a150244296dc3fe6385ffdf2ea6",
+      "completedAt": "2026-06-27T23:18:24.032Z",
+      "completed_at": "2026-06-27T23:18:24.032Z",
+      "notes": "Clarified README Morph key setup and verified docs tests.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-27T23:18:38.447Z"
+    },
+    {
+      "id": "tk-3613996b3ef9",
+      "title": "Run full verification for scrubSecrets/config fix",
+      "type": "verification",
+      "section": "Verification",
+      "status": "done",
+      "priority": 3,
+      "created_at": "2026-06-27T23:09:05.874Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-6771b40f4243"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-69ea289aeab6"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "implements": [],
+        "verifies": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9",
+          "AC10",
+          "AC11",
+          "AC12",
+          "AC13",
+          "AC14",
+          "AC15",
+          "AC16",
+          "AC17",
+          "AC18",
+          "AC19",
+          "AC20",
+          "AC21",
+          "AC22",
+          "AC23",
+          "AC24",
+          "AC25",
+          "AC26",
+          "AC27",
+          "AC28",
+          "AC29"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5",
+          "OOS1",
+          "OOS2",
+          "OOS3",
+          "OOS4"
+        ],
+        "not_applicable_reason": ""
+      },
+      "evidence_policy": "test",
+      "assignedTo": "agent",
+      "started_at": "2026-06-27T23:19:04.209Z",
+      "verification": "Acceptance reviewer remediation verified by adv-reviewer: scrubSecrets targeted 8 tests pass, docs targeted 4 tests pass, bun run typecheck pass, full bun test 130 pass. Diff inspected: index.ts unstringifiable fallback, index.test.ts regression, src/constants.ts comment.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Verified targeted scrubSecrets regressions, targeted README/instruction docs assertions, full Bun test suite, and TypeScript typecheck. Acceptance review added safe fallback for unstringifiable message values, a regression test, and constants comment clarification; reviewer reported scrubSecrets 8 tests pass, docs 4 tests pass, typecheck pass, and full bun test 130 pass. Remediation committed in checkpoint 18419c11e983c6625962cd1cbeb2c0735c8e6f6b.",
+      "filesTouched": [
+        "index.test.ts",
+        "index.ts",
+        "src/constants.ts"
+      ],
+      "touched_files": [
+        "index.test.ts",
+        "index.ts",
+        "src/constants.ts"
+      ],
+      "checkpointSha": "18419c11e983c6625962cd1cbeb2c0735c8e6f6b",
+      "completedAt": "2026-06-27T23:26:42.332Z",
+      "completed_at": "2026-06-27T23:26:42.332Z",
+      "notes": "Final verification passed; acceptance reviewer added unstringifiable-value hardening/test and reran verification successfully.",
+      "error_recovery": {
+        "last_error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "error_class": "TRANSIENT",
+        "next_strategy": "",
+        "attempts": []
+      },
+      "updatedAt": "2026-06-27T23:26:58.936Z"
+    }
+  ],
+  "subagent_reports": [
+    {
+      "schema_version": "1.0",
+      "change_id": "fixScrubSecretCoercion",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:design-validation"
+      },
+      "agent": "adv-researcher",
+      "topic": "Validate scrubSecrets runtime-coercion fix + Morph API key config design",
+      "sources": [
+        {
+          "label": "Morph Fast Apply API docs (Context7 /websites/morphllm, quickstart + api-reference)",
+          "locator": "https://docs.morphllm.com/quickstart",
+          "summary": "Confirms POST https://api.morphllm.com/v1/chat/completions, header Authorization: Bearer $MORPH_API_KEY, model morph-v3-fast (also morph-v3-large, auto), OpenAI-compatible response choices[0].message.content. Matches local index.ts:100-104 and constants.ts defaults exactly."
+        },
+        {
+          "label": "Local source index.ts (scrubSecrets + call sites)",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts:42-53,124-127,184-187",
+          "summary": "Current scrubSecrets(message:string, apiKey?:string) calls result.split/replace with no runtime normalization — throws on non-string. Call sites at 124 and 184 already pass formatted strings; widening to unknown is backward-compatible."
+        },
+        {
+          "label": "Local source src/constants.ts + src/execute.ts",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/src/constants.ts:22-25; src/execute.ts:175",
+          "summary": "constants read process.env.MORPH_API_KEY/MORPH_API_URL(default https://api.morphllm.com)/MORPH_MODEL(default morph-v3-fast) at module load. execute.ts:175 passes (result.error || 'unknown error') string — already safe."
+        },
+        {
+          "label": "Local tests index.test.ts scrubSecrets block + README setup",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.test.ts:1369-1390; README.md:83-93",
+          "summary": "Existing tests cover string-key redaction, Bearer redaction, unchanged-text only. README:88 says export MORPH_API_KEY then README:91 Restart OpenCode — env-in-process + restart guidance already partially present, design extends it."
+        }
+      ],
+      "architecture_assessment": "Design is sound and minimal. Treating scrubSecrets as an untrusted runtime boundary (P33 structural-correctness) is the by-the-book fix: total/deterministic over all JS values rather than relying on caller discipline. Normalization order is correct: string passthrough; Error instanceof -> .message; null/undefined via (message ?? '') -> ''; else String(value). All four AC cases (Error->'boom', undefined->'', null->'', 123->'123') hold. apiKey guard (typeof apiKey === 'string' && length>0) prevents non-string coercion and accidental redaction, satisfying AC5. Bearer regex unchanged preserves AC3. Combined redaction works because explicit split/join runs first then Bearer regex on same result (AC4). Widening signature to (unknown, unknown)->string is backward-compatible for both existing string call sites (no typecheck break). Config design matches Morph docs verbatim — no code change needed there, only README clarification, correctly preferred over adding a new config mechanism (constraint honored). process.env-in-plugin-process + restart/reload guidance is standard Node semantics: module-load-time reads (constants.ts:22) cannot see env mutations in already-running processes.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "No blockers. Minor non-blocking notes: (1) String(Symbol()) throws TypeError — extremely unlikely as a log/error message input but the only JS value that defeats String(); design's Error/null/undefined/string branches cover all realistic runtime inputs, so acceptable, optionally note in code comment. (2) Edge: if apiKey substring overlaps a Bearer token, explicit redaction runs first; AC only requires both secrets gone, which still holds. (3) Recommend a test asserting scrubSecrets(message, 12345) (number key) does not redact the literal '12345' substring if present, to lock AC5's no-coercion clause beyond just not-throwing."
+      },
+      "recommendation": "Proceed to design gate. Design is source-backed, structurally correct, backward-compatible, and minimal. Config claims match Morph docs exactly — keep code as-is, update README only. Suggest two small test additions during planning: (a) non-string apiKey with a coercible-collision value to lock the no-accidental-redaction clause; (b) optionally a code comment noting Symbol input is out of realistic scope. No contract-compromise risks identified.",
+      "follow_ups": [
+        "Planning: add regression test for non-string apiKey that would collide if coerced (e.g. number 12345 in a message containing '12345'), asserting no redaction.",
+        "Optional: code comment that String() normalization assumes non-Symbol inputs (Symbol would throw, not a realistic error/log value)."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixScrubSecretCoercion",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixScrubSecretCoercion",
+      "scope": {
+        "kind": "change",
+        "scope_key": "review:acceptance"
+      },
+      "agent": "adv-reviewer",
+      "phase": "review",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [],
+      "changes_made": [
+        {
+          "file": "index.ts",
+          "summary": "Hardened scrubSecrets fallback normalization with try/catch so unstringifiable non-string message values return an empty safe string instead of throwing before redaction logic can run.",
+          "verification": "bun test index.test.ts -t scrubSecrets passed: 8 scrubSecrets tests, including unstringifiable object regression."
+        },
+        {
+          "file": "index.test.ts",
+          "summary": "Added regression coverage for unstringifiable message values to lock scrubSecrets as a total boundary for hostile or malformed runtime inputs.",
+          "verification": "bun test index.test.ts -t scrubSecrets passed: 8 tests; full bun test passed: 130 tests."
+        },
+        {
+          "file": "src/constants.ts",
+          "summary": "Updated stale API-key environment comment from old mcpm/jarvis wording to OpenCode/plugin process environment, matching README and implementation boundary.",
+          "verification": "bun run typecheck passed; README/docs assertions passed."
+        }
+      ],
+      "wisdom_candidates": [
+        {
+          "type": "pattern",
+          "content": "For secret-scrubbing/error-boundary helpers that accept unknown runtime values, handle stringification failures explicitly; String(value) can still execute user-defined conversion hooks, so a catch-and-safe-default keeps error reporting from throwing before redaction."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "bun test index.test.ts -t scrubSecrets",
+          "bun test index.test.ts -t \"packaged tool-selection instructions\"",
+          "bun run typecheck",
+          "bun test"
+        ],
+        "results": "pass",
+        "evidence": "Path preflight OK for index.ts, index.test.ts, README.md. Context7 Morph docs confirm Authorization: Bearer $MORPH_API_KEY, https://api.morphllm.com/v1/chat/completions, and morph-v3-fast. Targeted scrubSecrets tests passed: 8 pass / 122 filtered. README packaged instruction tests passed: 4 pass / 126 filtered. Typecheck passed (tsc --noEmit). Full bun test passed: 130 pass / 0 fail."
+      },
+      "scope_drift": null,
+      "risks": [
+        "Reviewer remediation is present as uncommitted worktree modifications; orchestrator must include index.ts, index.test.ts, and src/constants.ts before final acceptance/release."
+      ],
+      "required_main_agent_actions": [
+        "Review and include reviewer remediation in the final change diff: index.ts, index.test.ts, src/constants.ts.",
+        "Proceed with acceptance if orchestrator accepts the added total-boundary hardening evidence."
+      ],
+      "required_follow_ups": [],
+      "consumer_warnings": []
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "fixScrubSecretCoercion",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/fixScrubSecretCoercion",
+      "scope": {
+        "kind": "change",
+        "scope_key": "harden:release"
+      },
+      "agent": "adv-reviewer",
+      "phase": "harden",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [],
+      "changes_made": [],
+      "wisdom_candidates": [],
+      "verification": {
+        "tests_run": [
+          "test -e 'index.ts' && printf 'index.ts OK\\n' || printf 'index.ts MISSING\\n'; test -e 'index.test.ts' && printf 'index.test.ts OK\\n' || printf 'index.test.ts MISSING\\n'; test -e 'README.md' && printf 'README.md OK\\n' || printf 'README.md MISSING\\n'; test -e 'src/constants.ts' && printf 'src/constants.ts OK\\n' || printf 'src/constants.ts MISSING\\n'",
+          "git status --short && git diff --stat origin/trunk...HEAD -- index.ts index.test.ts README.md src/constants.ts && git diff --name-only origin/trunk...HEAD -- index.ts index.test.ts README.md src/constants.ts",
+          "bun test index.test.ts -t 'scrubSecrets|README documents Morph key process environment setup'",
+          "git status --short"
+        ],
+        "results": "pass",
+        "evidence": "Path preflight OK for index.ts, index.test.ts, README.md, src/constants.ts. Worktree status clean before/after verification. Scoped branch diff vs origin/trunk contains only README.md, index.test.ts, index.ts, src/constants.ts with 71 insertions/6 deletions. Narrow Bun verification passed: 9 pass, 121 filtered out, 0 fail, 18 expect calls."
+      },
+      "scope_drift": null,
+      "risks": [],
+      "required_main_agent_actions": [],
+      "required_follow_ups": [],
+      "consumer_warnings": []
+    }
+  ],
+  "deltas": {},
+  "wisdom": [
+    {
+      "id": "ws-ISG1_i",
+      "type": "gotcha",
+      "content": "Fresh ADV worktrees may not have ignored dependencies installed; `bun test` can fail with missing package errors (e.g. `Cannot find package 'diff'`) until `bun install` runs in the worktree. Classify as environment setup before treating test output as product RED/GREEN evidence.",
+      "source_task": "tk-3613996b3ef9",
+      "recorded_at": "2026-06-27T23:20:12.331Z"
+    }
+  ],
+  "gates": {
+    "proposal": {
+      "status": "done",
+      "completed_at": "2026-06-27T23:01:53.457Z",
+      "completed_by": "user",
+      "approval_evidence": "User approved revised proposal after scope addition: \"approve\".",
+      "artifact_evidence": {
+        "kind": "proposal",
+        "content_hash": "ff4d022be143e32ccaacda593778a0f566eb39053c2156129d247877448215ef",
+        "non_whitespace_chars": 4462,
+        "checked_at": "2026-06-27T22:52:52.024Z"
+      }
+    },
+    "discovery": {
+      "status": "done",
+      "started_at": "2026-06-27T23:03:25.750Z",
+      "completed_at": "2026-06-27T23:03:43.129Z",
+      "completed_by": "user",
+      "approval_evidence": "User approved agreement/acceptance criteria: \"approve\". Typed contract minted from approved agreement.",
+      "artifact_evidence": {
+        "kind": "agreement",
+        "content_hash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "non_whitespace_chars": 3252,
+        "checked_at": "2026-06-27T22:52:52.025Z"
+      }
+    },
+    "design": {
+      "status": "done",
+      "completed_at": "2026-06-27T23:07:19.992Z",
+      "completed_by": "agent",
+      "approval_evidence": "Design artifact persisted. Independent adv-researcher validator returned pass/VALIDATED with no blockers, no contract-compromise risks, and can proceed to design gate.",
+      "artifact_evidence": {
+        "kind": "design",
+        "content_hash": "da0cdd633f66bd4657ca8b881d85c6523d6b2b4aa0e096bff41a63776f01b833",
+        "non_whitespace_chars": 2996,
+        "checked_at": "2026-06-27T22:52:52.026Z"
+      }
+    },
+    "planning": {
+      "status": "done",
+      "completed_at": "2026-06-27T23:13:24.822Z",
+      "completed_by": "user",
+      "approval_evidence": "User approved prep task graph: \"approve\"."
+    },
+    "execution": {
+      "status": "done",
+      "completed_at": "2026-06-27T23:20:30.030Z",
+      "completed_by": "agent",
+      "approval_evidence": "All 4 prep tasks completed. Final verification passed: targeted scrubSecrets, targeted docs assertions, full bun test (129 pass), and bun run typecheck."
+    },
+    "acceptance": {
+      "status": "done",
+      "completed_at": "2026-06-27T23:31:15.645Z",
+      "completed_by": "user",
+      "approval_evidence": "User accepted delivered work: \"approve\". Reviewer verdict READY; contract review matrix all pass/respected; executive summary persisted.",
+      "artifact_evidence": {
+        "kind": "acceptance",
+        "content_hash": "1423e0baa581d8f4c581f4d4af378dc1de90827f76d889e7536e4d8fd04699ef",
+        "non_whitespace_chars": 1195,
+        "checked_at": "2026-06-27T22:52:52.027Z"
+      }
+    },
+    "release": {
+      "status": "pending"
+    }
+  },
+  "reentry_history": [
+    {
+      "from_gate": "proposal",
+      "reason": "User added explicit scope requirement after proposal approval: verify Morph API key configuration remains correct or update method/instructions if needed.",
+      "scope_delta": "Add configuration/instructions audit for Morph API key handling, including README/instructions/constants checks and source-backed verification of current Morph authentication expectations.",
+      "reopened_by": "agent",
+      "reopened_at": "2026-06-27T22:57:10.471Z",
+      "gates_reset": [
+        "proposal",
+        "discovery",
+        "design",
+        "planning",
+        "execution",
+        "acceptance",
+        "release"
+      ]
+    }
+  ],
+  "origin": {
+    "kind": "adhoc"
+  },
+  "contract": {
+    "version": 1,
+    "rigor": "standard",
+    "source": {
+      "artifact": "agreement",
+      "contentHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+      "approvedAt": "2026-06-27T23:03:35.003Z"
+    },
+    "items": [
+      {
+        "id": "AC1",
+        "kind": "acceptance_criterion",
+        "text": "Non-string message inputs do not throw:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC2",
+        "kind": "acceptance_criterion",
+        "text": "`scrubSecrets(new Error(\"boom\"))` returns `\"boom\"`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC3",
+        "kind": "acceptance_criterion",
+        "text": "`scrubSecrets(undefined)` returns `\"\"`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC4",
+        "kind": "acceptance_criterion",
+        "text": "`scrubSecrets(null)` returns `\"\"`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC5",
+        "kind": "acceptance_criterion",
+        "text": "`scrubSecrets(123)` returns `\"123\"`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC6",
+        "kind": "acceptance_criterion",
+        "text": "Explicit API-key redaction remains correct:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC7",
+        "kind": "acceptance_criterion",
+        "text": "Given message `\"token sk-test-value\"` and API key `\"sk-test-value\"`, returned string contains `\"***REDACTED***\"` and does not contain `\"sk-test-value\"`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC8",
+        "kind": "acceptance_criterion",
+        "text": "Bearer-token redaction remains correct:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC9",
+        "kind": "acceptance_criterion",
+        "text": "Given a string containing `Bearer abcdef1234567890abcdef`, returned string contains `Bearer ***REDACTED***` and does not contain the raw token.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC10",
+        "kind": "acceptance_criterion",
+        "text": "Combined redaction works in one pass:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC11",
+        "kind": "acceptance_criterion",
+        "text": "Given a string containing both the explicit API key and a Bearer token, returned string redacts both secrets.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC12",
+        "kind": "acceptance_criterion",
+        "text": "Non-string `apiKey` input is safe:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC13",
+        "kind": "acceptance_criterion",
+        "text": "Passing a non-string API key does not throw.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC14",
+        "kind": "acceptance_criterion",
+        "text": "Non-string API key is not coerced into an accidental redaction token.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC15",
+        "kind": "acceptance_criterion",
+        "text": "Existing public behavior for unrelated strings is unchanged:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC16",
+        "kind": "acceptance_criterion",
+        "text": "`scrubSecrets(\"Morph API error (500): model not found\")` returns the same string.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC17",
+        "kind": "acceptance_criterion",
+        "text": "Morph API key configuration is source-backed:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC18",
+        "kind": "acceptance_criterion",
+        "text": "Code sends Morph API authentication as `Authorization: Bearer ${apiKey}`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC19",
+        "kind": "acceptance_criterion",
+        "text": "Code reads the default API key from `process.env.MORPH_API_KEY`, matching Morph docs examples that use `MORPH_API_KEY`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC20",
+        "kind": "acceptance_criterion",
+        "text": "README or packaged instructions state that `MORPH_API_KEY` must be visible to the OpenCode/plugin process.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC21",
+        "kind": "acceptance_criterion",
+        "text": "README or packaged instructions do not imply that setting `MORPH_API_KEY` in an unrelated shell is sufficient for already-running OpenCode sessions.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC22",
+        "kind": "acceptance_criterion",
+        "text": "Morph endpoint/model defaults are source-backed or corrected:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC23",
+        "kind": "acceptance_criterion",
+        "text": "`MORPH_API_URL` default remains compatible with `https://api.morphllm.com/v1/chat/completions` request construction, or is updated with tests/docs if incorrect.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC24",
+        "kind": "acceptance_criterion",
+        "text": "`MORPH_MODEL` default is one of the documented Fast Apply models.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC25",
+        "kind": "acceptance_criterion",
+        "text": "Verification passes:",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC26",
+        "kind": "acceptance_criterion",
+        "text": "Targeted `scrubSecrets` regression tests pass.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC27",
+        "kind": "acceptance_criterion",
+        "text": "Any docs/config drift tests touched by this change pass.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC28",
+        "kind": "acceptance_criterion",
+        "text": "Full repo test command passes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC29",
+        "kind": "acceptance_criterion",
+        "text": "Typecheck passes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "C1",
+        "kind": "constraint",
+        "text": "Preserve existing Bearer-token regex behavior unless tests prove current behavior is defective.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C2",
+        "kind": "constraint",
+        "text": "Preserve existing failure-kind strings and Morph API request/response behavior.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C3",
+        "kind": "constraint",
+        "text": "Keep scrubbing deterministic and local to the boundary; do not rely on caller discipline alone.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C4",
+        "kind": "constraint",
+        "text": "Do not add runtime dependencies for this fix.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C5",
+        "kind": "constraint",
+        "text": "Prefer correcting docs/instructions over adding a new plugin config mechanism unless current `process.env.MORPH_API_KEY` support is proven insufficient.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "OOS1",
+        "kind": "out_of_scope",
+        "text": "Broader plugin-load lifecycle changes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS2",
+        "kind": "out_of_scope",
+        "text": "Path confinement, import preservation, or marker-leakage guard changes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS3",
+        "kind": "out_of_scope",
+        "text": "Release automation or package publishing changes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      },
+      {
+        "id": "OOS4",
+        "kind": "out_of_scope",
+        "text": "Secret storage or credential-manager integration.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+        "verificationRequired": false,
+        "evidencePolicy": "not_applicable",
+        "status": "approved",
+        "notRequiredReason": "Out-of-scope contract item"
+      }
+    ],
+    "amendments": [],
+    "reviewMatrix": {
+      "reviewedAt": "2026-06-27T23:28:39.586Z",
+      "rows": [
+        {
+          "contractId": "AC1",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "`bun test index.test.ts -t scrubSecrets` passed 8 scrubSecrets tests per adv-reviewer; full `bun test` passed 130 tests.",
+          "notes": "Non-string message suite covered."
+        },
+        {
+          "contractId": "AC2",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "scrubSecrets test `coerces Error messages without throwing` passed; reviewer reran targeted suite.",
+          "notes": "Error(\"boom\") -> \"boom\"."
+        },
+        {
+          "contractId": "AC3",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "scrubSecrets test `coerces nullish and numeric messages without throwing` passed.",
+          "notes": "undefined -> empty string."
+        },
+        {
+          "contractId": "AC4",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "scrubSecrets test `coerces nullish and numeric messages without throwing` passed.",
+          "notes": "null -> empty string."
+        },
+        {
+          "contractId": "AC5",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "scrubSecrets test `coerces nullish and numeric messages without throwing` passed.",
+          "notes": "123 -> \"123\"."
+        },
+        {
+          "contractId": "AC6",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing test `removes explicit apiKey from message` passed in targeted and full suites.",
+          "notes": "Explicit key redaction behavior preserved."
+        },
+        {
+          "contractId": "AC7",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing explicit-key test asserts returned string contains `***REDACTED***` and not the raw key; targeted scrubSecrets suite passed.",
+          "notes": "API key removed."
+        },
+        {
+          "contractId": "AC8",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing test `removes Bearer token pattern` passed in targeted and full suites.",
+          "notes": "Bearer behavior preserved."
+        },
+        {
+          "contractId": "AC9",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing Bearer test asserts `Bearer ***REDACTED***` and no raw token; targeted scrubSecrets suite passed.",
+          "notes": "Bearer token removed."
+        },
+        {
+          "contractId": "AC10",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "New test `redacts explicit apiKey and Bearer token in one pass` passed.",
+          "notes": "Combined redaction covered."
+        },
+        {
+          "contractId": "AC11",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "New combined-redaction test passed in targeted and full suites.",
+          "notes": "Both explicit key and Bearer secret gone."
+        },
+        {
+          "contractId": "AC12",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "New test `does not coerce non-string apiKey into an accidental redaction token` passed.",
+          "notes": "Non-string apiKey safety covered."
+        },
+        {
+          "contractId": "AC13",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "New non-string apiKey test passed without throw.",
+          "notes": "Number apiKey did not throw."
+        },
+        {
+          "contractId": "AC14",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "New collision test with numeric value 12345 in message and apiKey 12345 as number passed with original message unchanged.",
+          "notes": "No accidental coercion/redaction."
+        },
+        {
+          "contractId": "AC15",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing test `leaves unrelated text intact` passed.",
+          "notes": "Unrelated string behavior unchanged."
+        },
+        {
+          "contractId": "AC16",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Existing unrelated text test asserts exact same string; targeted scrubSecrets suite passed.",
+          "notes": "No regression."
+        },
+        {
+          "contractId": "AC17",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified `index.ts` sends `Authorization: Bearer ${apiKey}` and Context7 Morph docs confirm Bearer auth.",
+          "notes": "Source-backed config."
+        },
+        {
+          "contractId": "AC18",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified `src/constants.ts` reads `process.env.MORPH_API_KEY`; Context7 Morph docs use `MORPH_API_KEY`.",
+          "notes": "Env var method remains current."
+        },
+        {
+          "contractId": "AC19",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "README updated and docs test `README documents Morph key process environment setup` passed.",
+          "notes": "README states OpenCode process environment."
+        },
+        {
+          "contractId": "AC20",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "static_check",
+          "evidence": "README updated and docs test asserts `already-running OpenCode sessions` plus restart guidance; targeted docs suite passed.",
+          "notes": "No implication that unrelated shell updates running sessions."
+        },
+        {
+          "contractId": "AC21",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified endpoint construction: `MORPH_API_URL=https://api.morphllm.com` + `/v1/chat/completions`, matching Morph docs.",
+          "notes": "Endpoint compatible."
+        },
+        {
+          "contractId": "AC22",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified `MORPH_MODEL=morph-v3-fast`; Context7 Morph docs list `morph-v3-fast` as Fast Apply model.",
+          "notes": "Default model documented."
+        },
+        {
+          "contractId": "AC23",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Targeted scrubSecrets tests passed before and after reviewer remediation; final reviewer suite reported 8 pass.",
+          "notes": "Targeted regression pass."
+        },
+        {
+          "contractId": "AC24",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Targeted docs test `bun test index.test.ts -t \"packaged tool-selection instructions\"` passed 4 tests.",
+          "notes": "Docs/config drift assertions pass."
+        },
+        {
+          "contractId": "AC25",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Full `bun test` passed: reviewer reported 130 tests pass after remediation.",
+          "notes": "Full test suite pass."
+        },
+        {
+          "contractId": "AC26",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "`bun run typecheck` passed per orchestrator and reviewer verification.",
+          "notes": "Typecheck pass."
+        },
+        {
+          "contractId": "AC27",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Final verification task recorded targeted + full test/typecheck pass evidence in ADV task state.",
+          "notes": "Verification evidence persisted."
+        },
+        {
+          "contractId": "AC28",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Final full suite and typecheck rerun after all code/docs/reviewer changes passed.",
+          "notes": "Post-remediation verification complete."
+        },
+        {
+          "contractId": "AC29",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Acceptance reviewer verdict READY; no blockers/issues; verification commands passed.",
+          "notes": "Acceptance review ready."
+        },
+        {
+          "contractId": "C1",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Bearer regex in `index.ts` preserved; tests passed.",
+          "notes": "Regex behavior unchanged."
+        },
+        {
+          "contractId": "C2",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Failure-kind strings and API request/response flow unchanged; reviewer found no behavior drift.",
+          "notes": "API semantics preserved."
+        },
+        {
+          "contractId": "C3",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Scrubbing made deterministic/local in `scrubSecrets`; callers do not own normalization.",
+          "notes": "Boundary owns safety."
+        },
+        {
+          "contractId": "C4",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No new dependencies added; package files unchanged except dependency installation artifacts ignored.",
+          "notes": "No runtime dependency added."
+        },
+        {
+          "contractId": "C5",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Kept `process.env.MORPH_API_KEY`; only README/comment clarification, no new config mechanism.",
+          "notes": "Docs corrected rather than config migration."
+        },
+        {
+          "contractId": "OOS1",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "review",
+          "evidence": "No broader plugin-load lifecycle work performed.",
+          "notes": "Out of scope respected."
+        },
+        {
+          "contractId": "OOS2",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "review",
+          "evidence": "No path confinement, import preservation, or marker-leakage changes performed.",
+          "notes": "Out of scope respected."
+        },
+        {
+          "contractId": "OOS3",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "review",
+          "evidence": "No release automation or package publishing changes performed.",
+          "notes": "Out of scope respected."
+        },
+        {
+          "contractId": "OOS4",
+          "kind": "out_of_scope",
+          "status": "not_applicable",
+          "evidencePolicy": "review",
+          "evidence": "No secret storage or credential-manager integration added.",
+          "notes": "Out of scope respected."
+        }
+      ]
+    }
+  },
+  "acceptanceCriteria": [
+    "Non-string message inputs do not throw:",
+    "`scrubSecrets(new Error(\"boom\"))` returns `\"boom\"`.",
+    "`scrubSecrets(undefined)` returns `\"\"`.",
+    "`scrubSecrets(null)` returns `\"\"`.",
+    "`scrubSecrets(123)` returns `\"123\"`.",
+    "Explicit API-key redaction remains correct:",
+    "Given message `\"token sk-test-value\"` and API key `\"sk-test-value\"`, returned string contains `\"***REDACTED***\"` and does not contain `\"sk-test-value\"`.",
+    "Bearer-token redaction remains correct:",
+    "Given a string containing `Bearer abcdef1234567890abcdef`, returned string contains `Bearer ***REDACTED***` and does not contain the raw token.",
+    "Combined redaction works in one pass:",
+    "Given a string containing both the explicit API key and a Bearer token, returned string redacts both secrets.",
+    "Non-string `apiKey` input is safe:",
+    "Passing a non-string API key does not throw.",
+    "Non-string API key is not coerced into an accidental redaction token.",
+    "Existing public behavior for unrelated strings is unchanged:",
+    "`scrubSecrets(\"Morph API error (500): model not found\")` returns the same string.",
+    "Morph API key configuration is source-backed:",
+    "Code sends Morph API authentication as `Authorization: Bearer ${apiKey}`.",
+    "Code reads the default API key from `process.env.MORPH_API_KEY`, matching Morph docs examples that use `MORPH_API_KEY`.",
+    "README or packaged instructions state that `MORPH_API_KEY` must be visible to the OpenCode/plugin process.",
+    "README or packaged instructions do not imply that setting `MORPH_API_KEY` in an unrelated shell is sufficient for already-running OpenCode sessions.",
+    "Morph endpoint/model defaults are source-backed or corrected:",
+    "`MORPH_API_URL` default remains compatible with `https://api.morphllm.com/v1/chat/completions` request construction, or is updated with tests/docs if incorrect.",
+    "`MORPH_MODEL` default is one of the documented Fast Apply models.",
+    "Verification passes:",
+    "Targeted `scrubSecrets` regression tests pass.",
+    "Any docs/config drift tests touched by this change pass.",
+    "Full repo test command passes.",
+    "Typecheck passes."
+  ],
+  "documents": {
+    "proposal": "# Fix scrubSecrets runtime coercion and verify Morph key setup\n\n## Problem\n\nGitHub issue #6 reports recurring OpenCode `failed to load plugin` errors caused by `scrubSecrets()` throwing `result.replace is not a function` when runtime input is not a string. The function is typed as string-only, but error paths can pass untrusted runtime values.\n\nThe same fix should verify that Morph API key configuration guidance is still correct, because this code sits on the API failure/configuration path and bad setup guidance can turn missing/invalid keys into repeated tool failures.\n\n## Evidence reviewed\n\n- Issue: https://github.com/JRedeker/opencode-morph-fast-apply/issues/6\n- Current implementation: `index.ts:42-53` assigns `message` directly, calls `.split()` and `.replace()` without runtime normalization.\n- Existing tests: `index.test.ts:1371-1390` cover string API-key redaction, Bearer token redaction, and unrelated text preservation only.\n- Related caller: `src/execute.ts:175` scrubs API failure text before surfacing it to users.\n- Config code: `src/constants.ts:22-25` reads `MORPH_API_KEY`, `MORPH_API_URL`, `MORPH_MODEL`, and `MORPH_TIMEOUT` from `process.env`.\n- README setup: `README.md:83-90` instructs `export MORPH_API_KEY=\"sk-your-key-here\"`; configuration table documents `MORPH_API_KEY`, `MORPH_API_URL`, `MORPH_MODEL`, and `MORPH_TIMEOUT`.\n- Packaged instruction: `instructions/morph-tools.md:28-39` says to fall back when `MORPH_API_KEY` is not configured.\n- Morph docs via Context7 `/websites/morphllm`: authentication uses `Authorization: Bearer <api-key>`; quickstart uses `-H \"Authorization: Bearer $MORPH_API_KEY\"`; raw API example reads `os.environ[\"MORPH_API_KEY\"]`; Fast Apply models include `morph-v3-fast`, `morph-v3-large`, and `auto`.\n- OpenCode docs via Context7: plugins are configured through the `plugin` array; OpenCode config can reference environment variables with `{env:VARIABLE_NAME}` for config values, but this plugin currently reads `process.env.MORPH_API_KEY` directly rather than an OpenCode plugin-specific config field.\n- No active ADV change already covers this issue.\n\n## Scope\n\nAffected files/modules expected:\n\n- `index.ts`: `scrubSecrets` runtime boundary and any adjacent catch-path normalization needed to keep API errors safe.\n- `index.test.ts`: regression tests for non-string message/API-key inputs plus existing redaction behavior and config/instruction drift checks if existing tests cover docs snippets.\n- `src/execute.ts`: caller audit only; code change only if current call path can still pass unsafe values after `scrubSecrets` is hardened.\n- `README.md` and `instructions/morph-tools.md`: update only if the key setup or fallback guidance is stale or ambiguous.\n- `src/constants.ts`: update only if config method or documented defaults are incorrect.\n\n## Proposed direction\n\nMake secret scrubbing structurally defensive at the boundary:\n\n1. Change `scrubSecrets` inputs from trusted strings to runtime-safe `unknown` values.\n2. Normalize `message` before scrubbing:\n   - string → unchanged\n   - `Error` → `.message`\n   - `null` / `undefined` → empty string\n   - other values → `String(value)`\n3. Normalize `apiKey` defensively:\n   - redact only when `apiKey` is a non-empty string\n   - never call string methods on non-string keys\n4. Keep existing Bearer-token redaction behavior unchanged.\n5. Add regression tests covering `Error`, `undefined`, `null`, number, non-string API key, and combined API-key + Bearer token redaction.\n6. Audit current callers for any raw error-object paths; normalize adjacent catch handling only if needed to preserve safe user-facing errors.\n7. Verify Morph key setup remains aligned with current Morph/OpenCode docs:\n   - `MORPH_API_KEY` env var remains valid and should be sent as `Authorization: Bearer ${MORPH_API_KEY}`.\n   - `MORPH_API_URL` default should remain `https://api.morphllm.com` for `/v1/chat/completions` calls.\n   - `MORPH_MODEL` default `morph-v3-fast` remains documented as valid; docs may also mention `auto` / `morph-v3-large` as alternatives.\n   - README should clarify that the key must be present in the OpenCode/plugin process environment, not only in an unrelated shell.\n\n## Out of scope\n\n- Changing Morph API request/response behavior beyond safe error handling.\n- Adding a new OpenCode plugin-specific config schema unless discovery proves `process.env.MORPH_API_KEY` is no longer viable.\n- Changing path confinement or file-write guards.\n- Broader plugin-load lifecycle refactors.\n- Publishing/release automation beyond normal verification for this fix.\n\n## Draft acceptance signals\n\n- `scrubSecrets(new Error(\"boom\"))` returns `\"boom\"` and does not throw.\n- `scrubSecrets(undefined)`, `scrubSecrets(null)`, and `scrubSecrets(123)` return strings and do not throw.\n- `scrubSecrets(\"Bearer abcdef1234567890 key\", \"key\")` redacts both the Bearer token and explicit key.\n- Passing a non-string `apiKey` does not throw and does not redact by accidental coercion.\n- Existing string redaction tests still pass.\n- Morph key setup docs/code are either confirmed current or updated with source-backed guidance.\n- Repo test and typecheck commands pass.",
+    "problemStatement": "`scrubSecrets()` is a safety function used on error paths, but it trusts `message` and `apiKey` to be strings at runtime. When a non-string value reaches it, it can throw while handling another error, causing OpenCode plugin load failures and disabling `morph_edit` for the session. The fix should make scrubbing total over runtime inputs while preserving existing redaction behavior for valid strings. The change should also verify and, if needed, update Morph API key setup guidance so missing/invalid key paths remain clear and aligned with current Morph/OpenCode configuration expectations.",
+    "agreement": "# Agreement: Fix scrubSecrets runtime coercion and verify Morph key setup\n\n## Objective\n\nMake `scrubSecrets()` total over runtime inputs so secret-scrubbing error paths never throw because `message` or `apiKey` is not a string. Confirm or update Morph API key setup guidance so users configure the plugin through a supported, current method.\n\n## Acceptance criteria\n\n1. Non-string message inputs do not throw:\n   - `scrubSecrets(new Error(\"boom\"))` returns `\"boom\"`.\n   - `scrubSecrets(undefined)` returns `\"\"`.\n   - `scrubSecrets(null)` returns `\"\"`.\n   - `scrubSecrets(123)` returns `\"123\"`.\n2. Explicit API-key redaction remains correct:\n   - Given message `\"token sk-test-value\"` and API key `\"sk-test-value\"`, returned string contains `\"***REDACTED***\"` and does not contain `\"sk-test-value\"`.\n3. Bearer-token redaction remains correct:\n   - Given a string containing `Bearer abcdef1234567890abcdef`, returned string contains `Bearer ***REDACTED***` and does not contain the raw token.\n4. Combined redaction works in one pass:\n   - Given a string containing both the explicit API key and a Bearer token, returned string redacts both secrets.\n5. Non-string `apiKey` input is safe:\n   - Passing a non-string API key does not throw.\n   - Non-string API key is not coerced into an accidental redaction token.\n6. Existing public behavior for unrelated strings is unchanged:\n   - `scrubSecrets(\"Morph API error (500): model not found\")` returns the same string.\n7. Morph API key configuration is source-backed:\n   - Code sends Morph API authentication as `Authorization: Bearer ${apiKey}`.\n   - Code reads the default API key from `process.env.MORPH_API_KEY`, matching Morph docs examples that use `MORPH_API_KEY`.\n   - README or packaged instructions state that `MORPH_API_KEY` must be visible to the OpenCode/plugin process.\n   - README or packaged instructions do not imply that setting `MORPH_API_KEY` in an unrelated shell is sufficient for already-running OpenCode sessions.\n8. Morph endpoint/model defaults are source-backed or corrected:\n   - `MORPH_API_URL` default remains compatible with `https://api.morphllm.com/v1/chat/completions` request construction, or is updated with tests/docs if incorrect.\n   - `MORPH_MODEL` default is one of the documented Fast Apply models.\n9. Verification passes:\n   - Targeted `scrubSecrets` regression tests pass.\n   - Any docs/config drift tests touched by this change pass.\n   - Full repo test command passes.\n   - Typecheck passes.\n\n## Constraints\n\n- Preserve existing Bearer-token regex behavior unless tests prove current behavior is defective.\n- Preserve existing failure-kind strings and Morph API request/response behavior.\n- Keep scrubbing deterministic and local to the boundary; do not rely on caller discipline alone.\n- Do not add runtime dependencies for this fix.\n- Prefer correcting docs/instructions over adding a new plugin config mechanism unless current `process.env.MORPH_API_KEY` support is proven insufficient.\n\n## Out of scope\n\n- Broader plugin-load lifecycle changes.\n- Path confinement, import preservation, or marker-leakage guard changes.\n- Release automation or package publishing changes.\n- Secret storage or credential-manager integration.\n\n## Risks and mitigations\n\n- Risk: changing parameter types could expose call sites that assumed `string` only. Mitigation: exported function accepts `unknown` while always returning `string`; tests and typecheck verify compatibility.\n- Risk: coercing `apiKey` could redact unintended text. Mitigation: only redact when `apiKey` is already a non-empty string.\n- Risk: config guidance could over-promise OpenCode behavior. Mitigation: document the actual implementation boundary: plugin reads `process.env.MORPH_API_KEY` in the OpenCode/plugin process; running sessions need restart/reload after environment changes.\n",
+    "design": "# Design: Fix scrubSecrets runtime coercion and verify Morph key setup\n\n## Architecture decision\n\nTreat `scrubSecrets` as an untrusted runtime boundary, not a string-only helper. Error paths are exactly where static typing is least reliable; the sanitizer must be total and deterministic for all JavaScript values.\n\n## Implementation design\n\n### 1. Runtime normalization helper inside `scrubSecrets`\n\nChange exported signature from:\n\n```ts\nscrubSecrets(message: string, apiKey?: string): string\n```\n\nto:\n\n```ts\nscrubSecrets(message: unknown, apiKey?: unknown): string\n```\n\nNormalize message before any string method call:\n\n```ts\nconst result =\n  typeof message === \"string\"\n    ? message\n    : message instanceof Error\n      ? message.message\n      : String(message ?? \"\");\n```\n\nThen redact only a real non-empty string key:\n\n```ts\nif (typeof apiKey === \"string\" && apiKey.length > 0) {\n  result = result.split(apiKey).join(\"***REDACTED***\");\n}\n```\n\nThen run existing Bearer-token regex unchanged.\n\n### 2. Preserve caller API and failure semantics\n\nExisting callers can continue passing strings. The widened parameter type is backwards-compatible for callers and improves safety for runtime error values. No failure-kind strings change.\n\nCall-site audit focus:\n\n- `index.ts` API HTTP and request-failed paths already pass formatted strings.\n- `src/execute.ts` already passes `result.error || \"unknown error\"`.\n- No caller should need defensive pre-normalization once `scrubSecrets` is total.\n\n### 3. Morph key configuration verification/docs\n\nKeep current code path unless implementation disproves it:\n\n- `src/constants.ts` reads `process.env.MORPH_API_KEY`.\n- `index.ts` sends `Authorization: Bearer ${apiKey}`.\n- `MORPH_API_URL` default `https://api.morphllm.com` combines with `/v1/chat/completions` at call site.\n- `MORPH_MODEL` default `morph-v3-fast` remains a documented Fast Apply model.\n\nDocs update target:\n\n- README key setup should say `MORPH_API_KEY` must be in the environment of the OpenCode process that loads the plugin.\n- README troubleshooting should say restart/reload OpenCode after changing the env var.\n- Packaged instruction can retain fallback guidance; update only if current text implies wrong setup behavior.\n\n### 4. Regression test design\n\nExtend existing `describe(\"scrubSecrets\")` block:\n\n- `Error` input returns `.message`.\n- `undefined` and `null` return empty string.\n- number input returns decimal string.\n- non-string `apiKey` does not throw and does not redact via coercion.\n- combined API key + Bearer token redacts both.\n\nExtend docs/config drift tests near `packaged tool-selection instructions` if README is changed:\n\n- README contains `OpenCode` process environment guidance.\n- README contains restart/reload guidance after changing `MORPH_API_KEY`.\n- Existing version/safety guard docs tests remain intact.\n\n## Verification plan\n\n- Targeted Bun test for `scrubSecrets` and docs assertions.\n- Full repo tests through available repo command.\n- Typecheck with `tsc --noEmit` or package script.\n\n## Source-backed notes\n\n- Morph docs confirm Bearer auth and `MORPH_API_KEY` examples for Fast Apply raw API calls.\n- Morph docs list `morph-v3-fast`, `morph-v3-large`, and `auto` as Fast Apply model IDs.\n- OpenCode docs confirm plugins are configured through `plugin`; this plugin's key is not an OpenCode config field and is read directly from process env.\n\n## Non-goals\n\n- No new credential storage.\n- No new dependency.\n- No OpenCode config schema migration.\n- No changes to Morph API payload shape.\n",
+    "executiveSummary": "# Executive Summary: Fix scrubSecrets runtime coercion\n\n## Outcome\n\n`scrubSecrets()` now safely handles runtime values beyond strings before calling string methods. Error values, nullish values, numbers, and even unstringifiable objects no longer turn an error-scrubbing path into a plugin-load failure.\n\n## What changed\n\n- Widened `scrubSecrets` runtime boundary to accept `unknown` inputs.\n- Normalized strings, `Error` instances, nullish values, and other values before redaction.\n- Guarded explicit API-key redaction so only non-empty string keys are used for redaction.\n- Preserved existing Bearer-token redaction and Morph API failure semantics.\n- Clarified README Morph key setup: `MORPH_API_KEY` must be visible to the OpenCode/plugin process, and already-running sessions need restart after env changes.\n- Updated `src/constants.ts` comment to match the OpenCode/plugin process environment model.\n\n## Verification\n\n- Targeted `scrubSecrets` tests: pass (8 tests after reviewer hardening).\n- Targeted docs/instruction tests: pass (4 tests).\n- Full `bun test`: pass (130 tests after reviewer hardening).\n- `bun run typecheck`: pass.\n- Independent acceptance review: READY, no blockers/issues.\n\n## Risk posture\n\nLow. The fix is local to the sanitizer boundary and docs/comment clarification. No new dependencies, config mechanism, or Morph API request/response changes were introduced.",
+    "acceptance": "# Acceptance\n\nReviewed at: 2026-06-27T23:28:39.586Z\n\n## Contract Review Matrix\n\n| ID | Kind | Requirement | Status | Evidence |\n|---|---|---|---|---|\n| AC1 | acceptance_criterion | Non-string message inputs do not throw: | pass | `bun test index.test.ts -t scrubSecrets` passed 8 scrubSecrets tests per adv-reviewer; full `bun test` passed 130 tests. |\n| AC2 | acceptance_criterion | `scrubSecrets(new Error(\"boom\"))` returns `\"boom\"`. | pass | scrubSecrets test `coerces Error messages without throwing` passed; reviewer reran targeted suite. |\n| AC3 | acceptance_criterion | `scrubSecrets(undefined)` returns `\"\"`. | pass | scrubSecrets test `coerces nullish and numeric messages without throwing` passed. |\n| AC4 | acceptance_criterion | `scrubSecrets(null)` returns `\"\"`. | pass | scrubSecrets test `coerces nullish and numeric messages without throwing` passed. |\n| AC5 | acceptance_criterion | `scrubSecrets(123)` returns `\"123\"`. | pass | scrubSecrets test `coerces nullish and numeric messages without throwing` passed. |\n| AC6 | acceptance_criterion | Explicit API-key redaction remains correct: | pass | Existing test `removes explicit apiKey from message` passed in targeted and full suites. |\n| AC7 | acceptance_criterion | Given message `\"token sk-test-value\"` and API key `\"sk-test-value\"`, returned string contains `\"***REDACTED***\"` and does not contain `\"sk-test-value\"`. | pass | Existing explicit-key test asserts returned string contains `***REDACTED***` and not the raw key; targeted scrubSecrets suite passed. |\n| AC8 | acceptance_criterion | Bearer-token redaction remains correct: | pass | Existing test `removes Bearer token pattern` passed in targeted and full suites. |\n| AC9 | acceptance_criterion | Given a string containing `Bearer abcdef1234567890abcdef`, returned string contains `Bearer ***REDACTED***` and does not contain the raw token. | pass | Existing Bearer test asserts `Bearer ***REDACTED***` and no raw token; targeted scrubSecrets suite passed. |\n| AC10 | acceptance_criterion | Combined redaction works in one pass: | pass | New test `redacts explicit apiKey and Bearer token in one pass` passed. |\n| AC11 | acceptance_criterion | Given a string containing both the explicit API key and a Bearer token, returned string redacts both secrets. | pass | New combined-redaction test passed in targeted and full suites. |\n| AC12 | acceptance_criterion | Non-string `apiKey` input is safe: | pass | New test `does not coerce non-string apiKey into an accidental redaction token` passed. |\n| AC13 | acceptance_criterion | Passing a non-string API key does not throw. | pass | New non-string apiKey test passed without throw. |\n| AC14 | acceptance_criterion | Non-string API key is not coerced into an accidental redaction token. | pass | New collision test with numeric value 12345 in message and apiKey 12345 as number passed with original message unchanged. |\n| AC15 | acceptance_criterion | Existing public behavior for unrelated strings is unchanged: | pass | Existing test `leaves unrelated text intact` passed. |\n| AC16 | acceptance_criterion | `scrubSecrets(\"Morph API error (500): model not found\")` returns the same string. | pass | Existing unrelated text test asserts exact same string; targeted scrubSecrets suite passed. |\n| AC17 | acceptance_criterion | Morph API key configuration is source-backed: | pass | Reviewer verified `index.ts` sends `Authorization: Bearer ${apiKey}` and Context7 Morph docs confirm Bearer auth. |\n| AC18 | acceptance_criterion | Code sends Morph API authentication as `Authorization: Bearer ${apiKey}`. | pass | Reviewer verified `src/constants.ts` reads `process.env.MORPH_API_KEY`; Context7 Morph docs use `MORPH_API_KEY`. |\n| AC19 | acceptance_criterion | Code reads the default API key from `process.env.MORPH_API_KEY`, matching Morph docs examples that use `MORPH_API_KEY`. | pass | README updated and docs test `README documents Morph key process environment setup` passed. |\n| AC20 | acceptance_criterion | README or packaged instructions state that `MORPH_API_KEY` must be visible to the OpenCode/plugin process. | pass | README updated and docs test asserts `already-running OpenCode sessions` plus restart guidance; targeted docs suite passed. |\n| AC21 | acceptance_criterion | README or packaged instructions do not imply that setting `MORPH_API_KEY` in an unrelated shell is sufficient for already-running OpenCode sessions. | pass | Reviewer verified endpoint construction: `MORPH_API_URL=https://api.morphllm.com` + `/v1/chat/completions`, matching Morph docs. |\n| AC22 | acceptance_criterion | Morph endpoint/model defaults are source-backed or corrected: | pass | Reviewer verified `MORPH_MODEL=morph-v3-fast`; Context7 Morph docs list `morph-v3-fast` as Fast Apply model. |\n| AC23 | acceptance_criterion | `MORPH_API_URL` default remains compatible with `https://api.morphllm.com/v1/chat/completions` request construction, or is updated with tests/docs if incorrect. | pass | Targeted scrubSecrets tests passed before and after reviewer remediation; final reviewer suite reported 8 pass. |\n| AC24 | acceptance_criterion | `MORPH_MODEL` default is one of the documented Fast Apply models. | pass | Targeted docs test `bun test index.test.ts -t \"packaged tool-selection instructions\"` passed 4 tests. |\n| AC25 | acceptance_criterion | Verification passes: | pass | Full `bun test` passed: reviewer reported 130 tests pass after remediation. |\n| AC26 | acceptance_criterion | Targeted `scrubSecrets` regression tests pass. | pass | `bun run typecheck` passed per orchestrator and reviewer verification. |\n| AC27 | acceptance_criterion | Any docs/config drift tests touched by this change pass. | pass | Final verification task recorded targeted + full test/typecheck pass evidence in ADV task state. |\n| AC28 | acceptance_criterion | Full repo test command passes. | pass | Final full suite and typecheck rerun after all code/docs/reviewer changes passed. |\n| AC29 | acceptance_criterion | Typecheck passes. | pass | Acceptance reviewer verdict READY; no blockers/issues; verification commands passed. |\n| C1 | constraint | Preserve existing Bearer-token regex behavior unless tests prove current behavior is defective. | respected | Bearer regex in `index.ts` preserved; tests passed. |\n| C2 | constraint | Preserve existing failure-kind strings and Morph API request/response behavior. | respected | Failure-kind strings and API request/response flow unchanged; reviewer found no behavior drift. |\n| C3 | constraint | Keep scrubbing deterministic and local to the boundary; do not rely on caller discipline alone. | respected | Scrubbing made deterministic/local in `scrubSecrets`; callers do not own normalization. |\n| C4 | constraint | Do not add runtime dependencies for this fix. | respected | No new dependencies added; package files unchanged except dependency installation artifacts ignored. |\n| C5 | constraint | Prefer correcting docs/instructions over adding a new plugin config mechanism unless current `process.env.MORPH_API_KEY` support is proven insufficient. | respected | Kept `process.env.MORPH_API_KEY`; only README/comment clarification, no new config mechanism. |\n| OOS1 | out_of_scope | Broader plugin-load lifecycle changes. | not_applicable | No broader plugin-load lifecycle work performed. |\n| OOS2 | out_of_scope | Path confinement, import preservation, or marker-leakage guard changes. | not_applicable | No path confinement, import preservation, or marker-leakage changes performed. |\n| OOS3 | out_of_scope | Release automation or package publishing changes. | not_applicable | No release automation or package publishing changes performed. |\n| OOS4 | out_of_scope | Secret storage or credential-manager integration. | not_applicable | No secret storage or credential-manager integration added. |\n\n"
+  },
+  "artifacts": {
+    "proposal": {
+      "updatedAt": "2026-06-27T23:00:24.571Z",
+      "contentHash": "ff4d022be143e32ccaacda593778a0f566eb39053c2156129d247877448215ef",
+      "source": "temporal",
+      "readable": false
+    },
+    "problemStatement": {
+      "updatedAt": "2026-06-27T23:00:24.571Z",
+      "contentHash": "40d134299a761226b2c4de6d0010934d205b0fee07123a71b1d0f16996e48ae9",
+      "source": "temporal",
+      "readable": false
+    },
+    "agreement": {
+      "updatedAt": "2026-06-27T23:00:24.571Z",
+      "contentHash": "3b2046bb6fc55789151703cd2423b84eeb5935ebb3233b15d5d475b28a2a4211",
+      "source": "temporal",
+      "readable": false
+    },
+    "design": {
+      "updatedAt": "2026-06-27T23:04:57.627Z",
+      "contentHash": "da0cdd633f66bd4657ca8b881d85c6523d6b2b4aa0e096bff41a63776f01b833",
+      "source": "temporal",
+      "readable": false
+    },
+    "executiveSummary": {
+      "updatedAt": "2026-06-27T23:28:58.668Z",
+      "contentHash": "1423e0baa581d8f4c581f4d4af378dc1de90827f76d889e7536e4d8fd04699ef",
+      "source": "temporal",
+      "readable": false
+    }
+  },
+  "lastSignalAt": "2026-06-27T23:35:38.366Z",
+  "adv_project_id": "a4b8e1b703f8294bb83a820749df6ec98b9a5f61",
+  "github_issues": [
+    "https://github.com/JRedeker/opencode-morph-fast-apply/issues/6"
+  ],
+  "worktree_auto_managed": true
+}
