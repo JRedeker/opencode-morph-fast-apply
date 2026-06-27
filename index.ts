@@ -39,9 +39,14 @@ export type FailureKind =
 /**
  * Remove secrets from a message before returning or logging it.
  */
-export function scrubSecrets(message: string, apiKey?: string): string {
-  let result = message;
-  if (apiKey) {
+export function scrubSecrets(message: unknown, apiKey?: unknown): string {
+  let result =
+    typeof message === "string"
+      ? message
+      : message instanceof Error
+        ? message.message
+        : String(message ?? "");
+  if (typeof apiKey === "string" && apiKey.length > 0) {
     result = result.split(apiKey).join("***REDACTED***");
   }
   // Scrub generic Bearer tokens
