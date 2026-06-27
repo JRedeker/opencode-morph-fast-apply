@@ -69,6 +69,14 @@ describe("packaged tool-selection instructions", () => {
     expect(content).toContain("Dropped imports guard");
     expect(content).toContain("bun.lock");
   });
+
+  test("README documents Morph key process environment setup", () => {
+    const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
+
+    expect(content).toContain("OpenCode process environment");
+    expect(content).toContain("Restart OpenCode");
+    expect(content).toContain("already-running OpenCode sessions");
+  });
 });
 
 describe("normalizeCodeEditInput", () => {
@@ -1386,6 +1394,34 @@ describe("scrubSecrets", () => {
   test("leaves unrelated text intact", () => {
     const message = "Morph API error (500): model not found";
     expect(scrubSecrets(message)).toBe(message);
+  });
+
+  test("coerces Error messages without throwing", () => {
+    expect(scrubSecrets(new Error("boom"))).toBe("boom");
+  });
+
+  test("coerces nullish and numeric messages without throwing", () => {
+    expect(scrubSecrets(undefined)).toBe("");
+    expect(scrubSecrets(null)).toBe("");
+    expect(scrubSecrets(123)).toBe("123");
+  });
+
+  test("does not coerce non-string apiKey into an accidental redaction token", () => {
+    const message = "Request failed with numeric value 12345";
+
+    expect(scrubSecrets(message, 12345)).toBe(message);
+  });
+
+  test("redacts explicit apiKey and Bearer token in one pass", () => {
+    const key = "sk-morph-test-key-67890";
+    const bearerToken = "abcdef1234567890abcdef";
+    const message = `Request failed with ${key} and Bearer ${bearerToken}`;
+    const scrubbed = scrubSecrets(message, key);
+
+    expect(scrubbed).toContain("***REDACTED***");
+    expect(scrubbed).toContain("Bearer ***REDACTED***");
+    expect(scrubbed).not.toContain(key);
+    expect(scrubbed).not.toContain(bearerToken);
   });
 });
 
