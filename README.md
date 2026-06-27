@@ -45,7 +45,7 @@ Or pin to a specific version:
     "~/.config/opencode/instructions/morph-tools.md"
   ],
   "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.9.0"
+    "github:JRedeker/opencode-morph-fast-apply#v1.10.1"
   ]
 }
 ```

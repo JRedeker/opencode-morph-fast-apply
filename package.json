@@ -1,6 +1,6 @@
 {
   "name": "opencode-morph-fast-apply",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "OpenCode plugin for Morph Fast Apply - 10x faster code editing",
   "type": "module",
   "main": "index.ts",

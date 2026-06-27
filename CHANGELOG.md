@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-06-27
+
+### Fixed
+
+- **Secret scrubbing runtime safety**: `scrubSecrets()` now accepts untrusted runtime values, safely normalizes strings, `Error` instances, nullish values, numbers, and unstringifiable objects before redaction, and no longer throws while handling plugin/API errors.
+- **API-key redaction boundary**: Explicit API-key redaction now only uses non-empty string keys, preventing accidental redaction from coerced non-string values while preserving Bearer-token redaction.
+
+### Changed
+
+- **Morph key setup docs**: README now clarifies that `MORPH_API_KEY` must be present in the OpenCode/plugin process environment and that already-running OpenCode sessions need restart after environment changes.
+
 ## [1.10.0] - 2026-06-06
 
 ### Added

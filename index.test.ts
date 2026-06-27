@@ -62,8 +62,8 @@ describe("packaged tool-selection instructions", () => {
   test("README uses current version pin and documents safety guards", () => {
     const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
 
-    expect(content).not.toContain("#v1.8.2");
-    expect(content).toContain("#v1.9.0");
+    expect(content).not.toContain("#v1.10.0");
+    expect(content).toContain("#v1.10.1");
     expect(content).toContain("Path confinement");
     expect(content).toContain("Secret scrubbing");
     expect(content).toContain("Dropped imports guard");
