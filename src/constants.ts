@@ -18,7 +18,7 @@ export const ALLOW_READONLY_AGENTS =
 /** Plugin version */
 export const PLUGIN_VERSION = "1.9.0";
 
-// Get API key from environment (set in mcpm/jarvis config)
+// Get API key from the OpenCode/plugin process environment.
 export const MORPH_API_KEY = process.env.MORPH_API_KEY;
 export const MORPH_API_URL = process.env.MORPH_API_URL || "https://api.morphllm.com";
 export const MORPH_MODEL = process.env.MORPH_MODEL || "morph-v3-fast";

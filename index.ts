@@ -40,12 +40,18 @@ export type FailureKind =
  * Remove secrets from a message before returning or logging it.
  */
 export function scrubSecrets(message: unknown, apiKey?: unknown): string {
-  let result =
-    typeof message === "string"
-      ? message
-      : message instanceof Error
-        ? message.message
-        : String(message ?? "");
+  let result: string;
+  if (typeof message === "string") {
+    result = message;
+  } else if (message instanceof Error) {
+    result = message.message;
+  } else {
+    try {
+      result = String(message ?? "");
+    } catch {
+      result = "";
+    }
+  }
   if (typeof apiKey === "string" && apiKey.length > 0) {
     result = result.split(apiKey).join("***REDACTED***");
   }

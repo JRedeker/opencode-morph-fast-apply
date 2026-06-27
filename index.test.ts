@@ -1406,6 +1406,16 @@ describe("scrubSecrets", () => {
     expect(scrubSecrets(123)).toBe("123");
   });
 
+  test("handles unstringifiable message values without throwing", () => {
+    const message = {
+      toString() {
+        throw new Error("cannot stringify");
+      },
+    };
+
+    expect(scrubSecrets(message)).toBe("");
+  });
+
   test("does not coerce non-string apiKey into an accidental redaction token", () => {
     const message = "Request failed with numeric value 12345";
 
