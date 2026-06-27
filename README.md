@@ -82,11 +82,15 @@ even when the plugin is installed and the always-on instruction is present.
 
 ### 2. Set your Morph API key
 
-Get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-keys), then add to your shell profile:
+Get an API key at [morphllm.com/dashboard](https://morphllm.com/dashboard/api-keys), then add it to the environment that starts OpenCode:
 
 ```bash
 export MORPH_API_KEY="sk-your-key-here"
 ```
+
+The plugin reads `MORPH_API_KEY` from the OpenCode process environment when it
+loads. Setting the variable in an unrelated shell does not update
+already-running OpenCode sessions.
 
 ### 3. Restart OpenCode
 
@@ -152,10 +156,14 @@ function validateToken(token) {
 
 ### "MORPH_API_KEY not configured"
 
-Ensure the environment variable is set and exported:
+Ensure the environment variable is set and exported in the shell or service that
+starts OpenCode:
 ```bash
 echo $MORPH_API_KEY  # Should show your key
 ```
+
+After changing `MORPH_API_KEY`, restart OpenCode so the plugin reloads with the
+updated OpenCode process environment.
 
 ### Timeout errors
 
