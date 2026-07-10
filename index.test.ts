@@ -85,6 +85,7 @@ describe("native edit recovery policy", () => {
   // in any one of them fails the suite (SC4 / DONT4: no surface left
   // unprotected, no single-surface duplication).
   const RECOVERY_ANCHORS = [
+    "unmatched or ambiguous exact target",
     "Re-read the target file before any retry",
     "Do not repeat the unchanged failed",
     "at most one corrected native",
