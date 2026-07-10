@@ -1,0 +1,1618 @@
+{
+  "id": "improveMorphRecovery",
+  "title": "Improve Morph recovery",
+  "status": "archived",
+  "lifecycleState": "open",
+  "created_at": "2026-07-10T19:22:07.366Z",
+  "tasks": [
+    {
+      "id": "tk-1aa43df758c2",
+      "title": "Align Morph recovery policy and regression tests",
+      "type": "code",
+      "section": "Implementation",
+      "status": "done",
+      "priority": 0,
+      "created_at": "2026-07-10T19:34:54.560Z",
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC1",
+          "SC2",
+          "SC3",
+          "AC1",
+          "AC2",
+          "AC3"
+        ],
+        "respects": [
+          "C1",
+          "C2",
+          "C3",
+          "DONT1",
+          "DONT2",
+          "DONT3"
+        ]
+      },
+      "evidence_policy": "test",
+      "assignedTo": "agent",
+      "started_at": "2026-07-10T19:37:16.290Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "improveMorphRecovery",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+          "task_id": "tk-1aa43df758c2",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-1aa43df758c2"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "index.ts",
+            "instructions/morph-tools.md",
+            "README.md",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun /tmp/opencode/morph_recovery_red_check.mjs <worktree>",
+              "exit_code": 1,
+              "summary": "RED (expected): proved strengthened anchors are absent from pre-change HEAD of index.ts, instructions/morph-tools.md, README.md -> the new regression test would have failed before doc alignment."
+            },
+            {
+              "command": "bun test -t \"native edit recovery policy\"",
+              "exit_code": 0,
+              "summary": "GREEN: 3 recovery-policy tests pass, 33 expect() calls; all three surfaces contain the canonical anchors plus preserved API-fallback and write-boundary signals."
+            },
+            {
+              "command": "bun run ci",
+              "exit_code": 0,
+              "summary": "VERIFY: full suite 133 pass / 0 fail (280 expect() calls) and tsc --noEmit clean (ci = bun test && tsc --noEmit); SC5 satisfied."
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Used identical canonical recovery wording across all three surfaces (index.ts uses backtick-free variant because its description is a JS template literal; md files use backticked `edit`/`morph_edit`).",
+              "why": "The design requires the same sequence on every owned surface; identical wording makes drift tests deterministic and lets one shared anchor set guard all three surfaces (SC4/DONT4) instead of duplicating a single surface."
+            },
+            {
+              "what": "Added the recovery block as a named 'Native edit recovery' subsection (md files) and a 'NATIVE EDIT RECOVERY' block (index.ts), placed immediately before the existing Morph FALLBACK line.",
+              "why": "Keeps the new native-edit-failure recovery structurally separate from the preserved Morph API-error/timeout fallback (SC3/AC4) and makes the 'fallback below' reference accurate."
+            },
+            {
+              "what": "Used native edit (exact string replacements) for the four localized insertions rather than morph_edit.",
+              "why": "Each change was a small, uniquely-anchored insertion — the native-edit use case; no API dependency needed and lower risk for whitespace-sensitive template-literal/markdown edits."
+            },
+            {
+              "what": "Added an 'Unreleased' README changelog note instead of a version bump.",
+              "why": "Documents the policy alignment per repo convention without implying a release/version change (C4: no release/publish/deploy)."
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "Scanned all three routing surfaces for the pre-existing one-way fallback (Morph -> native edit) and confirmed none defined post-native-edit-failure recovery; applied the same canonical recovery wording to every owned surface and preserved the existing fallback in each. No other subsystem carries this routing policy, so no broader same-pattern edits were required.",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "Aligned all three owned routing surfaces (index.ts embedded morph_edit description, instructions/morph-tools.md, README.md) with the approved native-exact-edit recovery policy and added content-level regression tests in index.test.ts. The recovery sequence (re-read; do not repeat unchanged input; at most one corrected native edit only if still small and exact; otherwise morph_edit for multi-line/scattered/whitespace-sensitive/broader-anchoring; write only for new-file/full-file) is now stated identically across all three surfaces. The existing Morph API-error/timeout -> native edit fallback is preserved and explicitly distinguished from the new native-edit-failure recovery. Tests loop the same canonical anchors over all three surfaces so any single-surface drift fails the suite (DONT4). bun run ci exits 0 (133 pass / 0 fail; tsc --noEmit clean). Note: worktree had no node_modules; ran bun install to enable verification — bun.lock unchanged (git status shows only the 4 intended files).",
+            "suggested_next_action": "Review the 4-file diff and mark task tk-1aa43df758c2 done; all SC1-SC5 / AC1-AC5 are satisfied and C1-C4 / DONT1-DONT4 respected."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun /tmp/opencode/morph_recovery_red_check.mjs <worktree>"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test -t \"native edit recovery policy\""
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run ci"
+            }
+          ]
+        }
+      ],
+      "verification": "RED proof recorded; focused native edit recovery policy tests pass (3 tests, 33 assertions); bun run ci passes (133 tests, 0 failures; tsc --noEmit clean). Diff reviewed: 4 intended policy/test files, whitespace clean.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Added aligned native-exact-edit recovery guidance to the embedded tool description, always-on instruction, and README; added content-level regression tests across all three surfaces while preserving Morph API timeout/error fallback and existing safety/runtime behavior.",
+      "filesTouched": [
+        "README.md",
+        "index.test.ts",
+        "index.ts",
+        "instructions/morph-tools.md"
+      ],
+      "touched_files": [
+        "README.md",
+        "index.test.ts",
+        "index.ts",
+        "instructions/morph-tools.md"
+      ],
+      "checkpointSha": "055f29e6422eeaa806db321b7041e4f013dadc79",
+      "completedAt": "2026-07-10T19:47:06.715Z",
+      "completed_at": "2026-07-10T19:47:06.715Z",
+      "notes": "Contract references remapped after release-scope re-entry; original completed policy work remains unchanged.",
+      "updatedAt": "2026-07-10T20:19:12.351Z"
+    },
+    {
+      "id": "tk-a83d8d15e606",
+      "title": "Prepare v1.10.2 release metadata and tests",
+      "type": "code",
+      "section": "Release preparation",
+      "status": "done",
+      "priority": 1,
+      "created_at": "2026-07-10T20:19:24.421Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-1aa43df758c2"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "implements": [
+          "SC4",
+          "SC5",
+          "AC4"
+        ],
+        "respects": [
+          "C3",
+          "C4",
+          "C5",
+          "DONT3",
+          "DONT4"
+        ]
+      },
+      "evidence_policy": "test",
+      "assignedTo": "agent",
+      "started_at": "2026-07-10T20:25:34.705Z",
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "improveMorphRecovery",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+          "task_id": "tk-a83d8d15e606",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-a83d8d15e606"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "files_touched": [
+            "package.json",
+            "README.md",
+            "CHANGELOG.md",
+            "index.test.ts",
+            "src/constants.ts"
+          ],
+          "verification": [
+            {
+              "command": "bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section\"",
+              "exit_code": 1,
+              "summary": "RED (expected): 4 fail / 0 pass before metadata bump — README still had #v1.10.1, package.json version was 1.10.1, CHANGELOG had no 1.10.2 section. Captured via bash because adv_run_test returned TemporalQueryTimeout."
+            },
+            {
+              "command": "bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section|PLUGIN_VERSION matches\"",
+              "exit_code": 0,
+              "summary": "GREEN: 5 pass / 0 fail after metadata bump (version pin, package.json version, README pin, CHANGELOG non-empty section, PLUGIN_VERSION consistency). Captured via bash (adv_run_test unavailable)."
+            },
+            {
+              "command": "bun run ci",
+              "exit_code": 0,
+              "summary": "VERIFY: `bun test && tsc --noEmit` — 137 pass / 0 fail, 295 expect() calls; tsc clean. (Fixed an initial TS2769 in the new PLUGIN_VERSION test by narrowing `string | undefined` before toBe; final run green.) Captured via bash (adv_run_test unavailable)."
+            },
+            {
+              "command": "awk '/^## \\[1.10.2\\]/{flag=1; next} /^## \\[/{flag=0} flag' CHANGELOG.md",
+              "exit_code": 0,
+              "summary": "Release-workflow extraction simulation: yields a non-empty notes body (the two recovery-policy bullets), confirming `gh release create --notes-file` will receive real notes for v1.10.2."
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Bumped src/constants.ts PLUGIN_VERSION 1.10.1->1.10.2 in addition to the four enumerated files and added a consistency test tying it to package.json",
+              "why": "PLUGIN_VERSION is the plugin's runtime self-reported version surfaced in tool metadata (index.ts). Leaving it at 1.10.1 would make the running plugin mis-report its release, violating SC4 ('release metadata all identify 1.10.2'). It is the same stale-version class as the README pin, so related-scan/campsite required aligning it. Metadata string only; no behavior change."
+            },
+            {
+              "what": "Left bun.lock untouched",
+              "why": "The bump is version-only with no dependency change. bun.lock workspaces[''] records the root package name and dependency ranges but not the root package version, so a version-only bump does not require lock regeneration."
+            },
+            {
+              "what": "CHANGELOG [1.10.2] notes describe the recovery policy and cross-surface regression tests",
+              "why": "That is the actual content of this change (README/index.ts/instructions recovery-policy docs + tests, diff since 1.10.1). The tag-release workflow feeds this body to `gh release create --notes-file`, so it must be non-empty and recovery-policy accurate."
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [
+            "adv_run_test could not record red/green/verify phase evidence this session (TemporalQueryTimeout on every attempt; adv_temporal_reconnect succeeded but did not restore the adv_run_test signal path). Verification was captured via direct bash with explicit exit codes instead. Restore the shared Temporal service layer and, if tool-recorded phase evidence is required for acceptance, re-run the three phases with adv_run_test."
+          ],
+          "related_scan": "Searched the repo for stale '1.10.1' / '#v1.10' pins. Fixed the same-pattern stale runtime self-reported version in src/constants.ts (PLUGIN_VERSION) and guarded it with a consistency assertion. Remaining '1.10.1' occurrences are legitimate: CHANGELOG '## [1.10.1]' past-release heading and index.test.ts mock-runtime fixtures that inject PLUGIN_VERSION '1.0.0' for execute.ts tests (unrelated to the real constant). No other live version pins remain.",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "v1.10.2 pre-merge source release preparation complete and verified in the worktree only. Changed 5 files: package.json 1.10.1->1.10.2; README.md install pin #v1.10.1->#v1.10.2 (line 48); CHANGELOG.md new non-empty '## [1.10.2] - 2026-07-10' Added section with recovery-policy notes (the release workflow's awk '/^## \\[1.10.2\\]/' extracts a non-empty notes body, confirmed by simulation); index.test.ts updated the version-pin assertion to v1.10.2 and added a 'release metadata consistency' describe (4 tests) cross-checking package.json, README pin, PLUGIN_VERSION, and CHANGELOG section; src/constants.ts PLUGIN_VERSION 1.10.1->1.10.2 (runtime self-reported version surfaced in tool metadata) plus a guarding consistency test. bun.lock NOT changed (version-only bump; lockfile workspaces[''] tracks name+dependencies, not root version). No tag/publish/deploy/global-config edits; runtime/safety/API/native-edit/release-workflow/plugin behavior untouched. INFRA NOTE: adv_run_test was unusable this session (TemporalQueryTimeout on every call; adv_temporal_reconnect did not restore it), so RED/GREEN/VERIFY were captured via direct bash with explicit exit codes rather than tool-recorded phase evidence.",
+            "suggested_next_action": "Proceed to acceptance: source release prep is verified (bun run ci exit 0, 137 pass, tsc clean). Tag/publish/local-deploy remain post-Phase-9 operations owned by the orchestrator; do not tag v1.10.2 until merge proof. Optionally restore STSL and re-run with adv_run_test if tool-recorded red/green/verify phase evidence is required (it was unavailable this session)."
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section\""
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section|PLUGIN_VERSION matches\""
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun run ci"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: awk '/^## \\[1.10.2\\]/{flag=1; next} /^## \\[/{flag=0} flag' CHANGELOG.md"
+            }
+          ]
+        },
+        {
+          "schema_version": "1.0",
+          "change_id": "improveMorphRecovery",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+          "task_id": "tk-a83d8d15e606",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-a83d8d15e606"
+          },
+          "agent": "adv-reviewer",
+          "phase": "review",
+          "verdict": "READY",
+          "blocking_findings": [],
+          "nonblocking_findings": [],
+          "changes_made": [],
+          "wisdom_candidates": [
+            {
+              "type": "success",
+              "content": "Release-metadata regression tests should assert package, README pin, runtime version constant, and non-empty changelog section together; this catches partial patch-version bumps before tag-triggered release notes are generated."
+            }
+          ],
+          "verification": {
+            "tests_run": [
+              "bun test -t \"release metadata consistency\"",
+              "bun test -t \"native edit recovery policy\""
+            ],
+            "results": "pass",
+            "evidence": "Focused metadata tests: 4 pass, 0 fail, 10 assertions. Focused recovery-policy tests: 3 pass, 0 fail, 38 assertions. Inspected final diff against origin/trunk (a5ebcc8): only CHANGELOG.md, README.md, index.test.ts, index.ts, instructions/morph-tools.md, package.json, and src/constants.ts changed; git diff --check passed; working tree clean. Per packet instruction, full CI was not rerun; supplied final CI evidence is 137 pass / 0 fail."
+          },
+          "scope_drift": null,
+          "risks": [],
+          "required_main_agent_actions": [],
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test -t \"release metadata consistency\""
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No adv_run_test evidence found for reported command: bun test -t \"native edit recovery policy\""
+            }
+          ]
+        }
+      ],
+      "verification": "RED evidence: focused release metadata assertions failed before version bump. GREEN: 5 focused release-metadata tests passed. VERIFY: bun run ci passed, 137 tests / 0 failures and clean typecheck. Diff reviewed: 5 intended source metadata/test files, whitespace clean.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Bumped source and runtime metadata to 1.10.2, added non-empty changelog release notes, aligned README pin, and added release metadata consistency coverage. No tag, publish, deployment, or global config change.",
+      "filesTouched": [
+        "CHANGELOG.md",
+        "README.md",
+        "index.test.ts",
+        "package.json",
+        "src/constants.ts"
+      ],
+      "touched_files": [
+        "CHANGELOG.md",
+        "README.md",
+        "index.test.ts",
+        "package.json",
+        "src/constants.ts"
+      ],
+      "checkpointSha": "7543fb95bb3cbcf8985780de9fe14050c5dfa905",
+      "completedAt": "2026-07-10T20:41:42.932Z",
+      "completed_at": "2026-07-10T20:41:42.932Z",
+      "notes": "Checkpoint 7543fb95bb3cbcf8985780de9fe14050c5dfa905. Focused release metadata tests and full CI passed.",
+      "updatedAt": "2026-07-10T20:41:52.320Z"
+    }
+  ],
+  "subagent_reports": [
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:design-validation"
+      },
+      "agent": "adv-researcher",
+      "topic": "Design validation — prose-only native-edit recovery guidance for opencode-morph-fast-apply",
+      "sources": [
+        {
+          "label": "OpenCode official plugins docs (tool.execute.before intercepts args; throw to block)",
+          "locator": "https://opencode.ai/docs/plugins/",
+          "summary": "tool.execute.before receives output.args and can mutate args or throw to block a tool BEFORE it runs (e.g. reject .env reads, escape bash commands). No documented contract to observe a native tool's failure and substitute a retry or reroute."
+        },
+        {
+          "label": "OpenCode-Book 13.2 Plugin Lifecycle Hooks — exact hook signatures",
+          "locator": "https://www.opencodebook.xyz/en/chapter_13_plugin_system/13.2_plugin_lifecycle_hooks",
+          "summary": "tool.execute.before(input,{args})=>Promise<void> modifies input args only; tool.execute.after(input,{title,output,metadata})=>Promise<void> modifies display output only. Both return void. No failure signal, no pass/fail branch, no re-invocation path. Confirms plugin cannot intercept/retry a native tool failure."
+        },
+        {
+          "label": "OpenCode issue #31680 — before-hook arg mutation was a no-op",
+          "locator": "https://github.com/anomalyco/opencode/issues/31680",
+          "summary": "Upstream bug: tool.execute.before arg mutation historically had no effect because the executor read original args, not hook output. Demonstrates the interception surface is fragile and unsuitable as a reliable native-edit retry/reroute substrate."
+        },
+        {
+          "label": "Local: index.ts morph_edit tool description + tool.execute.after hook",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.ts (L246-388)",
+          "summary": "Embedded morph_edit description already carries WHEN-TO-USE routing and a Morph-API-failure/timeout -> native edit FALLBACK line (L273). The only execution hook used is tool.execute.after for TUI title branding (L330) — display only, consistent with docs."
+        },
+        {
+          "label": "Local: instructions/morph-tools.md always-on routing policy",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/instructions/morph-tools.md",
+          "summary": "Canonical always-on instruction with First-Action table and Fallback Policy. Currently covers initial selection and Morph->native fallback only; has no post-native-edit-failure recovery branch — the exact gap the design fills."
+        },
+        {
+          "label": "Local: index.test.ts drift tests read all owned surfaces",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/index.test.ts (L29-80)",
+          "summary": "Tests already readFileSync both instructions/morph-tools.md and README.md and assert prose content; the pattern extends cleanly to assert the recovery rule across all three surfaces (index.ts description, instruction, README), satisfying SC4/AC5 and DONT4."
+        },
+        {
+          "label": "Local: prior archived change captured the same ownership boundary",
+          "locator": "/home/jon/dev/opencode-morph-fast-apply/.adv/archive/2026-06-07-fixImprovementFindings/change.json (L1159)",
+          "summary": "Prior research already recorded that plugin docs establish tool.execute.before argument interception but NOT a native-tool failure rewrite/retry contract — corroborating the boundary independently across two research passes."
+        }
+      ],
+      "architecture_assessment": "The design adds a single, ordered, prose-only native-edit recovery policy (re-read -> at most one corrected native edit only if still small/exact -> otherwise morph_edit) to three plugin-owned routing surfaces (index.ts tool description, instructions/morph-tools.md, README.md), preserves the existing Morph-API-failure/timeout -> native-edit fallback, and locks all three surfaces with drift tests. I independently verified the OpenCode plugin hook contract against two authoritative docs and one upstream issue. The hook surface is decisive: tool.execute.before can only mutate/throw on ARGS before a tool runs and tool.execute.after can only rewrite DISPLAY output after it runs; both return Promise<void> with no failure signal and no re-invocation capability. Therefore a plugin CANNOT observe a native edit's exact-match failure and automatically retry it or reroute to morph_edit. Automatic interception/retry is not supported by the platform. Prose-only guidance targeting the agent's own next action is the correct, and only, supported mechanism — this is the boring, proven solution (documentation + regression tests) over a novel unsupported runtime interception loop. Scope is correctly bounded: it does not touch native edit, the Morph API contract, safety guards, path confinement, secret scrubbing, readonly protections, or adv-engineer config. The design is internally consistent with the approved contract (SC1-SC5, AC1-AC5, C1-C4, DONT1-DONT4). Minor non-blocking execution risk: the plugin CANNOT structurally enforce 'at most one corrected native edit' (that bound is agent-behavioral, not machine-checkable), and tests can only assert prose PRESENCE/consistency, not runtime adherence — but this is inherent to any prose-routing change and the design already discloses it via C1 (must not claim automatic interception).",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "Design ownership boundary is source-confirmed: OpenCode plugin hooks cannot intercept/retry a native tool failure; prose-only guidance is the correct mechanism. Constraint C1 (do not claim automatic interception) is directly supported by the verified hook contract. Recommend two non-blocking planning notes: (1) keep the bounded-retry limit framed as agent-directed guidance, not a plugin-enforced guarantee, to stay truthful per C1/P33; (2) ensure drift tests assert the recovery rule in all THREE surfaces (index.ts description string, instruction file, README) so DONT4 cannot regress to single-surface coverage."
+      },
+      "architecture_judgement": {
+        "applicability": "applicable",
+        "confidence": "high",
+        "risk": "low",
+        "tradeoffs": [
+          "Prose-only guidance is not machine-enforceable: the 'at most one corrected native edit' bound and 'do not repeat unchanged input' rule depend on agent adherence; tests can assert prose presence/consistency but not runtime behavior.",
+          "Three parallel surfaces (tool description in index.ts, instruction file, README) create a small ongoing drift-maintenance cost, mitigated by the regression tests the design mandates.",
+          "Choosing documentation over runtime interception forgoes any automatic recovery, but the platform does not support automatic native-edit failure interception, so the alternative is illusory rather than a real lost capability."
+        ],
+        "alternatives_considered": [
+          {
+            "option": "Automatic interception/retry of native edit failures via tool.execute.before/after",
+            "disposition": "rejected",
+            "rationale": "Verified against OpenCode plugin docs and OpenCode-Book 13.2: before-hook controls ARGS only (mutate/throw pre-execution), after-hook controls DISPLAY output only; both return Promise<void> with no failure signal and no re-invocation path. Issue #31680 shows the interception surface was even historically a no-op. Automatic native-edit failure retry/reroute is not a supported contract."
+          },
+          {
+            "option": "New plugin tool surface or runtime retry loop wrapping edits",
+            "disposition": "rejected",
+            "rationale": "Explicitly excluded by DONT2; would require the plugin to own native edit execution, which it does not. Adds an unsupported, higher-risk runtime path for zero platform-backed benefit."
+          },
+          {
+            "option": "Single-surface guidance (only the tool description, or only the instruction file)",
+            "disposition": "rejected",
+            "rationale": "The three surfaces are consumed independently (embedded description is always present; instruction file is opt-in always-on; README is human-facing). Single-surface guidance leaves the others silent/contradictory and violates DONT4 and SC1's cross-surface consistency requirement."
+          },
+          {
+            "option": "Prose-only aligned recovery guidance across all three surfaces + drift tests (chosen)",
+            "disposition": "preferred",
+            "rationale": "Only platform-supported mechanism; boring/proven (docs + regression tests); bounded scope; preserves existing Morph->native fallback; consistent with C1 truthfulness constraint and existing index.test.ts test pattern."
+          }
+        ],
+        "recommendation": "Proceed to design-gate completion. Implement the ordered recovery policy as prose in all three owned surfaces, keep it framed as agent-directed guidance (never as plugin-enforced interception, per C1), preserve the existing Morph-API-failure/timeout -> native-edit fallback verbatim to satisfy AC4/DONT3, and add drift tests that assert the recovery rule in each of the three surfaces (index.ts description string, instruction file, README) to satisfy SC4/AC5/DONT4."
+      },
+      "recommendation": "PASS design validation. The design's central architectural claim — that this plugin cannot automatically intercept/retry native edit failures and must therefore use aligned prose-only routing guidance — is confirmed by authoritative OpenCode plugin hook documentation (before=args-only, after=display-only, both Promise<void>) and by an upstream bug showing the interception surface is fragile. This is the boring, correct solution. No blockers. Two non-blocking planning notes: (1) keep the bounded native-retry limit framed as agent guidance, not a machine-enforced guarantee, to remain truthful under C1; (2) ensure the drift tests cover all three surfaces so DONT4 cannot silently regress.",
+      "follow_ups": [
+        "Planning: write drift tests asserting the recovery rule in index.ts morph_edit description string AND instructions/morph-tools.md AND README.md (extends existing index.test.ts readFileSync pattern at L29-80) to satisfy SC4/AC5/DONT4.",
+        "Planning: verify the new wording does not weaken the existing Morph-API-failure/timeout -> native edit FALLBACK line in index.ts (L273) per AC4/DONT3."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "task_id": "tk-1aa43df758c2",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-1aa43df758c2"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "index.ts",
+        "instructions/morph-tools.md",
+        "README.md",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun /tmp/opencode/morph_recovery_red_check.mjs <worktree>",
+          "exit_code": 1,
+          "summary": "RED (expected): proved strengthened anchors are absent from pre-change HEAD of index.ts, instructions/morph-tools.md, README.md -> the new regression test would have failed before doc alignment."
+        },
+        {
+          "command": "bun test -t \"native edit recovery policy\"",
+          "exit_code": 0,
+          "summary": "GREEN: 3 recovery-policy tests pass, 33 expect() calls; all three surfaces contain the canonical anchors plus preserved API-fallback and write-boundary signals."
+        },
+        {
+          "command": "bun run ci",
+          "exit_code": 0,
+          "summary": "VERIFY: full suite 133 pass / 0 fail (280 expect() calls) and tsc --noEmit clean (ci = bun test && tsc --noEmit); SC5 satisfied."
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Used identical canonical recovery wording across all three surfaces (index.ts uses backtick-free variant because its description is a JS template literal; md files use backticked `edit`/`morph_edit`).",
+          "why": "The design requires the same sequence on every owned surface; identical wording makes drift tests deterministic and lets one shared anchor set guard all three surfaces (SC4/DONT4) instead of duplicating a single surface."
+        },
+        {
+          "what": "Added the recovery block as a named 'Native edit recovery' subsection (md files) and a 'NATIVE EDIT RECOVERY' block (index.ts), placed immediately before the existing Morph FALLBACK line.",
+          "why": "Keeps the new native-edit-failure recovery structurally separate from the preserved Morph API-error/timeout fallback (SC3/AC4) and makes the 'fallback below' reference accurate."
+        },
+        {
+          "what": "Used native edit (exact string replacements) for the four localized insertions rather than morph_edit.",
+          "why": "Each change was a small, uniquely-anchored insertion — the native-edit use case; no API dependency needed and lower risk for whitespace-sensitive template-literal/markdown edits."
+        },
+        {
+          "what": "Added an 'Unreleased' README changelog note instead of a version bump.",
+          "why": "Documents the policy alignment per repo convention without implying a release/version change (C4: no release/publish/deploy)."
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "Scanned all three routing surfaces for the pre-existing one-way fallback (Morph -> native edit) and confirmed none defined post-native-edit-failure recovery; applied the same canonical recovery wording to every owned surface and preserved the existing fallback in each. No other subsystem carries this routing policy, so no broader same-pattern edits were required.",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "Aligned all three owned routing surfaces (index.ts embedded morph_edit description, instructions/morph-tools.md, README.md) with the approved native-exact-edit recovery policy and added content-level regression tests in index.test.ts. The recovery sequence (re-read; do not repeat unchanged input; at most one corrected native edit only if still small and exact; otherwise morph_edit for multi-line/scattered/whitespace-sensitive/broader-anchoring; write only for new-file/full-file) is now stated identically across all three surfaces. The existing Morph API-error/timeout -> native edit fallback is preserved and explicitly distinguished from the new native-edit-failure recovery. Tests loop the same canonical anchors over all three surfaces so any single-surface drift fails the suite (DONT4). bun run ci exits 0 (133 pass / 0 fail; tsc --noEmit clean). Note: worktree had no node_modules; ran bun install to enable verification — bun.lock unchanged (git status shows only the 4 intended files).",
+        "suggested_next_action": "Review the 4-file diff and mark task tk-1aa43df758c2 done; all SC1-SC5 / AC1-AC5 are satisfied and C1-C4 / DONT1-DONT4 respected."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun /tmp/opencode/morph_recovery_red_check.mjs <worktree>"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test -t \"native edit recovery policy\""
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run ci"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "review:acceptance"
+      },
+      "agent": "adv-reviewer",
+      "phase": "review",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [],
+      "changes_made": [
+        {
+          "file": "index.test.ts",
+          "summary": "Strengthened all three policy-surface assertions: require native mismatch trigger, full bounded recovery sequence, explicit write-only boundary, and retained native-edit API fallback. Replaced weak generic anchors that could pass after omission of recovery-specific policy.",
+          "verification": "bun test -t \"native edit recovery policy\" passed: 3 tests, 38 assertions, 0 failures. Checkpoint commits: 0b4c11e and 631d995."
+        }
+      ],
+      "wisdom_candidates": [
+        {
+          "type": "pattern",
+          "content": "Content-policy regression tests should assert recovery-specific phrases and boundaries per owned surface; generic tokens such as tool names or a broad write mention can create false confidence after policy drift."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "bun test -t \"native edit recovery policy\""
+        ],
+        "results": "pass",
+        "evidence": "Focused post-remediation verification passed: 3/3 tests, 38 assertions, 0 failures. git diff --check from trunk merge-base to HEAD was clean. Checkpoint evidence recorded bun run ci passing at 055f29e; not duplicated because review change only strengthened focused test assertions."
+      },
+      "scope_drift": null,
+      "risks": [
+        "No runtime, API request-contract, safety-guard, native-edit interception, release, publishing, or deployment behavior changed; review found documentation and test-only changes across the three owned surfaces.",
+        "Full CI was already passing at checkpoint 055f29e; post-review change is test-only and focused policy coverage passed."
+      ],
+      "required_main_agent_actions": []
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "verifier:post-review"
+      },
+      "agent": "adv-verification-triage-bundle",
+      "phase": "local_verify",
+      "targets": [
+        {
+          "kind": "command",
+          "command": "git rev-parse HEAD",
+          "exit_code": 0
+        },
+        {
+          "kind": "command",
+          "command": "bun run ci",
+          "exit_code": 0
+        }
+      ],
+      "status": "pass",
+      "error_class": "UNKNOWN",
+      "confidence": "high",
+      "evidence_basis": "Final HEAD 631d995e5952794c14992c35b9919a00999ba850 verified. `bun run ci` completed successfully: 133 tests passed, 0 failed, 285 expectations; `tsc --noEmit` exited successfully.",
+      "findings": [
+        {
+          "id": "verify-001",
+          "severity": "info",
+          "summary": "Final reviewed HEAD and CI suite pass.",
+          "evidence": [
+            {
+              "label": "HEAD",
+              "locator": "command: git rev-parse HEAD",
+              "summary": "631d995e5952794c14992c35b9919a00999ba850"
+            },
+            {
+              "label": "CI output",
+              "locator": "command: bun run ci",
+              "summary": "133 pass, 0 fail, 285 expectations; exit code 0."
+            }
+          ]
+        }
+      ],
+      "recommended_next_action": "continue",
+      "scope_risk": false,
+      "suggested_handoff": {
+        "summary": "Final reviewed policy/test change is verified and ready for acceptance review.",
+        "in_scope": [
+          "Verify final branch HEAD and complete local CI after reviewer test-strengthening commits."
+        ],
+        "out_of_scope": [
+          "Remote CI, release, publish, and deployment."
+        ],
+        "done_when": [
+          "HEAD matches reviewed commit 631d995.",
+          "`bun run ci` exits 0."
+        ],
+        "verification": [
+          "`git rev-parse HEAD` returns 631d995e5952794c14992c35b9919a00999ba850.",
+          "`bun run ci` exits 0 with 133 passing tests and clean typecheck."
+        ]
+      },
+      "required_main_agent_actions": [],
+      "follow_ups": []
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "harden:release"
+      },
+      "agent": "adv-reviewer",
+      "phase": "harden",
+      "verdict": "BLOCKED",
+      "blocking_findings": [
+        {
+          "id": "deployment-readiness-1",
+          "label": "blocker",
+          "file": "docs/checklists/harden-checklist.md",
+          "line": 1,
+          "what": "Requested release-hardening checklist is absent from final HEAD/worktree.",
+          "why": "Release readiness cannot be attested against the mandated checklist; its required controls and evidence expectations are unavailable.",
+          "fix": "Restore the checklist to this worktree or provide the authoritative checklist content, then rerun hardening."
+        }
+      ],
+      "nonblocking_findings": [],
+      "changes_made": [],
+      "wisdom_candidates": [
+        {
+          "type": "pattern",
+          "content": "For instruction-only recovery policies, keep the embedded tool description, packaged instruction, and README aligned and test the same canonical anchors across all three surfaces."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "test -e \"docs/checklists/harden-checklist.md\" && echo OK || echo MISSING",
+          "git status --short && git rev-parse HEAD && git log --oneline -5 && git show --stat --oneline --summary 631d995",
+          "bun test index.test.ts",
+          "git diff --check a5ebcc8..631d995",
+          "git diff a5ebcc8..631d995 -- index.ts index.test.ts README.md instructions/morph-tools.md"
+        ],
+        "results": "pass",
+        "evidence": "Final HEAD is 631d995e5952794c14992c35b9919a00999ba850 and worktree is clean. Focused suite passed: 133 tests, 0 failures, 285 assertions. Diff check produced no whitespace errors. Reviewed final delta: bounded native-edit recovery policy is consistently present in index.ts, instructions/morph-tools.md, and README.md; index.test.ts locks those three surfaces together and confirms Morph API error/timeout -> native edit fallback remains. Test/TDD evidence: regression coverage exists and passes. Slop: no redundant runtime layer or generated/dead artifact added; tests are concise policy-drift assertions. Documentation hygiene: README Unreleased notes and packaged instructions match embedded description. Cleanup: clean worktree; four intentional source/docs/test files only; no generated artifacts. Production readiness: recovery directs reread, forbids unchanged retry, bounds corrected native edit to one exact retry, then routes broader repairs to morph_edit; original API fallback retained. Deployment readiness: package manifest includes index.ts, src/, README.md, LICENSE, instructions/, so changed packaged instruction and README are included. However, docs/checklists/harden-checklist.md is missing, so checklist-specific release attestation is blocked."
+      },
+      "scope_drift": null,
+      "risks": [
+        "Checklist-specific hardening controls could not be assessed because docs/checklists/harden-checklist.md is absent.",
+        "Instruction behavior relies on active agents exposing the stated native edit, morph_edit, and write tools; this is documented but not executable by this package."
+      ],
+      "required_main_agent_actions": [
+        "Restore docs/checklists/harden-checklist.md to the change worktree or provide its authoritative content.",
+        "After the checklist is available, rerun this hardening review against its explicit controls before release. No code or documentation remediation was required from the reviewed final delta.",
+        "Do not revisit final HEAD 631d995 implementation, recovery-policy wording, packaging list, or focused test suite unless the restored checklist identifies a concrete discrepancy."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 2,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "harden:release"
+      },
+      "agent": "adv-reviewer",
+      "phase": "harden",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [],
+      "changes_made": [],
+      "wisdom_candidates": [
+        {
+          "type": "pattern",
+          "content": "Bounded instruction-only behavior benefits from one canonical anchor list tested against each owned delivery surface, preventing documentation drift without adding runtime machinery."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "git status --short && git rev-parse HEAD && git diff --check a5ebcc8..631d995 && git diff --stat a5ebcc8..631d995 && git diff a5ebcc8..631d995 -- README.md instructions/morph-tools.md index.ts index.test.ts",
+          "bun test index.test.ts (final verifier evidence on unchanged HEAD)",
+          "tsc --noEmit (final verifier evidence on unchanged HEAD)"
+        ],
+        "results": "pass",
+        "evidence": "PASS 1 Test/TDD: final verifier recorded bun test index.test.ts: 133 pass, 0 fail, and tsc --noEmit clean on unchanged HEAD 631d995; new regression tests assert all canonical recovery anchors plus preserved API-error/timeout fallback across index.ts, packaged instruction, and README. PASS 2 AI slop/type erosion: 100-line delta is declarative policy/docs plus focused content-level drift tests; no placeholders, casts, any types, broad catches, naive retry loop, or redundant runtime abstraction added. PASS 3 Documentation hygiene: the same bounded five-step rule appears in the embedded tool description, packaged instruction, README troubleshooting section, and Unreleased changelog; wording differentiates native-edit recovery from existing Morph API fallback, with no conflict or stale release claim. PASS 4 Cleanup: final diff contains only four intentional tracked files; worktree is clean; no debug output, temp artifact, dead import, orphaned test, or whitespace error found. PASS 5 Production readiness: no runtime/safety/API/dependency code changed. Policy explicitly requires reread before retry, prohibits unchanged retry, permits at most one narrowly proven native retry, directs broader repairs to morph_edit, retains intentional full-file write boundary, and preserves existing API-error/timeout -> native-edit fallback. PASS 6 Deployment readiness: N/A for env, migration, external-service, CI/CD, infrastructure, feature flag, and deployment steps because the final delta is documentation/tool-description/test text only. Packaging impact is PASS: package.json already ships index.ts, README.md, and instructions/, covering all changed distributable surfaces. Final HEAD remains 631d995e5952794c14992c35b9919a00999ba850; git diff --check is clean."
+      },
+      "scope_drift": null,
+      "risks": [
+        "Instruction delivery still depends on host agent profiles exposing the native edit, morph_edit, and write tools; existing documentation states this limitation.",
+        "No live external Morph API call was appropriate or needed for this text-only delta."
+      ],
+      "required_main_agent_actions": []
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:release-design-validation"
+      },
+      "agent": "adv-researcher",
+      "topic": "v1.10.2 release/deployment expanded design validation",
+      "sources": [
+        {
+          "label": "Bun install/CI docs (bun ci = frozen lockfile)",
+          "locator": "https://bun.com/docs/pm/cli/install",
+          "summary": "bun ci is a real command equal to `bun install --frozen-lockfile`; installs exact versions from bun.lock and FAILS the build if package.json is out of sync with bun.lock. Requires bun.lock committed. Confirms release.yml line 22 `bun ci` is valid."
+        },
+        {
+          "label": "Bun git-dependency docs (commit-ish pinning)",
+          "locator": "https://bun.com/docs/guides/install/add-git",
+          "summary": "github:user/repo without a commit-ish resolves the latest commit on the default branch; a #v1.10.2 tag suffix pins a specific tag. Confirms deterministic-deploy design requires the #v1.10.2 pin."
+        },
+        {
+          "label": "Bun re-resolution / lockfile reset docs",
+          "locator": "https://bun.com/docs/guides/install/trusted",
+          "summary": "Documents rm -rf node_modules + rm bun.lock + bun install as the reliable re-install path when dependency resolution must be forced. Basis for the git-tag re-resolution hazard note."
+        },
+        {
+          "label": "Local project package.json (release repo)",
+          "locator": "worktree/.../package.json:3,17",
+          "summary": "version currently 1.10.1; ci script = `bun test && tsc --noEmit`. Version bump to 1.10.2 changes package.json name/version block."
+        },
+        {
+          "label": "Local project release.yml",
+          "locator": "worktree/.../.github/workflows/release.yml:5,22,33-35",
+          "summary": "Triggers on tags v*; runs `bun ci` then `bun test`+`typecheck`; awk-extracts `## [VERSION]` notes from CHANGELOG.md (version = ref name minus leading v). Creates/edits gh release idempotently."
+        },
+        {
+          "label": "Local project CHANGELOG.md",
+          "locator": "worktree/.../CHANGELOG.md:8-10",
+          "summary": "Has empty `## [Unreleased]` then `## [1.10.1]`. NO `## [1.10.2]` section exists yet. awk extract for v1.10.2 would emit empty notes unless a non-empty section is added first."
+        },
+        {
+          "label": "Global OpenCode config package.json",
+          "locator": "/home/jon/.config/opencode/package.json:5",
+          "summary": "opencode-morph-fast-apply pinned as `github:JRedeker/opencode-morph-fast-apply` (UNPINNED = latest default-branch commit). No lockfile present in ~/.config/opencode (glob *.lock* empty). Local deploy pin to #v1.10.2 needed for determinism."
+        },
+        {
+          "label": "Canonical tag-after-merge practice",
+          "locator": "https://softwareengineering.stackexchange.com/questions/442334",
+          "summary": "By-the-book consensus: tag stable code on the default branch, never feature/PR branches (tag drift on rebase/force-push, branch deletion, tag points to non-released commit). Matches design's tag-only-after-merge-proof ordering."
+        },
+        {
+          "label": "Tag reachability from default branch (git describe / merge-base)",
+          "locator": "https://stackoverflow.com/questions/49665094",
+          "summary": "A tag is only reachable from the default branch once its commit is merged there; git merge-base --is-ancestor / git branch --contains are the canonical reachability checks. Supports AC5 default-branch reachability proof gate."
+        }
+      ],
+      "architecture_assessment": "The expanded design is architecturally sound and follows by-the-book release/deployment sequencing. Source-authored release-prep (version + CHANGELOG + test expectations) committed on the change branch, ADV archive merging to the default branch, tag-only-after-merge-proof, tag-triggered GitHub Actions release, then a separate deterministic local-deploy step (pin existing git dependency to #v1.10.2, install, sync stable instruction, backup non-secret config, verify installed version + `opencode debug config`, require restart) is the correct shape. Two integrity gaps and several ordering hazards must be respected during execution: (1) release.yml `bun ci` is frozen-lockfile install and FAILS if package.json is out of sync with the tracked bun.lock — a version bump to 1.10.2 changes package.json, so bun.lock must be regenerated/synced in the SAME release-prep commit or CI will fail on the tag. (2) CHANGELOG.md currently has no `## [1.10.2]` section (only empty Unreleased + 1.10.1); the awk extractor emits empty release notes unless a non-empty 1.10.2 section is authored first (agreement SC5/AC-changelog already requires this). (3) Local deploy pins an UNPINNED github: dependency with no lockfile in ~/.config/opencode; git-tag pins can be served from Bun's cache, so re-resolution should be forced (explicit #v1.10.2 in package.json + install; if the installed version does not read 1.10.2, clear node_modules and reinstall) and verified by reading the installed manifest version, not assumed. (4) Config-integrity ordering: backup non-secret config state BEFORE editing ~/.config/opencode/package.json (constraint C6), and treat stable-instruction sync as mandatory co-equal with the package pin (avoidance A5 — do not update the package while leaving the instruction stale). None of these compromise the accepted policy-only Morph-recovery contract; they are release-mechanics correctness requirements the agreement already largely encodes.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "No architecture blocker and no contract-compromise risk. Design ordering (source prep -> merge -> merge-proof -> tag -> verify GH release -> pin/install/sync/backup/verify/restart) is canonical. Execution must honor four non-blocking integrity requirements captured in the assessment: (1) sync bun.lock in the version-bump commit so `bun ci` passes on the tag; (2) author a non-empty `## [1.10.2]` CHANGELOG section before tagging; (3) force + verify git-tag re-resolution on local deploy (no lockfile present, cache hazard); (4) backup-before-edit and mandatory stable-instruction sync. These are already reflected in agreement SC4/SC5/SC6/SC8, C5/C6, and A4/A5 — recommend the planning gate turn each into an explicit verification task rather than leaving them implicit."
+      },
+      "architecture_judgement": {
+        "applicability": "applicable",
+        "confidence": "high",
+        "risk": "low",
+        "tradeoffs": [
+          "Tag-after-merge-proof adds a serialization point (cannot tag until ADV Phase 9 proves default-branch reachability) but eliminates tag-drift/orphan-tag failure modes from feature-branch tagging.",
+          "Frozen-lockfile CI (`bun ci`) buys reproducible releases but converts any package.json/bun.lock skew into a hard tag-time CI failure, so the version bump must carry the lockfile update atomically.",
+          "Pinning the local git dependency to #v1.10.2 gains determinism but loses auto-tracking of future default-branch commits; acceptable and intended for a verified deployment, and reversible.",
+          "CHANGELOG-driven release notes keep a single source of truth but make an empty/missing `## [1.10.2]` section silently produce empty GitHub release notes — a content precondition, not an error the workflow surfaces."
+        ],
+        "alternatives_considered": [
+          {
+            "option": "Tag the change branch / tag before merge",
+            "disposition": "rejected",
+            "rationale": "Canonical guidance (softwareengineering.stackexchange 442334, gitflow) says tags belong on stable default-branch commits; feature-branch tags drift on rebase/force-push and can point to never-released commits. Design already forbids this (avoidance A4, constraint C5)."
+          },
+          {
+            "option": "Bump version without updating bun.lock",
+            "disposition": "rejected",
+            "rationale": "release.yml runs `bun ci` = frozen-lockfile; a package.json version change with a stale bun.lock fails the tag build. Lockfile must be synced in the same release-prep commit."
+          },
+          {
+            "option": "Leave global dependency unpinned (github:JRedeker/... default branch)",
+            "disposition": "rejected",
+            "rationale": "Unpinned github: resolves latest default-branch commit, which is non-deterministic and defeats 'deploy exactly v1.10.2'. Pin to #v1.10.2 (Bun git commit-ish docs)."
+          },
+          {
+            "option": "Publish to npm as the deployment channel",
+            "disposition": "rejected",
+            "rationale": "Out of scope by explicit agreement constraint C4; local OpenCode consumes the plugin via the git dependency, so a git-tag deploy is the correct and sufficient channel."
+          },
+          {
+            "option": "Update installed package only, skip stable-instruction sync",
+            "disposition": "rejected",
+            "rationale": "Global config loads the always-on instruction independently of the installed plugin; skipping the sync leaves policy drift (avoidance A5). Sync + verify both surfaces."
+          }
+        ],
+        "recommendation": "Proceed. At planning, materialize four explicit verification tasks: (1) version bump + bun.lock sync in one commit, asserted by a local `bun ci` before tagging; (2) author non-empty `## [1.10.2]` CHANGELOG section and assert awk-extract is non-empty; (3) local deploy = backup non-secret config -> pin #v1.10.2 -> install -> if installed manifest version != 1.10.2 force clean reinstall (rm node_modules) -> read installed version + sync stable instruction + `opencode debug config` exit 0; (4) gate tag push on ADV Phase 9 default-branch reachability proof and confirm `gh release view v1.10.2` non-draft with notes."
+      },
+      "recommendation": "Validation PASS, high confidence, low risk, no contract compromise. Design ordering is canonical (tag only after merge-proof; deterministic #v1.10.2 pin; verify-not-assume deploy). Before/at planning, convert four implicit integrity requirements into explicit tasks: (a) sync bun.lock in the version-bump commit so tag-time `bun ci` passes; (b) add a non-empty `## [1.10.2]` CHANGELOG section so the awk extractor emits real release notes; (c) force + verify git-tag re-resolution on local deploy since ~/.config/opencode has no lockfile and Bun may serve a cached git ref (assert installed manifest reads 1.10.2, clean-reinstall if not); (d) backup non-secret config BEFORE editing package.json and treat stable-instruction sync as mandatory co-equal with the package pin.",
+      "follow_ups": [
+        "Confirm ~/.config/opencode/package.json edit will preserve the two unrelated deps (@opencode-ai/plugin pin, opencode-firecrawl) — only the morph line gets #v1.10.2.",
+        "During local deploy, verify installed version by reading the installed node_modules manifest, not by assuming bun add succeeded, because a cached git ref can leave an older commit in place with no lockfile to enforce the pin."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:corrected-release-design"
+      },
+      "agent": "adv-researcher",
+      "topic": "Corrected v1.10.2 release design boundary: acceptance-scoped source prep vs post-Phase-9 tag/release/deploy",
+      "sources": [
+        {
+          "label": "llmbestpractices — GitHub Releases (canonical release convention)",
+          "locator": "https://llmbestpractices.com/tooling/github-releases",
+          "summary": "'Every release tag points to a commit on main.' Confirms release tags must originate from the default branch, not a feature branch. Directly validates design step 3 (tag only at merged default-branch commit)."
+        },
+        {
+          "label": "PyPA gh-action-pypi-publish Discussion #42 (release-PR tag ownership)",
+          "locator": "https://github.com/pypa/gh-action-pypi-publish/discussions/42",
+          "summary": "Authoritative description of the exact tension in this design: a tag on a release/feature branch 'does not belong to main and can easily be deleted'; only after the PR merges does the tag 'start belonging to main'. Confirms feature-branch tag publication is the risk being avoided."
+        },
+        {
+          "label": "flipt-io/flipt commit acda1ab — tag squashed merge commit and verify reachability (#6083)",
+          "locator": "https://github.com/flipt-io/flipt/commit/acda1ab153efd8dc29aa6adb011a997b14a48b87",
+          "summary": "Real-world release-process fix for the exact orphan-tag failure mode: squash-merge produces a NEW commit SHA; tagging the local release-branch commit orphans the tag (not an ancestor of default branch). Fix = hard-sync to origin default, confirm HEAD is squashed commit, add `git merge-base --is-ancestor` reachability gate before pushing the tag. Mirrors this design's Phase-9-merge-proof-then-tag-then-verify ordering."
+        },
+        {
+          "label": "git-scm git-tag / Git Basics Tagging docs",
+          "locator": "https://git-scm.com/docs/git-tag",
+          "summary": "Annotated-vs-lightweight tag semantics; a commit not reachable from any branch is 'unreachable, except by the exact commit hash'. Confirms tag reachability from the default branch is the correct structural proof, and annotated tags (design's choice) carry tagger/date/message metadata."
+        },
+        {
+          "label": "DEV — Automating releases with GitHub Actions (anti-pattern statement)",
+          "locator": "https://dev.to/madhan_gannarapu/automating-flutter-android-releases-to-google-play-using-github-actions-9lj",
+          "summary": "'Do not release production directly from a random feature branch. That is not CI/CD. That is gambling.' Production release triggers from tags on the release-ready branch, not feature merges. Reinforces the boundary."
+        },
+        {
+          "label": "In-repo release workflow .github/workflows/release.yml (verified in worktree)",
+          "locator": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery/.github/workflows/release.yml",
+          "summary": "Confirmed: workflow triggers on `push: tags: ['v*']`, runs `bun ci` + `bun test` + typecheck, extracts notes via awk from `## [VERSION]` CHANGELOG section, and `gh release create`. Validates every downstream dependency claim in the design: tag-triggered, non-empty changelog section required, GitHub release created from tag."
+        },
+        {
+          "label": "In-repo package.json + ci.yml (verified in worktree)",
+          "locator": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery/package.json",
+          "summary": "Current version 1.10.1 (design targets 1.10.2 patch — correct semver for docs/coverage correction with no API break). `ci` script = `bun test && tsc --noEmit`; CI runs on trunk push/PR. `bun ci` install is frozen-lockfile, so package/lock skew fails, validating the design's lock-consistency failure-handling row."
+        }
+      ],
+      "architecture_assessment": "The corrected design boundary is architecturally sound and matches canonical release-engineering practice. The core split — (1) source release preparation (package.json version, README pinned example, index.test.ts version/changelog assertions, non-empty CHANGELOG `## [1.10.2]` section, frozen-lockfile-clean bun.lock) is acceptance-scoped and completable pre-merge; (2) annotated tag creation, tag-triggered GitHub release publication/verification, and local deployment are mandatory post-Phase-9 operations gated on default-branch merge proof — is exactly the ordering that authoritative sources prescribe. The design correctly recognizes that tag/release CANNOT be truthful acceptance criteria for pre-merge work, because a tag pushed before merge would publish an unmerged feature-branch commit (llmbestpractices: tags point to commits on main; PyPA #42: a pre-merge tag 'does not belong to main'). The flipt-io/flipt fix (acda1ab) is a production precedent for this exact orphan-tag hazard under squash-merge and validates the design's step 5 reachability verification (tag target must equal the merged default-branch commit) as the correct structural gate rather than a heuristic. The design's failure-handling table ('Phase 9 merge unavailable → do not tag, publish, or deploy') and its rejected alternative ('Tag before merge: can publish unmerged code') are both correct and directly supported. The deployment half (pin global dependency to `github:...#v1.10.2`, verify installed manifest == 1.10.2, sync stable instruction path, report restart requirement) is deterministic and matches the design's own prior researcher-confirmed pinning rationale; unpinned default-branch resolution cannot prove deployed version, so pinning is the correct choice. Boundary preserves the user-requested end state: source metadata shipped and verifiable pre-merge, and tag/GitHub-release/local-deploy all completed after merge proof — nothing dropped, only re-sequenced to be truthful.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "Design boundary validated against 5 authoritative external sources plus 3 in-repo workflow/manifest verifications. No blockers. The typed acceptance contract correctly scopes only pre-merge source release preparation; tag/GitHub-release/deploy are correctly reframed as post-Phase-9 mandatory completion operations gated on default-branch merge proof. This avoids feature-branch publication (the stated risk) and preserves the user-requested full end state. Two non-blocking follow-ups noted."
+      },
+      "architecture_judgement": {
+        "applicability": "applicable",
+        "confidence": "high",
+        "risk": "low",
+        "tradeoffs": [
+          "Splitting the deliverable across the Phase-9 boundary means the ADV acceptance gate cannot mechanically prove the shipped GitHub release or local deployment; those must be verified by explicit post-archive completion evidence (tag reachability, `gh release view v1.10.2`, installed manifest version). This is the correct tradeoff — mechanical acceptance of a not-yet-mergeable artifact would be a false claim — but it shifts release-completion proof from the contract review matrix to post-archive operational evidence.",
+          "Annotated-tag-after-merge ordering adds one manual/ordered step (create+push tag at the merged commit, then verify target) versus a single pre-merge tag, in exchange for eliminating the orphan-tag/unmerged-publication failure mode. Worthwhile: the failure mode is silent and produces spanning/incorrect release notes (flipt precedent).",
+          "Pinning the global OpenCode dependency to an immutable tag ref (`#v1.10.2`) trades auto-tracking of future default-branch changes for deterministic, provable deployed version — required to satisfy the 'verify deployed manifest == 1.10.2' condition."
+        ],
+        "alternatives_considered": [
+          {
+            "option": "Keep tag/GitHub-release/deploy as typed acceptance criteria (pre-merge)",
+            "disposition": "rejected",
+            "rationale": "Cannot be truthfully satisfied before Phase 9: tagging a pre-merge feature-branch commit publishes unmerged code and orphans the tag off the default branch (PyPA #42; flipt acda1ab; llmbestpractices). Making unsatisfiable-until-merge conditions into acceptance criteria is a contract-compromise, which is exactly why discovery was re-entered."
+          },
+          {
+            "option": "Tag the local release-branch commit, then merge",
+            "disposition": "rejected",
+            "rationale": "Orphan-tag hazard: under squash-merge the merged commit has a new SHA, so the tag is not an ancestor of the default branch and the tag-triggered release runs against an unmerged commit. flipt-io/flipt fixed this exact bug by adding a `git merge-base --is-ancestor` reachability gate before pushing."
+          },
+          {
+            "option": "Keep the global OpenCode dependency unpinned (default-branch ref)",
+            "disposition": "rejected",
+            "rationale": "Cannot prove which version is deployed locally; violates the design's deterministic-deployment and 'verify installed manifest == 1.10.2' requirement. git-scm confirms only pinned refs give a stable reference point."
+          },
+          {
+            "option": "npm publish for distribution",
+            "disposition": "rejected",
+            "rationale": "Outside the repository's tag-triggered GitHub-release workflow and outside the agreement scope; the install path is a GitHub dependency ref, not an npm registry package."
+          }
+        ],
+        "recommendation": "Proceed with the corrected boundary unchanged. It is canonically correct and low-risk. Recommend the design/plan additionally encode an explicit reachability gate in the post-Phase-9 tag step — verify `git merge-base --is-ancestor <tag-commit> origin/trunk` (or confirm the tag target SHA equals the merged default-branch HEAD) BEFORE pushing the tag, not only after — to structurally prevent the orphan-tag failure mode rather than detect it post-hoc (flipt precedent). Also confirm during planning that the release workflow's `bun ci` (frozen lockfile) will pass at the tagged commit by ensuring any bun.lock regeneration is committed in the acceptance-scoped source-prep step."
+      },
+      "recommendation": "Design boundary is VALID — approve as-is. Acceptance contract correctly limited to pre-merge source release preparation; tag creation, GitHub release verification, and local deployment are correctly mandatory post-Phase-9 operations gated on default-branch merge proof. This avoids feature-branch publication and preserves the full user-requested end state. Add an explicit pre-push `git merge-base --is-ancestor` reachability gate to the tag step to structurally enforce (not just verify) that the tag targets the merged default-branch commit.",
+      "follow_ups": [
+        "Planning: encode a pre-push reachability gate (`git merge-base --is-ancestor <tag-commit> origin/<default>`) in the post-Phase-9 tag step, mirroring flipt-io/flipt acda1ab, to prevent orphan tags structurally.",
+        "Planning: ensure any bun.lock regeneration triggered by the version bump is committed within the acceptance-scoped source-prep step so the tag-triggered release workflow's frozen-lockfile `bun ci` passes at the tagged commit.",
+        "Note: the briefing packet (_briefingPacket) was truncated by output budget; validation relied on the authoritative _design and _agreement artifacts plus direct in-worktree workflow/manifest reads, which were sufficient for this design-boundary question."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "task_id": "tk-a83d8d15e606",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-a83d8d15e606"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "files_touched": [
+        "package.json",
+        "README.md",
+        "CHANGELOG.md",
+        "index.test.ts",
+        "src/constants.ts"
+      ],
+      "verification": [
+        {
+          "command": "bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section\"",
+          "exit_code": 1,
+          "summary": "RED (expected): 4 fail / 0 pass before metadata bump — README still had #v1.10.1, package.json version was 1.10.1, CHANGELOG had no 1.10.2 section. Captured via bash because adv_run_test returned TemporalQueryTimeout."
+        },
+        {
+          "command": "bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section|PLUGIN_VERSION matches\"",
+          "exit_code": 0,
+          "summary": "GREEN: 5 pass / 0 fail after metadata bump (version pin, package.json version, README pin, CHANGELOG non-empty section, PLUGIN_VERSION consistency). Captured via bash (adv_run_test unavailable)."
+        },
+        {
+          "command": "bun run ci",
+          "exit_code": 0,
+          "summary": "VERIFY: `bun test && tsc --noEmit` — 137 pass / 0 fail, 295 expect() calls; tsc clean. (Fixed an initial TS2769 in the new PLUGIN_VERSION test by narrowing `string | undefined` before toBe; final run green.) Captured via bash (adv_run_test unavailable)."
+        },
+        {
+          "command": "awk '/^## \\[1.10.2\\]/{flag=1; next} /^## \\[/{flag=0} flag' CHANGELOG.md",
+          "exit_code": 0,
+          "summary": "Release-workflow extraction simulation: yields a non-empty notes body (the two recovery-policy bullets), confirming `gh release create --notes-file` will receive real notes for v1.10.2."
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Bumped src/constants.ts PLUGIN_VERSION 1.10.1->1.10.2 in addition to the four enumerated files and added a consistency test tying it to package.json",
+          "why": "PLUGIN_VERSION is the plugin's runtime self-reported version surfaced in tool metadata (index.ts). Leaving it at 1.10.1 would make the running plugin mis-report its release, violating SC4 ('release metadata all identify 1.10.2'). It is the same stale-version class as the README pin, so related-scan/campsite required aligning it. Metadata string only; no behavior change."
+        },
+        {
+          "what": "Left bun.lock untouched",
+          "why": "The bump is version-only with no dependency change. bun.lock workspaces[''] records the root package name and dependency ranges but not the root package version, so a version-only bump does not require lock regeneration."
+        },
+        {
+          "what": "CHANGELOG [1.10.2] notes describe the recovery policy and cross-surface regression tests",
+          "why": "That is the actual content of this change (README/index.ts/instructions recovery-policy docs + tests, diff since 1.10.1). The tag-release workflow feeds this body to `gh release create --notes-file`, so it must be non-empty and recovery-policy accurate."
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [
+        "adv_run_test could not record red/green/verify phase evidence this session (TemporalQueryTimeout on every attempt; adv_temporal_reconnect succeeded but did not restore the adv_run_test signal path). Verification was captured via direct bash with explicit exit codes instead. Restore the shared Temporal service layer and, if tool-recorded phase evidence is required for acceptance, re-run the three phases with adv_run_test."
+      ],
+      "related_scan": "Searched the repo for stale '1.10.1' / '#v1.10' pins. Fixed the same-pattern stale runtime self-reported version in src/constants.ts (PLUGIN_VERSION) and guarded it with a consistency assertion. Remaining '1.10.1' occurrences are legitimate: CHANGELOG '## [1.10.1]' past-release heading and index.test.ts mock-runtime fixtures that inject PLUGIN_VERSION '1.0.0' for execute.ts tests (unrelated to the real constant). No other live version pins remain.",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "v1.10.2 pre-merge source release preparation complete and verified in the worktree only. Changed 5 files: package.json 1.10.1->1.10.2; README.md install pin #v1.10.1->#v1.10.2 (line 48); CHANGELOG.md new non-empty '## [1.10.2] - 2026-07-10' Added section with recovery-policy notes (the release workflow's awk '/^## \\[1.10.2\\]/' extracts a non-empty notes body, confirmed by simulation); index.test.ts updated the version-pin assertion to v1.10.2 and added a 'release metadata consistency' describe (4 tests) cross-checking package.json, README pin, PLUGIN_VERSION, and CHANGELOG section; src/constants.ts PLUGIN_VERSION 1.10.1->1.10.2 (runtime self-reported version surfaced in tool metadata) plus a guarding consistency test. bun.lock NOT changed (version-only bump; lockfile workspaces[''] tracks name+dependencies, not root version). No tag/publish/deploy/global-config edits; runtime/safety/API/native-edit/release-workflow/plugin behavior untouched. INFRA NOTE: adv_run_test was unusable this session (TemporalQueryTimeout on every call; adv_temporal_reconnect did not restore it), so RED/GREEN/VERIFY were captured via direct bash with explicit exit codes rather than tool-recorded phase evidence.",
+        "suggested_next_action": "Proceed to acceptance: source release prep is verified (bun run ci exit 0, 137 pass, tsc clean). Tag/publish/local-deploy remain post-Phase-9 operations owned by the orchestrator; do not tag v1.10.2 until merge proof. Optionally restore STSL and re-run with adv_run_test if tool-recorded red/green/verify phase evidence is required (it was unavailable this session)."
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section\""
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test index.test.ts -t \"version pin|release version|pinned-version example|non-empty section|PLUGIN_VERSION matches\""
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun run ci"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: awk '/^## \\[1.10.2\\]/{flag=1; next} /^## \\[/{flag=0} flag' CHANGELOG.md"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "improveMorphRecovery",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+      "task_id": "tk-a83d8d15e606",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-a83d8d15e606"
+      },
+      "agent": "adv-reviewer",
+      "phase": "review",
+      "verdict": "READY",
+      "blocking_findings": [],
+      "nonblocking_findings": [],
+      "changes_made": [],
+      "wisdom_candidates": [
+        {
+          "type": "success",
+          "content": "Release-metadata regression tests should assert package, README pin, runtime version constant, and non-empty changelog section together; this catches partial patch-version bumps before tag-triggered release notes are generated."
+        }
+      ],
+      "verification": {
+        "tests_run": [
+          "bun test -t \"release metadata consistency\"",
+          "bun test -t \"native edit recovery policy\""
+        ],
+        "results": "pass",
+        "evidence": "Focused metadata tests: 4 pass, 0 fail, 10 assertions. Focused recovery-policy tests: 3 pass, 0 fail, 38 assertions. Inspected final diff against origin/trunk (a5ebcc8): only CHANGELOG.md, README.md, index.test.ts, index.ts, instructions/morph-tools.md, package.json, and src/constants.ts changed; git diff --check passed; working tree clean. Per packet instruction, full CI was not rerun; supplied final CI evidence is 137 pass / 0 fail."
+      },
+      "scope_drift": null,
+      "risks": [],
+      "required_main_agent_actions": [],
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test -t \"release metadata consistency\""
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No adv_run_test evidence found for reported command: bun test -t \"native edit recovery policy\""
+        }
+      ]
+    }
+  ],
+  "test_runs": {
+    "tk-1aa43df758c2": [
+      {
+        "runId": "tr_mrfcg0qi_4fa045d4",
+        "phase": "red",
+        "exitCode": 1,
+        "classification": "failed",
+        "command": "bun /tmp/opencode/morph_recovery_red_check.mjs /home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/improveMorphRecovery",
+        "durationMs": 72.01322000008076,
+        "recordedAt": "2026-07-10T19:43:48.710Z"
+      },
+      {
+        "runId": "tr_mrfcg9do_c9db9702",
+        "phase": "green",
+        "exitCode": 1,
+        "classification": "failed",
+        "command": "bun test -t \"native edit recovery policy\"",
+        "durationMs": 55.62906999979168,
+        "recordedAt": "2026-07-10T19:43:59.918Z"
+      },
+      {
+        "runId": "tr_mrfch06x_ebd07944",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test -t \"native edit recovery policy\"",
+        "durationMs": 152.2721349997446,
+        "recordedAt": "2026-07-10T19:44:34.674Z"
+      },
+      {
+        "runId": "tr_mrfch9se_748a92f4",
+        "phase": "verify",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun run ci",
+        "durationMs": 1877.6858759997413,
+        "recordedAt": "2026-07-10T19:44:47.073Z"
+      },
+      {
+        "runId": "tr_mrfcnoiw_475939ec",
+        "phase": "verify",
+        "exitCode": 1,
+        "classification": "failed",
+        "command": "bun test -t \"native edit recovery policy\"",
+        "durationMs": 60.38132499996573,
+        "recordedAt": "2026-07-10T19:49:46.115Z"
+      },
+      {
+        "runId": "tr_mrfco1cb_a9506384",
+        "phase": "verify",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test -t \"native edit recovery policy\"",
+        "durationMs": 68.3135789996013,
+        "recordedAt": "2026-07-10T19:50:02.730Z"
+      },
+      {
+        "runId": "tr_mrfcoqch_a03f3dd9",
+        "phase": "verify",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test -t \"native edit recovery policy\"",
+        "durationMs": 64.2137539992109,
+        "recordedAt": "2026-07-10T19:50:35.144Z"
+      }
+    ]
+  },
+  "deltas": {},
+  "wisdom": [],
+  "gates": {
+    "proposal": {
+      "status": "done",
+      "completed_at": "2026-07-10T19:27:02.504Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved the proposal and problem statement in chat: “approve”.",
+      "artifact_evidence": {
+        "kind": "proposal",
+        "content_hash": "a2a85d946551d9da68f549501435c675c064e45b43f1441f20609859057e5ec4",
+        "non_whitespace_chars": 2844,
+        "checked_at": "2026-07-10T19:22:48.100Z"
+      }
+    },
+    "discovery": {
+      "status": "done",
+      "completed_at": "2026-07-10T20:15:08.852Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved corrected agreement: pre-merge source release preparation is acceptance-scoped; GitHub tag/release and local deployment are mandatory post-Phase-9 completion operations. Contract re-minted.",
+      "artifact_evidence": {
+        "kind": "agreement",
+        "content_hash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "non_whitespace_chars": 3694,
+        "checked_at": "2026-07-10T19:22:48.106Z"
+      }
+    },
+    "design": {
+      "status": "done",
+      "completed_at": "2026-07-10T20:19:05.322Z",
+      "completed_by": "agent",
+      "approval_evidence": "Corrected source-versus-post-archive release design persisted. Independent validation passed with high confidence and low risk.",
+      "artifact_evidence": {
+        "kind": "design",
+        "content_hash": "e47890967de63f5a486b3ff7028471baab1dff5940a103cb40c05acd8de60358",
+        "non_whitespace_chars": 1805,
+        "checked_at": "2026-07-10T19:22:48.107Z"
+      }
+    },
+    "planning": {
+      "status": "done",
+      "completed_at": "2026-07-10T20:24:52.501Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved corrected release-preparation task graph in chat: “approve”."
+    },
+    "execution": {
+      "status": "done",
+      "completed_at": "2026-07-10T20:42:17.278Z",
+      "completed_by": "agent",
+      "approval_evidence": "Both source tasks are checkpointed. Final source CI passed: 137 tests, 0 failures, clean typecheck. No tag, deployment, or global config change occurred."
+    },
+    "acceptance": {
+      "status": "done",
+      "completed_at": "2026-07-10T21:34:54.730Z",
+      "completed_by": "user",
+      "approval_evidence": "User approved source release preparation in chat: “approve”. Reviewer READY; CI 137 pass/0 fail; 20 contract rows passing/respected.",
+      "artifact_evidence": {
+        "kind": "acceptance",
+        "content_hash": "dfbe62c532a33f264da175e6263d01f04a74066137e909fd5d230759f587807e",
+        "non_whitespace_chars": 903,
+        "checked_at": "2026-07-10T19:22:48.108Z"
+      }
+    },
+    "release": {
+      "status": "pending"
+    }
+  },
+  "reentry_history": [
+    {
+      "from_gate": "discovery",
+      "reason": "User requested post-acceptance scope expansion: deploy the updated plugin locally and publish a new GitHub release after release verification.",
+      "scope_delta": "Add patch-version release preparation, local deployment to the configured OpenCode plugin path, GitHub tag/release publication, and verification of deployed local module and GitHub release.",
+      "reopened_by": "agent",
+      "reopened_at": "2026-07-10T20:04:14.060Z",
+      "gates_reset": [
+        "discovery",
+        "design",
+        "planning",
+        "execution",
+        "acceptance",
+        "release"
+      ]
+    },
+    {
+      "from_gate": "discovery",
+      "reason": "Prep found a contract-compromise risk: GitHub tag/release and local deployment require post-Phase-9 default-branch proof, so they cannot truthfully be acceptance criteria for work that must complete before Phase 9. Reframe them as mandatory post-archive release-completion conditions while retaining source release-preparation criteria in the typed contract.",
+      "scope_delta": "Keep v1.10.2 source metadata and changelog as acceptance-scoped work; move tag publication, GitHub release verification, and local deployment verification to explicit post-archive completion conditions executed after Phase 9 merge proof.",
+      "reopened_by": "agent",
+      "reopened_at": "2026-07-10T20:13:48.443Z",
+      "gates_reset": [
+        "discovery",
+        "design",
+        "planning",
+        "execution",
+        "acceptance",
+        "release"
+      ]
+    }
+  ],
+  "origin": {
+    "kind": "discovery",
+    "source_artifact": "host-wide-opencode-message-log-scan-2026-07-10"
+  },
+  "contract": {
+    "version": 1,
+    "rigor": "standard",
+    "source": {
+      "artifact": "agreement",
+      "contentHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+      "approvedAt": "2026-07-10T20:15:00.000Z"
+    },
+    "items": [
+      {
+        "id": "SC1",
+        "kind": "success_criterion",
+        "text": "`index.ts`, `instructions/morph-tools.md`, and `README.md` state the bounded native-edit recovery policy.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC2",
+        "kind": "success_criterion",
+        "text": "`write` remains limited to new-file or intentional full-file replacement work; the existing Morph API-error/timeout → native-edit fallback remains documented.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC3",
+        "kind": "success_criterion",
+        "text": "Tests fail if any owned policy surface omits required recovery anchors; `bun run ci` exits 0.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC4",
+        "kind": "success_criterion",
+        "text": "Source package version, README pinned-version example, version assertions, and release metadata all identify `1.10.2` / `v1.10.2` consistently.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "SC5",
+        "kind": "success_criterion",
+        "text": "`CHANGELOG.md` has a non-empty `## [1.10.2]` section so the tag-release workflow can create release notes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "AC1",
+        "kind": "acceptance_criterion",
+        "text": "Given native `edit` reports unmatched or ambiguous target, all three owned policy surfaces tell the agent to re-read and not repeat unchanged input.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC2",
+        "kind": "acceptance_criterion",
+        "text": "Given re-read content leaves a small exact edit, all three surfaces permit at most one corrected native edit; otherwise they direct Morph for multi-line, scattered, whitespace-sensitive, or broader-anchoring repair.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC3",
+        "kind": "acceptance_criterion",
+        "text": "Existing Morph API-error/timeout fallback and `write` boundary remain present and tested.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC4",
+        "kind": "acceptance_criterion",
+        "text": "Automated source tests verify policy anchors plus version/changelog consistency; `bun run ci` exits 0.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "C1",
+        "kind": "constraint",
+        "text": "Do not claim automatic native-edit interception or retry.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C2",
+        "kind": "constraint",
+        "text": "Do not route every small edit through Morph.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C3",
+        "kind": "constraint",
+        "text": "Keep Morph safety guards, path confinement, secret scrubbing, readonly protections, API request contract, and runtime behavior unchanged.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C4",
+        "kind": "constraint",
+        "text": "Do not create an npm release, alter unrelated OpenCode settings, or hand-edit deployed plugin files.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C5",
+        "kind": "constraint",
+        "text": "Do not create/push `v1.10.2` until Phase 9 proves the release commit reached the default branch.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C6",
+        "kind": "constraint",
+        "text": "Before changing `~/.config/opencode/package.json` or lock state, preserve non-secret current state in the configured dotfiles backup location and retain unrelated dependencies.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "DONT1",
+        "kind": "avoidance",
+        "text": "Blind repetition of unchanged native edit input.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT2",
+        "kind": "avoidance",
+        "text": "New plugin tool surface or runtime retry loop.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT3",
+        "kind": "avoidance",
+        "text": "Weakening Morph API fallback or safety protections.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT4",
+        "kind": "avoidance",
+        "text": "Creating a tag or GitHub release from an unmerged feature branch.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT5",
+        "kind": "avoidance",
+        "text": "Updating only the installed package while leaving the configured stable instruction stale.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      }
+    ],
+    "amendments": [],
+    "reviewMatrix": {
+      "reviewedAt": "2026-07-10T20:43:00.000Z",
+      "rows": [
+        {
+          "contractId": "SC1",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer READY: three owned recovery surfaces intact."
+        },
+        {
+          "contractId": "SC2",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified write boundary and API fallback retained."
+        },
+        {
+          "contractId": "SC3",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Cross-surface policy tests present; final CI pass evidence."
+        },
+        {
+          "contractId": "SC4",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified package, README, runtime constant, and metadata consistently identify 1.10.2."
+        },
+        {
+          "contractId": "SC5",
+          "kind": "success_criterion",
+          "status": "pass",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer verified non-empty workflow-compatible CHANGELOG 1.10.2 section."
+        },
+        {
+          "contractId": "AC1",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Policy anchor tests pass; reviewer confirmed recovery wording."
+        },
+        {
+          "contractId": "AC2",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Policy tests pass; reviewer confirmed bounded native retry/Morph handoff."
+        },
+        {
+          "contractId": "AC3",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Focused tests and review confirm API fallback and write boundary."
+        },
+        {
+          "contractId": "AC4",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Final bun run ci: 137 pass, 0 fail, clean typecheck; reviewer focused suite 7 pass."
+        },
+        {
+          "contractId": "C1",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "Diff has no native edit interception/retry runtime code."
+        },
+        {
+          "contractId": "C2",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "Existing routing retains native exact-edit path."
+        },
+        {
+          "contractId": "C3",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "Reviewer found no runtime, safety, API, or workflow behavior changes."
+        },
+        {
+          "contractId": "C4",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No npm release, global config, or deployed-file modification in source diff."
+        },
+        {
+          "contractId": "C5",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No tag created; tag reserved for post-Phase-9 merge proof."
+        },
+        {
+          "contractId": "C6",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No local config/package manifest change performed before archive."
+        },
+        {
+          "contractId": "DONT1",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Recovery wording forbids unchanged retry."
+        },
+        {
+          "contractId": "DONT2",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No new tool or runtime retry in diff."
+        },
+        {
+          "contractId": "DONT3",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Reviewer confirms fallback and safety unchanged."
+        },
+        {
+          "contractId": "DONT4",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No feature-branch tag/release created."
+        },
+        {
+          "contractId": "DONT5",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Local deployed package/instruction intentionally untouched pending post-archive release."
+        }
+      ]
+    }
+  },
+  "acceptanceCriteria": [
+    "Given native `edit` reports unmatched or ambiguous target, all three owned policy surfaces tell the agent to re-read and not repeat unchanged input.",
+    "Given re-read content leaves a small exact edit, all three surfaces permit at most one corrected native edit; otherwise they direct Morph for multi-line, scattered, whitespace-sensitive, or broader-anchoring repair.",
+    "Existing Morph API-error/timeout fallback and `write` boundary remain present and tested.",
+    "Automated source tests verify policy anchors plus version/changelog consistency; `bun run ci` exits 0."
+  ],
+  "documents": {
+    "proposal": "# Proposal: Improve Morph recovery and release it\n\n## Problem\n\nNative exact-string edits often fail when target text is stale or ambiguous. The plugin already provides Morph for contextual edits but lacked a clear recovery route after native `edit` failure. The implemented policy/test change is accepted; the user additionally requires it to ship as a verified local OpenCode deployment and a GitHub release.\n\n## Direction\n\n1. Keep the accepted policy-only Morph recovery implementation.\n2. Prepare a patch release, `v1.10.2`, with source version, documentation pin, test expectation, and changelog aligned.\n3. Archive only after the release-preparation commit is merged to the default branch.\n4. After merge proof, push `v1.10.2`; the existing tag-triggered GitHub Actions workflow creates the release from `CHANGELOG.md`.\n5. Deploy the released tag locally through the configured Git dependency, then synchronize the separate configured stable instruction path and verify both installed content and effective OpenCode configuration.\n\n## Scope\n\n### In scope\n\n- Existing native-edit recovery guidance and its cross-surface tests.\n- `package.json`, README version example, version assertions, `CHANGELOG.md`, and tracked `bun.lock` release metadata.\n- Post-merge tag/release verification for `v1.10.2`.\n- Deterministic local install of the released Git tag, stable-instruction synchronization, config backup, and verification.\n\n### Out of scope\n\n- OpenCode native `edit` implementation.\n- Morph API/runtime/safety behavior and Advance configuration.\n- npm publishing, unrelated OpenCode configuration changes, feature work, or deployment infrastructure changes.\n\n## Boundaries\n\n- Do not tag or publish from the unmerged change branch.\n- Do not publish to npm.\n- Pin only the existing local OpenCode plugin dependency to the released tag; preserve unrelated configuration.\n\n## Evidence\n\n- Current source, installed local package, Git tags, and latest GitHub release are `v1.10.1`.\n- `.github/workflows/release.yml` runs on `v*` tags and extracts `## [version]` notes from `CHANGELOG.md`.\n- Global OpenCode config loads `/home/jon/.config/opencode/node_modules/opencode-morph-fast-apply/index.ts` and a separate stable instruction at `~/.config/opencode/instructions/morph-tools.md`.\n- Global dependency manifest currently uses an unpinned GitHub dependency; deterministic local deployment requires a `#v1.10.2` pin and package installation after release.",
+    "problemStatement": "Host-wide OpenCode message-log analysis found 224 failed native exact-edit calls across 385 adv-engineer sessions. The dominant error is an exact-string mismatch, including “Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.” The current Morph plugin already exposes `morph_edit` and ships routing guidance, but that guidance has no explicit recovery path for a failed native `edit` call. The Morph plugin cannot automatically rerun or replace OpenCode’s native edit tool; the owned fix must make recovery guidance clear, consistent, and test-protected wherever this plugin communicates tool choice.",
+    "agreement": "# Agreement: Improve Morph recovery and ship v1.10.2\n\n## Objectives\n\n1. Preserve the accepted native-edit recovery policy: re-read target content, never repeat unchanged failed input, make at most one corrected native exact edit only when still small/exact, otherwise use Morph for contextual repair.\n2. Keep policy wording and regression coverage aligned across the embedded tool description, packaged always-on instruction, and README.\n3. Prepare patch release `v1.10.2` source metadata and changelog notes that satisfy the tag-release workflow.\n4. Complete tag publication, GitHub release verification, and deterministic local deployment only after ADV Phase 9 proves default-branch merge.\n\n## Success Criteria\n\n1. `index.ts`, `instructions/morph-tools.md`, and `README.md` state the bounded native-edit recovery policy.\n2. `write` remains limited to new-file or intentional full-file replacement work; the existing Morph API-error/timeout → native-edit fallback remains documented.\n3. Tests fail if any owned policy surface omits required recovery anchors; `bun run ci` exits 0.\n4. Source package version, README pinned-version example, version assertions, and release metadata all identify `1.10.2` / `v1.10.2` consistently.\n5. `CHANGELOG.md` has a non-empty `## [1.10.2]` section so the tag-release workflow can create release notes.\n\n## Acceptance Criteria\n\n1. Given native `edit` reports unmatched or ambiguous target, all three owned policy surfaces tell the agent to re-read and not repeat unchanged input.\n2. Given re-read content leaves a small exact edit, all three surfaces permit at most one corrected native edit; otherwise they direct Morph for multi-line, scattered, whitespace-sensitive, or broader-anchoring repair.\n3. Existing Morph API-error/timeout fallback and `write` boundary remain present and tested.\n4. Automated source tests verify policy anchors plus version/changelog consistency; `bun run ci` exits 0.\n\n## Constraints\n\n1. Do not claim automatic native-edit interception or retry.\n2. Do not route every small edit through Morph.\n3. Keep Morph safety guards, path confinement, secret scrubbing, readonly protections, API request contract, and runtime behavior unchanged.\n4. Do not create an npm release, alter unrelated OpenCode settings, or hand-edit deployed plugin files.\n5. Do not create/push `v1.10.2` until Phase 9 proves the release commit reached the default branch.\n6. Before changing `~/.config/opencode/package.json` or lock state, preserve non-secret current state in the configured dotfiles backup location and retain unrelated dependencies.\n\n## Avoidances\n\n1. Blind repetition of unchanged native edit input.\n2. New plugin tool surface or runtime retry loop.\n3. Weakening Morph API fallback or safety protections.\n4. Creating a tag or GitHub release from an unmerged feature branch.\n5. Updating only the installed package while leaving the configured stable instruction stale.\n\n## Post-Archive Release Completion\n\nThese release-owned operations occur after user archive sign-off and successful ADV Phase 9 merge proof; they are not acceptance criteria for pre-merge source work.\n\n- Create and push annotated tag `v1.10.2` at the merged default-branch commit.\n- Confirm the tag-triggered GitHub workflow publishes non-draft release `v1.10.2` using the new changelog section.\n- Pin the existing global OpenCode dependency to `github:JRedeker/opencode-morph-fast-apply#v1.10.2`, install it, and confirm the deployed package manifest reports `1.10.2`.\n- Synchronize the separately configured stable instruction path from released package content.\n- Run `opencode debug config`; report that OpenCode restart is required for plugin/instruction reload.\n\n## Discovery Evidence\n\n- Current source, installed package, latest tag, and latest GitHub release: `v1.10.1`.\n- Tag release workflow runs on `v*`, tests/typechecks, and extracts notes from `CHANGELOG.md` section `## [version]`.\n- Global OpenCode loads an installed plugin path and a separate stable instruction path.\n- `adv-researcher` confirmed patch versioning, tag-after-merge, non-empty changelog, and deterministic Git-tag dependency pinning are appropriate; no contract-compromise risk remains under this release ordering.\n\n## Sign-Off\n\nUser approved corrected release ordering in chat: “approve”.",
+    "design": "# Design: v1.10.2 source preparation and post-archive release completion\n\n## Pre-Merge Source Work\n\nKeep existing native-edit recovery policy implementation unchanged. Add one release-preparation change set:\n\n- `package.json`: version `1.10.2`.\n- `README.md`: pinned plugin example `v1.10.2`.\n- `CHANGELOG.md`: non-empty `## [1.10.2]` section containing recovery-policy notes.\n- `index.test.ts`: version/changelog consistency checks alongside existing policy coverage.\n- `bun.lock`: regenerate only when package metadata requires it; frozen `bun ci` must pass.\n\nThe existing completed policy task maps only to SC1–SC3 and AC1–AC3. The new release-preparation task maps SC4–SC5 and AC4.\n\n## Post-Archive Release Completion\n\nAfter archive Phase 9 proves the release-preparation commit is reachable from default branch:\n\n1. Verify the prospective tag target is an ancestor of `origin/trunk` with `git merge-base --is-ancestor`.\n2. Create and push annotated tag `v1.10.2` at that merged commit.\n3. Verify tag-triggered GitHub release publication and non-draft state.\n4. Back up non-secret current OpenCode dependency/config state.\n5. Pin only the existing global plugin dependency to `github:JRedeker/opencode-morph-fast-apply#v1.10.2`, install it, and verify installed manifest version.\n6. Sync released packaged instruction to configured stable instruction path.\n7. Run `opencode debug config`; require user restart for reload.\n\n## Invariants\n\n- Never tag or publish a feature-branch commit.\n- Never hand-edit the deployed module.\n- Never leave the separately configured stable instruction stale.\n- Never claim source acceptance equals post-archive release completion.\n\n## Validation\n\n- Pre-merge: focused version/changelog tests and `bun run ci`.\n- Post-archive: default-branch ancestry, GitHub release state, installed manifest version, instruction equivalence, and config diagnostic.\n\n## Independent Validation\n\nIndependent researcher: applicable, high confidence, low risk. The corrected boundary eliminates orphan-tag risk from squash merges and leaves no contract-compromise risk.",
+    "executiveSummary": "# Executive Summary\n\n`improveMorphRecovery` adds safe, bounded Morph recovery guidance for failed native exact edits and prepares source release `v1.10.2`.\n\n## Delivered\n\n- Recovery guidance aligned across tool description, always-on instruction, and README.\n- Cross-surface tests prevent policy drift.\n- Package, runtime metadata, README pin, and non-empty changelog notes aligned to `1.10.2`.\n\n## Verification\n\n- Acceptance review: READY.\n- Harden review: READY.\n- `bun run ci`: 137 pass, 0 fail; TypeScript clean.\n- Contract: 20/20 pass or respected.\n\n## Post-Merge Release Completion\n\nAfter Phase 9 merge proof: tag/push `v1.10.2`, confirm GitHub release, pin/install released local plugin, sync stable instruction, run `opencode debug config`, restart OpenCode.\n\n## Risks\n\nNo source blocker. Tagging and deployment intentionally wait for merged default-branch evidence.",
+    "acceptance": "# Acceptance\n\nReviewed at: 2026-07-10T20:43:00.000Z\n\n## Contract Review Matrix\n\n| ID | Kind | Requirement | Status | Evidence |\n|---|---|---|---|---|\n| SC1 | success_criterion | `index.ts`, `instructions/morph-tools.md`, and `README.md` state the bounded native-edit recovery policy. | pass | Reviewer READY: three owned recovery surfaces intact. |\n| SC2 | success_criterion | `write` remains limited to new-file or intentional full-file replacement work; the existing Morph API-error/timeout → native-edit fallback remains documented. | pass | Reviewer verified write boundary and API fallback retained. |\n| SC3 | success_criterion | Tests fail if any owned policy surface omits required recovery anchors; `bun run ci` exits 0. | pass | Cross-surface policy tests present; final CI pass evidence. |\n| SC4 | success_criterion | Source package version, README pinned-version example, version assertions, and release metadata all identify `1.10.2` / `v1.10.2` consistently. | pass | Reviewer verified package, README, runtime constant, and metadata consistently identify 1.10.2. |\n| SC5 | success_criterion | `CHANGELOG.md` has a non-empty `## [1.10.2]` section so the tag-release workflow can create release notes. | pass | Reviewer verified non-empty workflow-compatible CHANGELOG 1.10.2 section. |\n| AC1 | acceptance_criterion | Given native `edit` reports unmatched or ambiguous target, all three owned policy surfaces tell the agent to re-read and not repeat unchanged input. | pass | Policy anchor tests pass; reviewer confirmed recovery wording. |\n| AC2 | acceptance_criterion | Given re-read content leaves a small exact edit, all three surfaces permit at most one corrected native edit; otherwise they direct Morph for multi-line, scattered, whitespace-sensitive, or broader-anchoring repair. | pass | Policy tests pass; reviewer confirmed bounded native retry/Morph handoff. |\n| AC3 | acceptance_criterion | Existing Morph API-error/timeout fallback and `write` boundary remain present and tested. | pass | Focused tests and review confirm API fallback and write boundary. |\n| AC4 | acceptance_criterion | Automated source tests verify policy anchors plus version/changelog consistency; `bun run ci` exits 0. | pass | Final bun run ci: 137 pass, 0 fail, clean typecheck; reviewer focused suite 7 pass. |\n| C1 | constraint | Do not claim automatic native-edit interception or retry. | respected | Diff has no native edit interception/retry runtime code. |\n| C2 | constraint | Do not route every small edit through Morph. | respected | Existing routing retains native exact-edit path. |\n| C3 | constraint | Keep Morph safety guards, path confinement, secret scrubbing, readonly protections, API request contract, and runtime behavior unchanged. | respected | Reviewer found no runtime, safety, API, or workflow behavior changes. |\n| C4 | constraint | Do not create an npm release, alter unrelated OpenCode settings, or hand-edit deployed plugin files. | respected | No npm release, global config, or deployed-file modification in source diff. |\n| C5 | constraint | Do not create/push `v1.10.2` until Phase 9 proves the release commit reached the default branch. | respected | No tag created; tag reserved for post-Phase-9 merge proof. |\n| C6 | constraint | Before changing `~/.config/opencode/package.json` or lock state, preserve non-secret current state in the configured dotfiles backup location and retain unrelated dependencies. | respected | No local config/package manifest change performed before archive. |\n| DONT1 | avoidance | Blind repetition of unchanged native edit input. | respected | Recovery wording forbids unchanged retry. |\n| DONT2 | avoidance | New plugin tool surface or runtime retry loop. | respected | No new tool or runtime retry in diff. |\n| DONT3 | avoidance | Weakening Morph API fallback or safety protections. | respected | Reviewer confirms fallback and safety unchanged. |\n| DONT4 | avoidance | Creating a tag or GitHub release from an unmerged feature branch. | respected | No feature-branch tag/release created. |\n| DONT5 | avoidance | Updating only the installed package while leaving the configured stable instruction stale. | respected | Local deployed package/instruction intentionally untouched pending post-archive release. |\n\n"
+  },
+  "artifacts": {
+    "proposal": {
+      "updatedAt": "2026-07-10T20:13:03.389Z",
+      "contentHash": "96a47bd94098a4d185557a6cb92666f58a8f9bcc61f0704779207c779be6f11b",
+      "source": "temporal",
+      "readable": false
+    },
+    "problemStatement": {
+      "updatedAt": "2026-07-10T19:22:07.460Z",
+      "contentHash": "d97b4768af648d2a1278b73e64f86b88c6d58e25116d25d5b8590f9844c398c9",
+      "source": "temporal",
+      "readable": false
+    },
+    "agreement": {
+      "updatedAt": "2026-07-10T20:14:51.194Z",
+      "contentHash": "cf491b0680091515aae229eaf61049125c619175fdef1c36238621cbcefd0e91",
+      "source": "temporal",
+      "readable": false
+    },
+    "design": {
+      "updatedAt": "2026-07-10T20:18:48.546Z",
+      "contentHash": "e47890967de63f5a486b3ff7028471baab1dff5940a103cb40c05acd8de60358",
+      "source": "temporal",
+      "readable": false
+    },
+    "executiveSummary": {
+      "updatedAt": "2026-07-10T21:36:56.347Z",
+      "contentHash": "30182157f43275d3479791dc721f2972476b38c59e57187a2a66da87506975d2",
+      "source": "temporal",
+      "readable": false
+    }
+  },
+  "lastSignalAt": "2026-07-10T21:36:56.347Z",
+  "adv_project_id": "a4b8e1b703f8294bb83a820749df6ec98b9a5f61",
+  "clarify_findings": [
+    {
+      "code": "CLARIFY_UNCLEAR_SCOPE",
+      "severity": "warning",
+      "message": "Proposal has no Scope section. What files and modules will be affected?",
+      "recorded_at": "2026-07-10T20:09:55.323Z",
+      "resolved": true,
+      "resolved_at": "2026-07-10T20:14:20.689Z"
+    }
+  ],
+  "worktree_auto_managed": true
+}
