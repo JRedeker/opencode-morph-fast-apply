@@ -89,10 +89,10 @@ describe("native edit recovery policy", () => {
     "Do not repeat the unchanged failed",
     "at most one corrected native",
     "still small and exact",
-    "morph_edit",
-    "multi-line",
-    "scattered",
-    "whitespace-sensitive",
+    "Otherwise use",
+    "contextual repair",
+    "multi-line, scattered, whitespace-sensitive, or broader anchoring",
+    "separate from the Morph API-error/timeout fallback",
   ];
 
   const readSurface = (relativePath: string) =>
@@ -103,8 +103,10 @@ describe("native edit recovery policy", () => {
     for (const anchor of RECOVERY_ANCHORS) {
       expect(content).toContain(anchor);
     }
-    // SC2: write boundary preserved in the description.
-    expect(content).toContain("native write");
+    // SC2: preserve the explicit write-only boundary in the recovery block.
+    expect(content).toContain(
+      "Use write only for new-file or intentional full-file replacement",
+    );
     // SC3 / AC4: existing Morph API-error/timeout -> native edit fallback retained.
     expect(content).toContain("use the native 'edit' tool");
     expect(content).toContain("API error, timeout");
@@ -116,9 +118,12 @@ describe("native edit recovery policy", () => {
       expect(content).toContain(anchor);
     }
     expect(content).toContain("Native edit recovery");
-    expect(content).toContain("full-file replacement");
+    expect(content).toContain(
+      "Use `write` only for new-file or intentional full-file replacement",
+    );
     // SC3: fallback preserved alongside recovery.
     expect(content).toContain("API error or timeout");
+    expect(content).toContain("use native `edit`");
   });
 
   test("README states the recovery policy", () => {
@@ -127,8 +132,11 @@ describe("native edit recovery policy", () => {
       expect(content).toContain(anchor);
     }
     expect(content).toContain("Native edit recovery");
-    expect(content).toContain("full-file replacement");
+    expect(content).toContain(
+      "Use `write` only for new-file or intentional full-file replacement",
+    );
     expect(content).toContain("API-error/timeout");
+    expect(content).toContain("native `edit`");
   });
 });
 
