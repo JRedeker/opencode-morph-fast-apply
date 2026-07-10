@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EXISTING_CODE_MARKER } from "./src/constants.js";
+import { EXISTING_CODE_MARKER, PLUGIN_VERSION } from "./src/constants.js";
 import {
   extractImportedIdentifiers,
   findDroppedIdentifiers,
@@ -62,8 +62,8 @@ describe("packaged tool-selection instructions", () => {
   test("README uses current version pin and documents safety guards", () => {
     const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
 
-    expect(content).not.toContain("#v1.10.0");
-    expect(content).toContain("#v1.10.1");
+    expect(content).not.toContain("#v1.10.1");
+    expect(content).toContain("#v1.10.2");
     expect(content).toContain("Path confinement");
     expect(content).toContain("Secret scrubbing");
     expect(content).toContain("Dropped imports guard");
@@ -76,6 +76,77 @@ describe("packaged tool-selection instructions", () => {
     expect(content).toContain("OpenCode process environment");
     expect(content).toContain("Restart OpenCode");
     expect(content).toContain("already-running OpenCode sessions");
+  });
+});
+
+describe("release metadata consistency", () => {
+  // Cross-source release checks: package.json, the README pinned-version
+  // example, and the CHANGELOG section must all agree on the same version so
+  // the tag-release workflow (`gh release create --notes-file` fed by the
+  // `## [version]` body) ships correct, non-empty notes. Pin the expected
+  // version explicitly so a stale or partial bump fails loudly (SC4/SC5).
+  const EXPECTED_VERSION = "1.10.2";
+
+  const readSurface = (relativePath: string) =>
+    readFileSync(join(import.meta.dir, relativePath), "utf-8");
+
+  const readPackageVersion = () => {
+    const pkg = JSON.parse(readSurface("package.json")) as {
+      version?: string;
+    };
+    return pkg.version;
+  };
+
+  const changelogSection = (changelog: string, version: string) => {
+    const heading = `## [${version}]`;
+    const start = changelog.indexOf(heading);
+    if (start < 0) return null;
+    const afterHeading = changelog.slice(start + heading.length);
+    const nextHeading = afterHeading.match(/\n## \[/);
+    const body =
+      nextHeading && nextHeading.index !== undefined
+        ? afterHeading.slice(0, nextHeading.index)
+        : afterHeading;
+    return body.trim();
+  };
+
+  test("package.json declares the release version", () => {
+    expect(readPackageVersion()).toBe(EXPECTED_VERSION);
+  });
+
+  test("README pinned-version example matches package.json version", () => {
+    const version = readPackageVersion();
+    const readme = readSurface("README.md");
+
+    expect(version).toBe(EXPECTED_VERSION);
+    expect(readme).toContain(`#v${version}`);
+    // Guard against the previous release pin lingering in the install example.
+    expect(readme).not.toContain("#v1.10.1");
+  });
+
+  test("CHANGELOG has a non-empty section for package.json version", () => {
+    const version = readPackageVersion();
+    const changelog = readSurface("CHANGELOG.md");
+    const body = changelogSection(changelog, version ?? "");
+
+    expect(version).toBe(EXPECTED_VERSION);
+    expect(body).not.toBeNull();
+    // Release workflow feeds this body to `gh release create --notes-file`;
+    // it must carry real notes (a date suffix alone is not enough).
+    expect(body ?? "").toMatch(/^- /m);
+  });
+
+  test("runtime-reported PLUGIN_VERSION matches package.json version", () => {
+    // PLUGIN_VERSION is the plugin's self-reported version surfaced in tool
+    // metadata (index.ts); it must track the package version or the running
+    // plugin would mis-report its release. Same stale-version class as the
+    // README pin (related-scan / SC4).
+    const version = readPackageVersion();
+    expect(PLUGIN_VERSION).toBe(EXPECTED_VERSION);
+    expect(version).toBe(EXPECTED_VERSION);
+    if (version !== undefined) {
+      expect(PLUGIN_VERSION).toBe(version);
+    }
   });
 });
 

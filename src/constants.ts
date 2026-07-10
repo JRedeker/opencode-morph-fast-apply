@@ -16,7 +16,7 @@ export const ALLOW_READONLY_AGENTS =
   process.env.MORPH_ALLOW_READONLY_AGENTS === "true";
 
 /** Plugin version */
-export const PLUGIN_VERSION = "1.10.1";
+export const PLUGIN_VERSION = "1.10.2";
 
 // Get API key from the OpenCode/plugin process environment.
 export const MORPH_API_KEY = process.env.MORPH_API_KEY;

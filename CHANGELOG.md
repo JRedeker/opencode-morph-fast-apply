@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-07-10
+
+### Added
+
+- **Native edit recovery policy**: The embedded `morph_edit` description, the packaged always-on instruction, and the README now share one bounded recovery sequence for a failed native exact `edit` — re-read the target, never repeat unchanged failed input, allow at most one corrected native edit only when still small and exact, otherwise hand off to `morph_edit` for multi-line, scattered, whitespace-sensitive, or broader-anchoring contextual repair. The existing Morph API-error/timeout → native `edit` fallback is preserved, and `write` remains limited to new-file or intentional full-file replacement.
+- **Cross-surface recovery-policy regression tests**: Content-level tests assert the recovery anchors are present and consistent across all three routing surfaces (tool description, packaged instruction, README), so a drift in any one surface fails the suite. Release-metadata tests now also pin `package.json`, the README pinned-version example, the runtime-reported `PLUGIN_VERSION` constant, and this CHANGELOG section to the same version so release metadata cannot drift.
+
 ## [1.10.1] - 2026-06-27
 
 ### Fixed
