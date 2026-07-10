@@ -38,6 +38,18 @@ faster or more reliable than exact-string replacement.
 - If `morph_edit` is blocked in readonly agents, switch to a write-capable agent
 - If the change requires replacing the entire file, use `write`
 
+### Native edit recovery
+
+When a native `edit` reports an unmatched or ambiguous exact target:
+
+1. Re-read the target file before any retry.
+2. Do not repeat the unchanged failed `edit` input.
+3. Make at most one corrected native `edit` only when the re-read proves the change is still small and exact.
+4. Otherwise use `morph_edit` for the contextual repair — multi-line, scattered, whitespace-sensitive, or broader anchoring.
+5. Use `write` only for new-file or intentional full-file replacement.
+
+This recovery sequence is separate from the Morph API-error/timeout fallback, which still recovers to native `edit`.
+
 ### Setup Notes
 
 - Preferred instruction path: `~/.config/opencode/instructions/morph-tools.md`

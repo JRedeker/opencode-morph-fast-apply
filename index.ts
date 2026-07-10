@@ -270,6 +270,15 @@ DISAMBIGUATION — when a file has repeated patterns, include enough unique cont
   BAD:  just "return result;" (matches many places)
   GOOD: include the unique function signature above it
 
+NATIVE EDIT RECOVERY — when a native edit reports an unmatched or ambiguous exact target:
+- Re-read the target file before any retry.
+- Do not repeat the unchanged failed edit input.
+- Make at most one corrected native edit only when the re-read proves the change is still small and exact.
+- Otherwise use morph_edit for the contextual repair (multi-line, scattered, whitespace-sensitive, or broader anchoring).
+- Use write only for new-file or intentional full-file replacement.
+
+This recovery is separate from the Morph API-error/timeout fallback below, which still recovers to native edit.
+
 FALLBACK: If morph_edit fails (API error, timeout), use the native 'edit' tool with exact oldString/newString matching.`,
 
         args: {

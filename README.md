@@ -196,11 +196,28 @@ If an AI agent wraps `code_edit` in markdown fences (for example, ```` ```typesc
 
 If edits are applied to the wrong location, add more unique context around your changes and make your `instructions` more specific about which function/section you're modifying.
 
+### Native edit recovery
+
+When a native `edit` reports an unmatched or ambiguous exact target:
+
+1. Re-read the target file before any retry.
+2. Do not repeat the unchanged failed `edit` input.
+3. Make at most one corrected native `edit` only when the re-read proves the change is still small and exact.
+4. Otherwise use `morph_edit` for the contextual repair — multi-line, scattered, whitespace-sensitive, or broader anchoring.
+5. Use `write` only for new-file or intentional full-file replacement.
+
+This recovery sequence is separate from the Morph API-error/timeout fallback, which still recovers to native `edit`.
+
 ### Tool blocked in plan/explore mode
 
 The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). Switch to a build/code mode to make edits.
 
 ## Changelog
+
+### Unreleased
+
+- **Native edit recovery policy** — The embedded `morph_edit` description, the packaged always-on instruction, and the README now share the same bounded recovery sequence for a failed native exact `edit`: re-read the target, do not repeat unchanged input, allow at most one corrected native edit only when still small and exact, otherwise hand off to `morph_edit` for contextual repair. The existing Morph API-error/timeout → native `edit` fallback is preserved.
+- **Drift regression tests** — Content-level tests assert the recovery policy is present and consistent across all three routing surfaces.
 
 ### v1.8.2
 

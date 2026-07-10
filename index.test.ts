@@ -79,6 +79,59 @@ describe("packaged tool-selection instructions", () => {
   });
 });
 
+describe("native edit recovery policy", () => {
+  // Canonical anchors that must appear verbatim in every owned routing
+  // surface. Looping the same set over all three surfaces means a regression
+  // in any one of them fails the suite (SC4 / DONT4: no surface left
+  // unprotected, no single-surface duplication).
+  const RECOVERY_ANCHORS = [
+    "Re-read the target file before any retry",
+    "Do not repeat the unchanged failed",
+    "at most one corrected native",
+    "still small and exact",
+    "morph_edit",
+    "multi-line",
+    "scattered",
+    "whitespace-sensitive",
+  ];
+
+  const readSurface = (relativePath: string) =>
+    readFileSync(join(import.meta.dir, relativePath), "utf-8");
+
+  test("embedded morph_edit description states the recovery policy and preserves the API fallback", () => {
+    const content = readSurface("index.ts");
+    for (const anchor of RECOVERY_ANCHORS) {
+      expect(content).toContain(anchor);
+    }
+    // SC2: write boundary preserved in the description.
+    expect(content).toContain("native write");
+    // SC3 / AC4: existing Morph API-error/timeout -> native edit fallback retained.
+    expect(content).toContain("use the native 'edit' tool");
+    expect(content).toContain("API error, timeout");
+  });
+
+  test("packaged instruction states the recovery policy", () => {
+    const content = readSurface(join("instructions", "morph-tools.md"));
+    for (const anchor of RECOVERY_ANCHORS) {
+      expect(content).toContain(anchor);
+    }
+    expect(content).toContain("Native edit recovery");
+    expect(content).toContain("full-file replacement");
+    // SC3: fallback preserved alongside recovery.
+    expect(content).toContain("API error or timeout");
+  });
+
+  test("README states the recovery policy", () => {
+    const content = readSurface("README.md");
+    for (const anchor of RECOVERY_ANCHORS) {
+      expect(content).toContain(anchor);
+    }
+    expect(content).toContain("Native edit recovery");
+    expect(content).toContain("full-file replacement");
+    expect(content).toContain("API-error/timeout");
+  });
+});
+
 describe("normalizeCodeEditInput", () => {
   test("returns plain code unchanged", () => {
     const input = `${EXISTING_CODE_MARKER}\nfunction foo() { return 1 }\n${EXISTING_CODE_MARKER}`;
