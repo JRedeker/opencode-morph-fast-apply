@@ -4,6 +4,10 @@
   "description": "OpenCode plugin for Morph Fast Apply - 10x faster code editing",
   "type": "module",
   "main": "index.ts",
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "files": [
     "index.ts",
     "src/",
@@ -12,18 +16,28 @@
     "instructions/"
   ],
   "scripts": {
-    "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "ci": "bun test && tsc --noEmit"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun run test",
+    "ci": "bun run check"
   },
   "dependencies": {
     "@opencode-ai/plugin": "latest",
     "diff": "^8.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/bun": "latest",
     "@types/diff": "^7.0.2",
-    "bun-types": "latest",
-    "typescript": "^5.0.0"
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0"
   },
   "keywords": [
     "opencode",

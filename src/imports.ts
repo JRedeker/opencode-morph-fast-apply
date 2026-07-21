@@ -37,7 +37,10 @@ function parseTsNamedBindings(bindingList: string): string[] {
   return bindingList
     .split(",")
     .map((s) => {
-      const parts = s.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+      const parts = s
+        .trim()
+        .replace(/^type\s+/, "")
+        .split(/\s+as\s+/);
       return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
     })
     .filter((s): s is string => !!s && s.length > 0);
@@ -81,9 +84,20 @@ export function extractImportEntries(
     let result = "";
     let depth = 0;
     for (const ch of code) {
-      if (ch === "(") { depth++; result += ch; continue; }
-      if (ch === ")") { depth--; result += ch; continue; }
-      if (ch === "\n" && depth > 0) { result += " "; continue; }
+      if (ch === "(") {
+        depth++;
+        result += ch;
+        continue;
+      }
+      if (ch === ")") {
+        depth--;
+        result += ch;
+        continue;
+      }
+      if (ch === "\n" && depth > 0) {
+        result += " ";
+        continue;
+      }
       result += ch;
     }
     normalizedCode = result;
@@ -95,7 +109,8 @@ export function extractImportEntries(
 
     // Skip empty lines and comment lines (but NOT #include / #using directives)
     if (!trimmed) continue;
-    if (trimmed.startsWith("#") && ext !== "py" && !cExts.includes(ext)) continue;
+    if (trimmed.startsWith("#") && ext !== "py" && !cExts.includes(ext))
+      continue;
 
     // Python: from X import Y, Z  |  import X, Y
     if (ext === "py") {
@@ -111,9 +126,13 @@ export function extractImportEntries(
           .map((s) => {
             const parts = s.trim().split(/\s+as\s+/);
             // If aliased, take the alias (last part); otherwise take the name
-            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+            return (
+              parts.length > 1 ? parts[parts.length - 1] : parts[0]
+            )?.trim();
           })
-          .filter((s): s is string => !!s && s.length > 0 && !s.startsWith("*"));
+          .filter(
+            (s): s is string => !!s && s.length > 0 && !s.startsWith("*"),
+          );
         if (names.length > 0) {
           entries.push({ kind: "py-from", source, bindings: names });
         }
@@ -126,7 +145,9 @@ export function extractImportEntries(
           .split(",")
           .map((s) => {
             const parts = s.trim().split(/\s+as\s+/);
-            return (parts.length > 1 ? parts[parts.length - 1] : parts[0])?.trim();
+            return (
+              parts.length > 1 ? parts[parts.length - 1] : parts[0]
+            )?.trim();
           })
           .filter((s): s is string => !!s && s.length > 0);
         for (const name of names) {
@@ -139,7 +160,9 @@ export function extractImportEntries(
     // TypeScript / JavaScript: import { X, Y } from ...  |  import X from ...
     if (jsExts.includes(ext)) {
       // import X, { Y as Z } from '...'
-      const combinedImport = trimmed.match(/^import\s+(\w+)\s*,\s*\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
+      const combinedImport = trimmed.match(
+        /^import\s+(\w+)\s*,\s*\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/,
+      );
       if (combinedImport) {
         const source = combinedImport[3];
         const names = parseTsNamedBindings(combinedImport[2]);
@@ -155,7 +178,9 @@ export function extractImportEntries(
       }
 
       // import { X, Y as Z } from '...'
-      const namedImport = trimmed.match(/^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/);
+      const namedImport = trimmed.match(
+        /^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/,
+      );
       if (namedImport) {
         const source = namedImport[2];
         const names = parseTsNamedBindings(namedImport[1]);
@@ -166,7 +191,9 @@ export function extractImportEntries(
       }
 
       // import X from '...'  (default import)
-      const defaultImport = trimmed.match(/^import\s+(?:type\s+)?(\w+)\s+from\s+['"]([^'"]+)['"]/);
+      const defaultImport = trimmed.match(
+        /^import\s+(?:type\s+)?(\w+)\s+from\s+['"]([^'"]+)['"]/,
+      );
       if (defaultImport) {
         entries.push({
           kind: "ts-default",
@@ -177,7 +204,9 @@ export function extractImportEntries(
       }
 
       // import * as X from '...'
-      const namespaceImport = trimmed.match(/^import\s+(?:type\s+)?\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/);
+      const namespaceImport = trimmed.match(
+        /^import\s+(?:type\s+)?\*\s+as\s+(\w+)\s+from\s+['"]([^'"]+)['"]/,
+      );
       if (namespaceImport) {
         entries.push({
           kind: "ts-namespace",
@@ -208,7 +237,11 @@ export function extractImportEntries(
         const source = requireDestructure[2];
         const names = parseRequireDestructureBindings(requireDestructure[1]);
         if (names.length > 0) {
-          entries.push({ kind: "ts-require-destructure", source, bindings: names });
+          entries.push({
+            kind: "ts-require-destructure",
+            source,
+            bindings: names,
+          });
         }
         continue;
       }
@@ -216,9 +249,7 @@ export function extractImportEntries(
 
     // Go: import "pkg"  |  import ( "pkg1" \n "pkg2" )
     if (ext === "go") {
-      const singleImport = trimmed.match(
-        /^import\s+(?:(\w+)\s+)?"([^"]+)"/,
-      );
+      const singleImport = trimmed.match(/^import\s+(?:(\w+)\s+)?"([^"]+)"/);
       if (singleImport) {
         const source = singleImport[2];
         const alias = singleImport[1];
@@ -329,7 +360,11 @@ export function extractImportEntries(
   const seen = new Set<string>();
   const deduped: ImportEntry[] = [];
   for (const entry of entries) {
-    const key = JSON.stringify({ kind: entry.kind, source: entry.source, bindings: entry.bindings });
+    const key = JSON.stringify({
+      kind: entry.kind,
+      source: entry.source,
+      bindings: entry.bindings,
+    });
     if (!seen.has(key)) {
       seen.add(key);
       deduped.push(entry);

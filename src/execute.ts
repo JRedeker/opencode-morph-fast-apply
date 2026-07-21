@@ -1,6 +1,4 @@
-import type {
-  ResolveTargetPathResult,
-} from "./path-confinement.js";
+import type { ResolveTargetPathResult } from "./path-confinement.js";
 import type { FailureKind } from "../index.js";
 import { scrubSecrets } from "../index.js";
 
@@ -22,15 +20,18 @@ export interface ExecuteMorphEditRuntime {
     directory?: string;
   };
   now: () => number;
-  readFile: (
-    filepath: string,
-  ) => Promise<{ exists: boolean; text: string }>;
+  readFile: (filepath: string) => Promise<{ exists: boolean; text: string }>;
   writeFile: (filepath: string, content: string) => Promise<void>;
   callMorphApply: (
     originalCode: string,
     codeEdit: string,
     instructions: string,
-  ) => Promise<{ success: boolean; content?: string; error?: string; kind?: FailureKind }>;
+  ) => Promise<{
+    success: boolean;
+    content?: string;
+    error?: string;
+    kind?: FailureKind;
+  }>;
   resolveTargetPath: (
     targetPath: string,
     root: string,
@@ -69,11 +70,7 @@ export async function executeMorphEdit(
   args: ExecuteMorphEditArgs,
   runtime: ExecuteMorphEditRuntime,
 ): Promise<string> {
-  const {
-    target_filepath,
-    instructions,
-    code_edit,
-  } = args;
+  const { target_filepath, instructions, code_edit } = args;
 
   const {
     log,
@@ -101,10 +98,7 @@ export async function executeMorphEdit(
   const normalizedCodeEdit = normalizeCodeEditInput(code_edit);
 
   // Block usage in readonly agents (plan, explore) unless overridden
-  if (
-    !ALLOW_READONLY_AGENTS &&
-    READONLY_AGENTS.includes(context.agent)
-  ) {
+  if (!ALLOW_READONLY_AGENTS && READONLY_AGENTS.includes(context.agent)) {
     await log(
       "debug",
       `Blocked morph_edit in readonly agent: ${context.agent}`,
@@ -172,7 +166,10 @@ export async function executeMorphEdit(
   const apiDuration = now() - startTime;
 
   if (!result.success || !result.content) {
-    const safeError = scrubSecrets(result.error || "unknown error", MORPH_API_KEY);
+    const safeError = scrubSecrets(
+      result.error || "unknown error",
+      MORPH_API_KEY,
+    );
     return `Morph API failed: ${safeError}\n\nSuggestion: Try using the native 'edit' tool instead with exact string replacement.\nThe edit tool requires matching the exact text in the file.`;
   }
 
@@ -185,10 +182,7 @@ export async function executeMorphEdit(
   // `!originalHadMarker` precondition avoids false positives on files that
   // legitimately contain the marker string.
   const originalHadMarker = originalCode.includes(EXISTING_CODE_MARKER);
-  if (
-    !originalHadMarker &&
-    mergedCode.includes(EXISTING_CODE_MARKER)
-  ) {
+  if (!originalHadMarker && mergedCode.includes(EXISTING_CODE_MARKER)) {
     await log(
       "warn",
       `Marker leakage detected in merged output for ${target_filepath}`,
@@ -254,11 +248,7 @@ export async function executeMorphEdit(
   }
 
   // Generate unified diff
-  const diff = generateUnifiedDiff(
-    target_filepath,
-    originalCode,
-    mergedCode,
-  );
+  const diff = generateUnifiedDiff(target_filepath, originalCode, mergedCode);
 
   // Calculate change stats
   const { added, removed } = countChanges(diff);

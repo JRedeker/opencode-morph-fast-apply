@@ -57,7 +57,7 @@ export function scrubSecrets(message: unknown, apiKey?: unknown): string {
   }
   // Scrub generic Bearer tokens
   result = result.replace(
-    /Bearer\s+[A-Za-z0-9_\-\.]{10,}/gi,
+    /Bearer\s+[A-Za-z0-9_.-]{10,}/gi,
     "Bearer ***REDACTED***",
   );
   return result;
@@ -192,10 +192,7 @@ export async function callMorphApply(
     }
     return {
       success: false,
-      error: scrubSecrets(
-        `Morph API request failed: ${error.message}`,
-        apiKey,
-      ),
+      error: scrubSecrets(`Morph API request failed: ${error.message}`, apiKey),
       kind: "api_request_failed",
     };
   }

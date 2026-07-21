@@ -15,15 +15,15 @@ faster or more reliable than exact-string replacement.
 
 ### First-Action Policy
 
-| Editing task | First tool | Why |
-|---|---|---|
-| Large file edits (300+ lines) | `morph_edit` | Avoids fragile exact-string matching |
-| Multiple scattered changes in one file | `morph_edit` | Batch edits efficiently |
-| Whitespace-sensitive edits | `morph_edit` | More forgiving with formatting/context |
-| Complex refactors inside an existing file | `morph_edit` | Better partial-file merge behavior |
-| Small exact replacement | `edit` | Faster, local, no API call |
-| Single-line rename/fix | `edit` | Simpler exact replacement |
-| New file creation | `write` | `morph_edit` only edits existing files |
+| Editing task                              | First tool   | Why                                    |
+| ----------------------------------------- | ------------ | -------------------------------------- |
+| Large file edits (300+ lines)             | `morph_edit` | Avoids fragile exact-string matching   |
+| Multiple scattered changes in one file    | `morph_edit` | Batch edits efficiently                |
+| Whitespace-sensitive edits                | `morph_edit` | More forgiving with formatting/context |
+| Complex refactors inside an existing file | `morph_edit` | Better partial-file merge behavior     |
+| Small exact replacement                   | `edit`       | Faster, local, no API call             |
+| Single-line rename/fix                    | `edit`       | Simpler exact replacement              |
+| New file creation                         | `write`      | `morph_edit` only edits existing files |
 
 ### When NOT to Use morph_edit
 
