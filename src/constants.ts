@@ -20,6 +20,7 @@ export const PLUGIN_VERSION = "1.10.2";
 
 // Get API key from the OpenCode/plugin process environment.
 export const MORPH_API_KEY = process.env.MORPH_API_KEY;
-export const MORPH_API_URL = process.env.MORPH_API_URL || "https://api.morphllm.com";
+export const MORPH_API_URL =
+  process.env.MORPH_API_URL || "https://api.morphllm.com";
 export const MORPH_MODEL = process.env.MORPH_MODEL || "morph-v3-fast";
 export const MORPH_TIMEOUT = parseInt(process.env.MORPH_TIMEOUT || "30000", 10);

@@ -10,15 +10,10 @@ import {
 import { normalizeCodeEditInput } from "./src/normalize.js";
 import {
   executeMorphEdit,
-  type ExecuteMorphEditArgs,
   type ExecuteMorphEditRuntime,
 } from "./src/execute.js";
 import { generateUnifiedDiff, countChanges } from "./src/diff.js";
-import {
-  callMorphApply,
-  scrubSecrets,
-  type FailureKind,
-} from "./index.js";
+import { callMorphApply, scrubSecrets } from "./index.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -49,9 +44,7 @@ describe("packaged tool-selection instructions", () => {
   test("README documents packaged instruction path", () => {
     const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
 
-    expect(content).toContain(
-      "~/.config/opencode/instructions/morph-tools.md",
-    );
+    expect(content).toContain("~/.config/opencode/instructions/morph-tools.md");
     expect(content).toContain(
       "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md",
     );
@@ -323,7 +316,6 @@ describe("marker leakage detection logic", () => {
   });
 
   test("not triggered when no markers in input", () => {
-    const originalCode = "function foo() { return 1 }";
     const mergedCode = `function foo() { return 1 }\n${EXISTING_CODE_MARKER}`;
     const hasMarkers = false;
 
@@ -449,7 +441,7 @@ describe("truncation detection logic", () => {
     const lineLoss = (originalLineCount - mergedLineCount) / originalLineCount;
 
     // NaN > 0.6 is false, so this should NOT trigger
-    const triggered = true && charLoss > 0.6 && lineLoss > 0.5;
+    const triggered = charLoss > 0.6 && lineLoss > 0.5;
     expect(triggered).toBe(false);
   });
 
@@ -489,7 +481,8 @@ describe("truncation detection logic", () => {
 
 describe("extractImportedIdentifiers", () => {
   test("extracts Python from-import identifiers", () => {
-    const code = "from asyncpg import PostgresError\nfrom services.ops import DataOps";
+    const code =
+      "from asyncpg import PostgresError\nfrom services.ops import DataOps";
     const ids = extractImportedIdentifiers(code, "svc.py");
     expect(ids).toContain("PostgresError");
     expect(ids).toContain("DataOps");
@@ -578,7 +571,8 @@ describe("extractImportedIdentifiers", () => {
   });
 
   test("extracts Rust use statement", () => {
-    const code = "use std::collections::HashMap;\nuse tokio::io::{AsyncRead, AsyncWrite};";
+    const code =
+      "use std::collections::HashMap;\nuse tokio::io::{AsyncRead, AsyncWrite};";
     const ids = extractImportedIdentifiers(code, "main.rs");
     expect(ids).toContain("HashMap");
     expect(ids).toContain("AsyncRead");
@@ -586,7 +580,8 @@ describe("extractImportedIdentifiers", () => {
   });
 
   test("extracts Java import", () => {
-    const code = "import java.util.ArrayList;\nimport static org.junit.Assert.*;";
+    const code =
+      "import java.util.ArrayList;\nimport static org.junit.Assert.*;";
     const ids = extractImportedIdentifiers(code, "App.java");
     expect(ids).toContain("ArrayList");
   });
@@ -611,13 +606,15 @@ describe("extractImportedIdentifiers", () => {
   });
 
   test("deduplicates identifiers", () => {
-    const code = 'import { Router } from "express";\nimport { Router } from "express";';
+    const code =
+      'import { Router } from "express";\nimport { Router } from "express";';
     const ids = extractImportedIdentifiers(code, "app.ts");
     expect(ids.filter((id) => id === "Router")).toHaveLength(1);
   });
 
   test("skips comment lines", () => {
-    const code = '// import { Fake } from "nowhere";\nimport { Real } from "somewhere";';
+    const code =
+      '// import { Fake } from "nowhere";\nimport { Real } from "somewhere";';
     const ids = extractImportedIdentifiers(code, "app.ts");
     expect(ids).toContain("Real");
     expect(ids).not.toContain("Fake");
@@ -777,7 +774,7 @@ describe("extractImportEntries", () => {
   });
 
   test("returns stable entries for C include", () => {
-    const code = '#include <stdio.h>';
+    const code = "#include <stdio.h>";
     const entries = extractImportEntries(code, "main.c");
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
@@ -799,7 +796,8 @@ describe("extractImportEntries", () => {
   });
 
   test("deduplicates identical entries", () => {
-    const code = 'import { Router } from "express";\nimport { Router } from "express";';
+    const code =
+      'import { Router } from "express";\nimport { Router } from "express";';
     const entries = extractImportEntries(code, "app.ts");
     expect(entries).toHaveLength(1);
   });
@@ -816,10 +814,7 @@ describe("findDroppedIdentifiers", () => {
     ].join("\n");
 
     // Simulate Morph dropping imports — identifiers not present anywhere
-    const merged = [
-      "async def main():",
-      "    pass",
-    ].join("\n");
+    const merged = ["async def main():", "    pass"].join("\n");
 
     const dropped = findDroppedIdentifiers(original, merged, "svc.py");
     expect(dropped).toContain("PostgresError");
@@ -854,7 +849,8 @@ describe("findDroppedIdentifiers", () => {
   });
 
   test("flags identifier dropped from import and not used elsewhere", () => {
-    const original = 'import { Router, Request, Response } from "express";\nconst app = Router();';
+    const original =
+      'import { Router, Request, Response } from "express";\nconst app = Router();';
     const merged = 'import { Router } from "express";\nconst app = Router();';
     // Request and Response are in original imports but not in merged imports
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
@@ -879,11 +875,17 @@ describe("findDroppedIdentifiers", () => {
       "    ResultMapper,",
       ")",
     ].join("\n");
-    const originalBody = Array.from({ length: 1360 }, (_, i) => `# line ${i + 30}`).join("\n");
+    const originalBody = Array.from(
+      { length: 1360 },
+      (_, i) => `# line ${i + 30}`,
+    ).join("\n");
     const original = originalImports + "\n" + originalBody;
 
     // Morph drops the import block silently
-    const merged = Array.from({ length: 1360 }, (_, i) => `# line ${i + 30}`).join("\n");
+    const merged = Array.from(
+      { length: 1360 },
+      (_, i) => `# line ${i + 30}`,
+    ).join("\n");
 
     const dropped = findDroppedIdentifiers(original, merged, "service.py");
     expect(dropped.length).toBeGreaterThan(0);
@@ -897,7 +899,8 @@ describe("findDroppedIdentifiers", () => {
     // If an identifier is still imported, just in a different declaration form,
     // it should NOT be flagged.
     const original = 'import { Router } from "express";';
-    const merged = 'import express from "express";\nconst { Router } = express;';
+    const merged =
+      'import express from "express";\nconst { Router } = express;';
     // Note: Router is no longer in an import declaration, so this WILL be flagged
     // with declaration-level comparison. This is correct behavior.
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
@@ -913,13 +916,14 @@ describe("findDroppedIdentifiers", () => {
 
   test("declaration-level comparison: flags dropped alias binding", () => {
     const original = 'import { createRouter as cr } from "express";';
-    const merged = '// import dropped';
+    const merged = "// import dropped";
     const dropped = findDroppedIdentifiers(original, merged, "app.ts");
     expect(dropped).toContain("cr");
   });
 
   test("declaration-level comparison: flags dropped require destructure alias binding", () => {
-    const original = 'const { readFile: rf } = require("node:fs");\nrf("file");';
+    const original =
+      'const { readFile: rf } = require("node:fs");\nrf("file");';
     const merged = '// require dropped\nrf("file");';
     const dropped = findDroppedIdentifiers(original, merged, "app.js");
     expect(dropped).toContain("rf");
@@ -928,7 +932,13 @@ describe("findDroppedIdentifiers", () => {
 
 import { resolveTargetPath } from "./src/path-confinement.js";
 import { tmpdir } from "node:os";
-import { mkdtempSync, writeFileSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  symlinkSync,
+  mkdirSync,
+  rmSync,
+} from "node:fs";
 
 describe("resolveTargetPath", () => {
   let tmpDir: string;
@@ -1006,9 +1016,13 @@ describe("resolveTargetPath", () => {
     writeFileSync(join(evilDir, "secret.txt"), "secret");
     // Create symlink inside root pointing outside
     symlinkSync(evilDir, join(root, "link-out"));
-    const result = resolveTargetPath(join(root, "link-out", "secret.txt"), root, {
-      targetExists: true,
-    });
+    const result = resolveTargetPath(
+      join(root, "link-out", "secret.txt"),
+      root,
+      {
+        targetExists: true,
+      },
+    );
     expect("error" in result).toBe(true);
     if ("error" in result) {
       expect(result.error).toContain("outside");
@@ -1033,9 +1047,13 @@ describe("resolveTargetPath", () => {
     const evilDir = join(tmpDir, "evil");
     mkdirSync(evilDir, { recursive: true });
     symlinkSync(evilDir, join(root, "link-out"));
-    const result = resolveTargetPath(join(root, "link-out", "new-file.txt"), root, {
-      targetExists: false,
-    });
+    const result = resolveTargetPath(
+      join(root, "link-out", "new-file.txt"),
+      root,
+      {
+        targetExists: false,
+      },
+    );
     expect("error" in result).toBe(true);
     if ("error" in result) {
       expect(result.error).toContain("outside");
@@ -1045,9 +1063,13 @@ describe("resolveTargetPath", () => {
   test("new target allows when nearest existing parent is real directory inside root", () => {
     const subDir = join(root, "sub");
     mkdirSync(subDir, { recursive: true });
-    const result = resolveTargetPath(join(root, "sub", "new", "file.txt"), root, {
-      targetExists: false,
-    });
+    const result = resolveTargetPath(
+      join(root, "sub", "new", "file.txt"),
+      root,
+      {
+        targetExists: false,
+      },
+    );
     expect("path" in result).toBe(true);
     if ("path" in result) {
       expect(result.path).toBe(join(root, "sub", "new", "file.txt"));
@@ -1090,13 +1112,13 @@ function makeMockRuntime(
       success: false,
       error: "mock-not-configured",
     }),
-    resolveTargetPath: (targetPath, root, _options?) =>
-      ({ path: join(root, targetPath) }),
+    resolveTargetPath: (targetPath, root, _options?) => ({
+      path: join(root, targetPath),
+    }),
     normalizeCodeEditInput: (s) => normalizeCodeEditInput(s),
     findDroppedIdentifiers: (orig, merged, fp) =>
       findDroppedIdentifiers(orig, merged, fp),
-    generateUnifiedDiff: (fp, orig, mod) =>
-      generateUnifiedDiff(fp, orig, mod),
+    generateUnifiedDiff: (fp, orig, mod) => generateUnifiedDiff(fp, orig, mod),
     countChanges: (diff) => countChanges(diff),
     constants: {
       MORPH_API_KEY: "fake-key",
@@ -1268,7 +1290,10 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
 
   test("rejects catastrophic truncation", async () => {
     // original: 20 lines, ~80 chars
-    const original = Array.from({ length: 20 }, (_, i) => `const x${i} = ${i};`).join("\n");
+    const original = Array.from(
+      { length: 20 },
+      (_, i) => `const x${i} = ${i};`,
+    ).join("\n");
     // merged: 2 lines, ~10 chars  (>60% char loss, >50% line loss)
     const merged = "const a = 1;\n";
 
@@ -1320,9 +1345,10 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
 });
 
 describe("executeMorphEdit - no-marker guard coverage", () => {
-  const tenLines = Array.from({ length: 10 }, (_, i) => `const v${i} = ${i};`).join(
-    "\n",
-  );
+  const tenLines = Array.from(
+    { length: 10 },
+    (_, i) => `const v${i} = ${i};`,
+  ).join("\n");
 
   test("blocks catastrophic shrink on no-marker edit (vs code_edit baseline)", async () => {
     // 10-line file (≤10 so the missing-marker refusal does not trigger),
@@ -1362,7 +1388,10 @@ describe("executeMorphEdit - no-marker guard coverage", () => {
 
     let wrote = false;
     const runtime = makeMockRuntime({
-      readFile: async () => ({ exists: true, text: "const a = 1;\nconst b = 2;\n" }),
+      readFile: async () => ({
+        exists: true,
+        text: "const a = 1;\nconst b = 2;\n",
+      }),
       callMorphApply: async () => ({ success: true, content: replacement }),
       writeFile: async () => {
         wrote = true;
@@ -1385,7 +1414,10 @@ describe("executeMorphEdit - no-marker guard coverage", () => {
   test("blocks marker leakage on no-marker edit", async () => {
     let wrote = false;
     const runtime = makeMockRuntime({
-      readFile: async () => ({ exists: true, text: "const a = 1;\nconst b = 2;\n" }),
+      readFile: async () => ({
+        exists: true,
+        text: "const a = 1;\nconst b = 2;\n",
+      }),
       callMorphApply: async () => ({
         success: true,
         content: `const a = 1;\n${EXISTING_CODE_MARKER}\nconst b = 2;\n`,

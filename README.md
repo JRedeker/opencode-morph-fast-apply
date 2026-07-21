@@ -28,12 +28,8 @@ Add to your global config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
-  "instructions": [
-    "~/.config/opencode/instructions/morph-tools.md"
-  ],
-  "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply"
-  ]
+  "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply"]
 }
 ```
 
@@ -41,12 +37,8 @@ Or pin to a specific version:
 
 ```json
 {
-  "instructions": [
-    "~/.config/opencode/instructions/morph-tools.md"
-  ],
-  "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply#v1.10.2"
-  ]
+  "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.10.2"]
 }
 ```
 
@@ -65,9 +57,7 @@ instead:
   "instructions": [
     "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
   ],
-  "plugin": [
-    "github:JRedeker/opencode-morph-fast-apply"
-  ]
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply"]
 }
 ```
 
@@ -117,36 +107,36 @@ function validateToken(token) {
 
 ### When to use `morph_edit` vs `edit`
 
-| Situation | Tool | Reason |
-|-----------|------|--------|
-| Small, exact replacement | `edit` | Fast, no API call |
-| Large file (500+ lines) | `morph_edit` | Handles partial snippets |
-| Multiple scattered changes | `morph_edit` | Batch efficiently |
-| Whitespace-sensitive | `morph_edit` | Forgiving with formatting |
+| Situation                  | Tool         | Reason                    |
+| -------------------------- | ------------ | ------------------------- |
+| Small, exact replacement   | `edit`       | Fast, no API call         |
+| Large file (500+ lines)    | `morph_edit` | Handles partial snippets  |
+| Multiple scattered changes | `morph_edit` | Batch efficiently         |
+| Whitespace-sensitive       | `morph_edit` | Forgiving with formatting |
 
 ## Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MORPH_API_KEY` | (required) | Your Morph API key |
-| `MORPH_API_URL` | `https://api.morphllm.com` | API endpoint |
-| `MORPH_MODEL` | `morph-v3-fast` | Model to use (see below) |
-| `MORPH_TIMEOUT` | `30000` | Request timeout in ms |
+| Variable        | Default                    | Description              |
+| --------------- | -------------------------- | ------------------------ |
+| `MORPH_API_KEY` | (required)                 | Your Morph API key       |
+| `MORPH_API_URL` | `https://api.morphllm.com` | API endpoint             |
+| `MORPH_MODEL`   | `morph-v3-fast`            | Model to use (see below) |
+| `MORPH_TIMEOUT` | `30000`                    | Request timeout in ms    |
 
 ### Available Models
 
-| Model | Speed | Accuracy | Best For |
-|-------|-------|----------|----------|
-| `morph-v3-fast` | 10,500+ tok/sec | 96% | Real-time applications, quick edits |
-| `morph-v3-large` | 5,000+ tok/sec | 98% | Complex changes, highest accuracy |
-| `auto` | 5,000-10,500 tok/sec | ~98% | Recommended - automatically selects optimal model |
+| Model            | Speed                | Accuracy | Best For                                          |
+| ---------------- | -------------------- | -------- | ------------------------------------------------- |
+| `morph-v3-fast`  | 10,500+ tok/sec      | 96%      | Real-time applications, quick edits               |
+| `morph-v3-large` | 5,000+ tok/sec       | 98%      | Complex changes, highest accuracy                 |
+| `auto`           | 5,000-10,500 tok/sec | ~98%     | Recommended - automatically selects optimal model |
 
 ## How It Works
 
 1. Reads the original file content
 2. Sends to Morph API:
    - `<instruction>` - Your intent description
-   - `<code>` - The complete original file  
+   - `<code>` - The complete original file
    - `<update>` - Your partial edit with markers
 3. Morph intelligently merges the lazy edit markers with original code
 4. Writes the merged result back to the file
@@ -158,6 +148,7 @@ function validateToken(token) {
 
 Ensure the environment variable is set and exported in the shell or service that
 starts OpenCode:
+
 ```bash
 echo $MORPH_API_KEY  # Should show your key
 ```
@@ -168,6 +159,7 @@ updated OpenCode process environment.
 ### Timeout errors
 
 Increase the timeout for large files:
+
 ```bash
 export MORPH_TIMEOUT=60000  # 60 seconds
 ```
@@ -190,7 +182,7 @@ In all guard cases, `morph_edit` returns a detailed error with recovery options 
 
 ### Markdown-fenced `code_edit` input
 
-If an AI agent wraps `code_edit` in markdown fences (for example, ```` ```typescript ... ``` ````), `morph_edit` strips the outer fence before sending content to Morph.
+If an AI agent wraps `code_edit` in markdown fences (for example, ` ```typescript ... ``` `), `morph_edit` strips the outer fence before sending content to Morph.
 
 ### Wrong edit location
 
