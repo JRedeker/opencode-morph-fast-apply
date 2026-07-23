@@ -10,6 +10,7 @@
   },
   "files": [
     "index.ts",
+    "impl.ts",
     "src/",
     "README.md",
     "LICENSE",
