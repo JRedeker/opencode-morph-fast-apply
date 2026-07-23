@@ -1,6 +1,6 @@
 import type { ResolveTargetPathResult } from "./path-confinement.js";
-import type { FailureKind } from "../index.js";
-import { scrubSecrets } from "../index.js";
+import type { FailureKind } from "../impl.js";
+import { scrubSecrets } from "../impl.js";
 
 export interface ExecuteMorphEditArgs {
   target_filepath: string;

@@ -13,7 +13,7 @@ import {
   type ExecuteMorphEditRuntime,
 } from "./src/execute.js";
 import { generateUnifiedDiff, countChanges } from "./src/diff.js";
-import { callMorphApply, scrubSecrets } from "./index.js";
+import { callMorphApply, scrubSecrets } from "./impl.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -164,7 +164,9 @@ describe("native edit recovery policy", () => {
     readFileSync(join(import.meta.dir, relativePath), "utf-8");
 
   test("embedded morph_edit description states the recovery policy and preserves the API fallback", () => {
-    const content = readSurface("index.ts");
+    // The morph_edit tool definition (and its description prose) lives in
+    // impl.ts; index.ts is a thin entry shim exporting only default.
+    const content = readSurface("impl.ts");
     for (const anchor of RECOVERY_ANCHORS) {
       expect(content).toContain(anchor);
     }
