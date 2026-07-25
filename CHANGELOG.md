@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-07-24
+
+### Added
+
+- **ADV worktree capability confinement**: `morph_edit` now honors an ADV-validated, non-enumerable capability root when supplied, so delegated ADV task edits remain confined to their assigned worktree. Missing or malformed capabilities preserve the existing session-root confinement behavior.
+- **Optional ADV task routing inputs**: The tool schema accepts optional `workdir` and `taskId` values for ADV validation while remaining backward-compatible for existing callers that omit them.
+
 ## [1.10.2] - 2026-07-10
 
 ### Added

@@ -38,7 +38,7 @@ Or pin to a specific version:
 ```json
 {
   "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
-  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.10.2"]
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.11.0"]
 }
 ```
 
