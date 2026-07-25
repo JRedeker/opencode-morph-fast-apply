@@ -23,6 +23,7 @@ import { findDroppedIdentifiers } from "./src/imports.js";
 import { normalizeCodeEditInput } from "./src/normalize.js";
 import { resolveTargetPath } from "./src/path-confinement.js";
 import { executeMorphEdit } from "./src/execute.js";
+import { readCapabilityRoot } from "./src/adv-capability.js";
 
 /**
  * Stable failure-kind classification for API/guard/write failures.
@@ -292,6 +293,18 @@ FALLBACK: If morph_edit fails (API error, timeout), use the native 'edit' tool w
             .describe(
               'The code changes wrapped with "// ... existing code ..." markers for unchanged sections',
             ),
+          workdir: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "ADV worktree root. Pass with taskId to edit ADV per-change worktrees; ADV validates both against the task's worktree. Omit for session-repo edits.",
+            ),
+          taskId: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "ADV task ID. Pass with workdir to edit ADV per-change worktrees; ADV validates both. Omit for session-repo edits.",
+            ),
         },
 
         async execute(args, context) {
@@ -314,6 +327,7 @@ FALLBACK: If morph_edit fails (API error, timeout), use the native 'edit' tool w
             callMorphApply,
             resolveTargetPath,
             normalizeCodeEditInput,
+            readCapabilityRoot,
             findDroppedIdentifiers,
             generateUnifiedDiff,
             countChanges,

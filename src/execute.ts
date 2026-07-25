@@ -38,6 +38,7 @@ export interface ExecuteMorphEditRuntime {
     options?: { targetExists?: boolean },
   ) => ResolveTargetPathResult;
   normalizeCodeEditInput: (codeEdit: string) => string;
+  readCapabilityRoot: (args: unknown) => string | null;
   findDroppedIdentifiers: (
     originalCode: string,
     mergedCode: string,
@@ -82,6 +83,7 @@ export async function executeMorphEdit(
     callMorphApply,
     resolveTargetPath,
     normalizeCodeEditInput,
+    readCapabilityRoot,
     findDroppedIdentifiers,
     generateUnifiedDiff,
     countChanges,
@@ -107,7 +109,11 @@ export async function executeMorphEdit(
   }
 
   // Resolve and confine target path to allowed root
-  const root = context.worktree ?? context.directory ?? directory;
+  const root =
+    readCapabilityRoot(args) ??
+    context.worktree ??
+    context.directory ??
+    directory;
   const resolved = resolveTargetPath(target_filepath, root);
   if ("error" in resolved) {
     await log("warn", `Blocked morph_edit: ${resolved.error}`);
