@@ -1,0 +1,16 @@
+{
+  "archived_at": "2026-07-25T00:30:21.234Z",
+  "capabilities": [],
+  "change_hash": "4e04784d8d08278e49d58ceb421dd83a7f3a31bc2f4a41fc3dabe88b03998362",
+  "change_id": "addMorphWorktreeCapabilityRead",
+  "completed_tasks": 5,
+  "created_at": "2026-07-24T21:42:09.009Z",
+  "current_gate": "release",
+  "last_activity_at": "2026-07-25T00:24:58.669Z",
+  "lifecycle_state": "open",
+  "status": "archived",
+  "summary_hash": "f1dc77ea899591f012566110a2d0b1274dad36922c6778b794a89b8ac0edebc2",
+  "task_count": 5,
+  "title": "Add morph worktree capability read",
+  "version": "1"
+}

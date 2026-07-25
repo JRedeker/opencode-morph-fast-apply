@@ -1,0 +1,1286 @@
+{
+  "id": "addMorphWorktreeCapabilityRead",
+  "title": "Add morph worktree capability read",
+  "status": "archived",
+  "lifecycleState": "open",
+  "created_at": "2026-07-24T21:42:09.009Z",
+  "tasks": [
+    {
+      "id": "tk-cde864a6cfe8",
+      "title": "Create `src/adv-capability.ts` — the ADV worktree capability symbol constant + reader.",
+      "type": "code",
+      "section": "Capability reader",
+      "status": "done",
+      "priority": 0,
+      "created_at": "2026-07-24T23:39:32.209Z",
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "respects": [
+          "C1",
+          "DONT2",
+          "DONT5"
+        ],
+        "verifies": [
+          "AC3"
+        ]
+      },
+      "evidence_policy": "test",
+      "evidence_plan": {
+        "policy": "test",
+        "proof_target": "Automated red/green tests evidenced by adv_run_test",
+        "stage": "stage-v2",
+        "provenance": "new"
+      },
+      "assignedTo": "agent",
+      "started_at": "2026-07-24T23:47:20.934Z",
+      "verification": "T1 capability reader implemented: src/adv-capability.ts (ADV_MORPH_WORKTREE_CAPABILITY + readCapabilityRoot, fail-closed shape-validation). Independently verified: full suite 151 pass/1 skip/0 fail, typecheck+lint+format pass. Note: full feature (T1-T4) lands in this commit as coupled unit; T2-T4 checkpoints will be clean.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Task checkpoint completed",
+      "filesTouched": [
+        "impl.ts",
+        "index.test.ts",
+        "src/adv-capability.ts",
+        "src/execute.ts"
+      ],
+      "touched_files": [
+        "impl.ts",
+        "index.test.ts",
+        "src/adv-capability.ts",
+        "src/execute.ts"
+      ],
+      "checkpointSha": "02d0e23a45ea7ba4ab58d7636230fe4efb2eccbd",
+      "completedAt": "2026-07-25T00:03:23.180Z",
+      "completed_at": "2026-07-25T00:03:23.180Z"
+    },
+    {
+      "id": "tk-87d31cafb202",
+      "title": "Wire the capability reader into `executeMorphEdit` so a valid ADV capability root overrides session-root confinement; absence/malformed falls back unchanged.",
+      "type": "code",
+      "section": "executeMorphEdit confinement",
+      "status": "done",
+      "priority": 1,
+      "created_at": "2026-07-24T23:39:54.782Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-cde864a6cfe8"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "respects": [
+          "C2",
+          "DONT1"
+        ],
+        "verifies": [
+          "AC1",
+          "AC2",
+          "AC3"
+        ]
+      },
+      "evidence_policy": "test",
+      "evidence_plan": {
+        "policy": "test",
+        "proof_target": "Automated red/green tests evidenced by adv_run_test",
+        "stage": "stage-v2",
+        "provenance": "new"
+      },
+      "verification": "T2 executeMorphEdit confinement: readCapabilityRoot wired into runtime + root precedence (capability ?? worktree ?? directory); makeMockRuntime default added. Independently verified green. Part of commit 02d0e23 (coupled feature unit).",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Task checkpoint completed",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "02d0e23a45ea7ba4ab58d7636230fe4efb2eccbd",
+      "completedAt": "2026-07-25T00:04:04.405Z",
+      "completed_at": "2026-07-25T00:04:04.405Z"
+    },
+    {
+      "id": "tk-bc175731b67f",
+      "title": "Add the concurrency test (AC5) and the two-tier runtime integration guard (AC6).",
+      "type": "code",
+      "section": "Concurrency + runtime guard",
+      "status": "done",
+      "priority": 2,
+      "created_at": "2026-07-24T23:40:11.364Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-cde864a6cfe8"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-87d31cafb202"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "respects": [
+          "DONT5"
+        ],
+        "verifies": [
+          "AC5",
+          "AC6"
+        ]
+      },
+      "evidence_policy": "test",
+      "evidence_plan": {
+        "policy": "test",
+        "proof_target": "Automated red/green tests evidenced by adv_run_test",
+        "stage": "stage-v2",
+        "provenance": "new"
+      },
+      "subagent_reports": [
+        {
+          "schema_version": "1.0",
+          "change_id": "addMorphWorktreeCapabilityRead",
+          "attempt": 1,
+          "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/addMorphWorktreeCapabilityRead",
+          "task_id": "tk-bc175731b67f",
+          "scope": {
+            "kind": "task",
+            "task_id": "tk-bc175731b67f"
+          },
+          "agent": "adv-engineer",
+          "status": "complete",
+          "evidence_binding_version": "typed-v1",
+          "files_touched": [
+            "src/adv-capability.ts",
+            "src/execute.ts",
+            "impl.ts",
+            "index.test.ts"
+          ],
+          "verification": [
+            {
+              "test_run_id": "bash-t1-red",
+              "command": "bun test index.test.ts",
+              "exit_code": 1,
+              "summary": "T1 RED: 1 error (module ./src/adv-capability.js not found) before creating implementation"
+            },
+            {
+              "test_run_id": "bash-t1-green",
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "T1 GREEN: 145 pass after creating src/adv-capability.ts"
+            },
+            {
+              "test_run_id": "bash-t2-red",
+              "command": "bun test index.test.ts",
+              "exit_code": 1,
+              "summary": "T2 RED: capability root not used; in-root target rejected because root fell back to /some-other-project"
+            },
+            {
+              "test_run_id": "bash-t2-green",
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "T2 GREEN: 148 pass after wiring readCapabilityRoot into executeMorphEdit"
+            },
+            {
+              "test_run_id": "bash-t3-red",
+              "command": "bun test index.test.ts",
+              "exit_code": 1,
+              "summary": "T3 RED: morph_edit tool args missing workdir/taskId keys"
+            },
+            {
+              "test_run_id": "bash-t3-green",
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "T3 GREEN: 149 pass after adding optional workdir/taskId args to impl.ts"
+            },
+            {
+              "test_run_id": "bash-t4-red",
+              "command": "bun test index.test.ts",
+              "exit_code": 1,
+              "summary": "T4 RED: readCapabilityRoot stubbed to return null; capability and concurrency tests fail"
+            },
+            {
+              "test_run_id": "bash-t4-green",
+              "command": "bun test index.test.ts",
+              "exit_code": 0,
+              "summary": "T4 GREEN: 151 pass, 1 skip after restoring readCapabilityRoot"
+            },
+            {
+              "test_run_id": "bash-full-check",
+              "command": "bun run check",
+              "exit_code": 0,
+              "summary": "Full check green: typecheck + lint + format:check + test (151 pass, 1 skip, 321 expect calls)"
+            }
+          ],
+          "decisions": [
+            {
+              "what": "Used tool.schema.string().optional() for workdir/taskId args",
+              "why": "tool.schema is typeof z (Zod v4) and .optional() is the canonical Zod optional string API; verified by bun run typecheck"
+            },
+            {
+              "what": "Avoided importing from any advance package",
+              "why": "Constraint in spec; redeclared Symbol.for key and kept all ADV logic in capability symbol shape-validation only"
+            },
+            {
+              "what": "Used smoke test + typecheck instead of direct zod safeParse in T3",
+              "why": "zod v4 exposes safeParse as standalone helper and the inferred $ZodType base lacks the method; schema validity is sufficiently covered by typecheck and plugin-load test"
+            },
+            {
+              "what": "Did not weaken resolveTargetPath and did not read workdir/taskId inside morph for confinement",
+              "why": "Spec requirement: confinement uses only the validated capability symbol root via resolveTargetPath; workdir/taskId are opaque schema fields for ADV dispatch metadata only"
+            }
+          ],
+          "blockers": [],
+          "scope_drift": null,
+          "follow_ups": [],
+          "required_main_agent_actions": [],
+          "related_scan": "none",
+          "context_update_for_adv": {
+            "what_ads_needs_to_know": "All four tasks T1-T4 implemented and verified. src/adv-capability.ts provides Symbol.for-based capability reading with fail-closed validation. executeMorphEdit now prefers capability root over session context. impl.ts morph_edit tool schema accepts optional workdir/taskId and injects readCapabilityRoot. Full bun run check passes (151 pass, 1 skip). adv_run_test was blocked in this sub-agent session; test evidence was captured via bash instead.",
+            "suggested_next_action": "Review the diff in the worktree and proceed to acceptance/design review gate."
+          },
+          "apply_context": {
+            "implementation_cycle_id": "ic_addMorphWorktreeCapabilityRead_1",
+            "implementation_provenance": {
+              "kind": "engineer_report",
+              "report_key": "addMorphWorktreeCapabilityRead_tk-bc175731b67f"
+            }
+          },
+          "consumer_warnings": [
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t1-red"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t1-green"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t2-red"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t2-green"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t3-red"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t3-green"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t4-red"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-t4-green"
+            },
+            {
+              "kind": "verification_missing",
+              "message": "No durable adv_run_test evidence found for run_id: bash-full-check"
+            }
+          ]
+        }
+      ],
+      "verification": "T4 concurrency + AC6 two-tier: AC5 independent per-call roots; AC6 Tier1 characterization (symbol survives reference, dropped by spread/assign); AC6 Tier2 documented upgrade checklist. Part of commit 02d0e23.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Task checkpoint completed",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "02d0e23a45ea7ba4ab58d7636230fe4efb2eccbd",
+      "completedAt": "2026-07-25T00:04:35.448Z",
+      "completed_at": "2026-07-25T00:04:35.448Z"
+    },
+    {
+      "id": "tk-cd5e6076ba4a",
+      "title": "Expose optional model-visible `workdir`/`taskId` in the morph_edit schema and wire the real `readCapabilityRoot` into the runtime injection.",
+      "type": "code",
+      "section": "Tool registration",
+      "status": "done",
+      "priority": 2,
+      "created_at": "2026-07-24T23:40:11.401Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-cde864a6cfe8"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-87d31cafb202"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "inline"
+      },
+      "contract_refs": {
+        "respects": [
+          "C5",
+          "DONT3"
+        ],
+        "verifies": [
+          "AC4"
+        ]
+      },
+      "evidence_policy": "test",
+      "evidence_plan": {
+        "policy": "test",
+        "proof_target": "Automated red/green tests evidenced by adv_run_test",
+        "stage": "stage-v2",
+        "provenance": "new"
+      },
+      "verification": "T3 impl.ts schema + wiring: optional workdir/taskId args via tool.schema.string().optional() (verified by typecheck); readCapabilityRoot injected into runtime; morph does not read workdir/taskId for confinement. Part of commit 02d0e23.",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Task checkpoint completed",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "02d0e23a45ea7ba4ab58d7636230fe4efb2eccbd",
+      "completedAt": "2026-07-25T00:04:35.443Z",
+      "completed_at": "2026-07-25T00:04:35.443Z"
+    },
+    {
+      "id": "tk-e98b9aaa1a66",
+      "title": "Run the full existing test suite + typecheck/lint and confirm zero regressions after all capability changes land.",
+      "type": "verification",
+      "section": "Regression",
+      "status": "done",
+      "priority": 3,
+      "created_at": "2026-07-24T23:40:20.371Z",
+      "deps": [
+        {
+          "type": "blocked_by",
+          "target": "tk-cde864a6cfe8"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-87d31cafb202"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-cd5e6076ba4a"
+        },
+        {
+          "type": "blocked_by",
+          "target": "tk-bc175731b67f"
+        }
+      ],
+      "metadata": {
+        "tdd_intent": "separate_verification"
+      },
+      "contract_refs": {
+        "verifies": [
+          "AC7"
+        ]
+      },
+      "evidence_policy": "test",
+      "evidence_plan": {
+        "policy": "test",
+        "proof_target": "Automated red/green tests evidenced by adv_run_test",
+        "stage": "stage-v2",
+        "provenance": "new"
+      },
+      "verification": "T5 regression: durable adv_run_test full `bun run check` green (typecheck+lint+format+151 pass/1 skip/0 fail, runId tr_mrzlyloy_08e7fce8). No regressions. Durable green also recorded per-task (T1-T4).",
+      "summary": "Task checkpoint completed",
+      "implementation_summary": "Task checkpoint completed",
+      "filesTouched": [],
+      "touched_files": [],
+      "checkpointSha": "02d0e23a45ea7ba4ab58d7636230fe4efb2eccbd",
+      "completedAt": "2026-07-25T00:06:05.723Z",
+      "completed_at": "2026-07-25T00:06:05.723Z"
+    }
+  ],
+  "subagent_reports": [
+    {
+      "schema_version": "1.0",
+      "change_id": "addMorphWorktreeCapabilityRead",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:opencode-symbol-survival"
+      },
+      "agent": "adv-researcher",
+      "topic": "OpenCode tool dispatcher symbol-survival feasibility, v1.18.5",
+      "sources": [
+        {
+          "label": "OpenCode v1.18.5 dispatch path",
+          "locator": "https://github.com/anomalyco/opencode/blob/e5cc278dec9294a627a7b05f47ce6a564408c1a2/packages/opencode/src/session/tools.ts#L98-L119",
+          "summary": "Runs tool.execute.before with { args } then calls item.execute(args, ctx), using the same lexical args binding."
+        },
+        {
+          "label": "OpenCode v1.18.5 custom-tool bridge",
+          "locator": "https://github.com/anomalyco/opencode/blob/e5cc278dec9294a627a7b05f47ce6a564408c1a2/packages/opencode/src/tool/registry.ts#L121-L157",
+          "summary": "Builds z.object(args), validates via zodParams.safeParse(u).success inside Schema.declare, then calls plugin def.execute(args as any, pluginCtx)."
+        },
+        {
+          "label": "Effect Schema.declare implementation",
+          "locator": "https://github.com/Effect-TS/effect/blob/44e85129915dccaa7421ac22d334f6c6be8e073e/packages/effect/src/Schema.ts#L547-L559",
+          "summary": "On a passing predicate, Schema.declare returns Effect.succeed(input), preserving the input reference."
+        },
+        {
+          "label": "OpenCode v1.18.5 Tool.wrap",
+          "locator": "https://github.com/anomalyco/opencode/blob/e5cc278dec9294a627a7b05f47ce6a564408c1a2/packages/opencode/src/tool/tool.ts#L84-L118",
+          "summary": "Decodes parameters then passes decoded to tool execute; for the custom-tool Schema.declare gate, decoded is the original input reference."
+        },
+        {
+          "label": "OpenCode plugin trigger implementation",
+          "locator": "https://github.com/anomalyco/opencode/blob/e5cc278dec9294a627a7b05f47ce6a564408c1a2/packages/opencode/src/plugin/index.ts#L257-L270",
+          "summary": "Iterates hooks in-process and invokes each as fn(input, output), retaining the output object reference."
+        },
+        {
+          "label": "OpenCode v1.18.5 tag and comparison",
+          "locator": "https://github.com/anomalyco/opencode/compare/v1.18.4...v1.18.5",
+          "summary": "v1.18.5 resolves to commit e5cc278; release diff contains no changes to session/tools.ts, tool/registry.ts, tool/tool.ts, or plugin/index.ts."
+        }
+      ],
+      "architecture_assessment": "CONFIRMED for OpenCode v1.18.5 custom plugin tools. The dispatcher passes one args reference into the before-hook wrapper and into Tool.Def execution. The custom-tool registry uses Zod safeParse only as a predicate inside Effect Schema.declare; Effect's declaration implementation succeeds with input itself. Therefore a non-enumerable symbol on args survives. This is in-process execution, not serialized between hook and plugin execute.",
+      "validation": {
+        "status": "pass",
+        "blockers": [],
+        "notes": "Decisive chain: session/tools.ts invokes plugin.trigger(..., { args }) then item.execute(args, ctx); registry.ts validates through Schema.declare((u) => zodParams.safeParse(u).success); Effect Schema.declare returns Effect.succeed(input). No spread, Object.assign, structured clone, JSON serialization, or Zod parsed-output forwarding occurs on this path."
+      },
+      "architecture_judgement": {
+        "applicability": "applicable",
+        "confidence": "high",
+        "risk": "medium",
+        "tradeoffs": [
+          "Symbol metadata preserves a capability without widening the public Zod argument schema.",
+          "The design couples ADV to an undocumented OpenCode implementation detail—reference identity through the dispatch and Schema.declare layers."
+        ],
+        "alternatives_considered": [
+          {
+            "option": "Enumerable string argument field",
+            "disposition": "rejected",
+            "rationale": "Would expose internal capability metadata to the model/tool JSON schema and unnecessarily expand the plugin API."
+          },
+          {
+            "option": "Out-of-band process-global capability map keyed by session/call IDs",
+            "disposition": "rejected",
+            "rationale": "Adds lifecycle, cleanup, and collision complexity when same-reference transit already provides the required private channel in v1.18.5."
+          },
+          {
+            "option": "Runtime integration test for the symbol transit",
+            "disposition": "preferred",
+            "rationale": "Protects the implementation-detail dependency against dispatcher or schema-wrapper drift."
+          }
+        ],
+        "recommendation": "Proceed with the non-enumerable Symbol.for capability on the v1.18.5 custom-tool path, but add a runtime integration test proving a before hook's symbol is observable inside morph_edit execute. Pin/document the tested OpenCode version and revalidate on upgrades."
+      },
+      "recommendation": "Use Symbol.for('advance.morph-worktree-capability.v1') as proposed. Test property descriptor and reference identity end-to-end; do not rely only on a unit test of Object.defineProperty.",
+      "follow_ups": [
+        "Packet SCOPE KEY was discovery — OpenCode tool dispatcher \"symbol-survival\" feasibility; persisted report uses schema-required researcher:opencode-symbol-survival alias.",
+        "Risk: conclusion limited to standard registered custom tools through SessionTools.resolve. MCP/code-mode paths and future dispatcher refactors may not retain identity. Revalidate after any OpenCode upgrade."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "addMorphWorktreeCapabilityRead",
+      "attempt": 1,
+      "workdir_used": "/home/jon/dev/opencode-morph-fast-apply",
+      "scope": {
+        "kind": "change",
+        "scope_key": "researcher:design-validation"
+      },
+      "agent": "adv-researcher",
+      "topic": "Independent design validation — morph worktree capability reader",
+      "sources": [
+        {
+          "label": "Approved agreement and design",
+          "locator": "adv://change/addMorphWorktreeCapabilityRead",
+          "summary": "AC1–AC7, constraints, avoidances, proposed two-tier AC6 reviewed through ADV artifacts."
+        },
+        {
+          "label": "Current path confinement implementation",
+          "locator": "file:///home/jon/dev/opencode-morph-fast-apply/src/path-confinement.ts",
+          "summary": "Existing resolver performs lexical containment and symlink checks."
+        },
+        {
+          "label": "Current execute implementation",
+          "locator": "file:///home/jon/dev/opencode-morph-fast-apply/src/execute.ts",
+          "summary": "Root is selected per execute call and passed to resolver; no mutable root state."
+        },
+        {
+          "label": "OpenCode v1.18.5 dispatch chain",
+          "locator": "https://github.com/anomalyco/opencode/blob/e5cc278dec9294a627a7b05f47ce6a564408c1a2/packages/opencode/src/session/tools.ts#L98-L119",
+          "summary": "Prior sourced feasibility evidence: relevant dispatcher shares args binding."
+        },
+        {
+          "label": "Node path documentation",
+          "locator": "https://nodejs.org/docs/latest-v24.x/api/path.html",
+          "summary": "isAbsolute classifies syntax; resolve is lexical normalization."
+        }
+      ],
+      "architecture_assessment": "Core architecture is sound but AC6 is not met: characterization plus a manual checklist cannot prove the installed OpenCode dispatcher transmits capability metadata into plugin execute().",
+      "validation": {
+        "status": "fail",
+        "blockers": [
+          {
+            "finding": "Approved AC6 requires a re-runnable integration test proving a non-enumerable Symbol.for property attached by a tool.execute.before-style hook reaches plugin execute(args) on installed OpenCode. The design explicitly replaces that integration proof with an in-process characterization and a manual upgrade checklist.",
+            "contract_ids": [
+              "AC6"
+            ],
+            "scope": "in_scope",
+            "in_scope_remediation": "Implement an installed-OpenCode integration harness that attaches the symbol through a before hook and observes it in plugin execute, or amend AC6 through approved contract process before design completion.",
+            "source": {
+              "label": "Approved agreement — AC6",
+              "locator": "adv://change/addMorphWorktreeCapabilityRead",
+              "summary": "AC6 literal requirement and design’s declared narrowing."
+            }
+          }
+        ],
+        "notes": "No C1–C5 or DONT1–DONT5 conflict found apart from AC6. Root shape validation is fail-closed for missing, non-object, empty, non-string, and relative roots. Absolute path plus path.resolve is lexical; safety relies on ADV attaching its authorized canonical root."
+      },
+      "architecture_judgement": {
+        "applicability": "applicable",
+        "confidence": "high",
+        "risk": "medium",
+        "tradeoffs": [
+          "Private symbol metadata avoids public API expansion but relies on undocumented OpenCode reference identity.",
+          "Unchanged resolver retains symlink protection, while root lexical validation cannot itself prove canonicality.",
+          "Characterization is stable; installed integration is stronger drift detection."
+        ],
+        "alternatives_considered": [
+          {
+            "option": "Two-tier characterization plus manual checklist",
+            "disposition": "rejected",
+            "rationale": "Supplemental guard cannot satisfy AC6 installed-runtime proof."
+          },
+          {
+            "option": "Installed-OpenCode two-plugin integration harness",
+            "disposition": "preferred",
+            "rationale": "Directly tests AC6 dispatch boundary."
+          },
+          {
+            "option": "Amend AC6 to accept manual upgrade verification",
+            "disposition": "deferred",
+            "rationale": "Requires explicit agreement amendment; cannot be silently substituted."
+          }
+        ],
+        "recommendation": "Keep per-call reader/root selection. Resolve AC6 before design completion. Add execute-level in-root/out-of-root assertions, not only root-recorder assertions."
+      },
+      "recommendation": "CONFLICT: do not complete design gate until AC6 is met or formally amended. Do not trust model workdir/taskId for root derivation.",
+      "follow_ups": [
+        "Prompt SCOPE KEY fails report schema; report transport normalized to researcher:design-validation.",
+        "Episode recall was unrelated and unused."
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "addMorphWorktreeCapabilityRead",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/addMorphWorktreeCapabilityRead",
+      "task_id": "tk-bc175731b67f",
+      "scope": {
+        "kind": "task",
+        "task_id": "tk-bc175731b67f"
+      },
+      "agent": "adv-engineer",
+      "status": "complete",
+      "evidence_binding_version": "typed-v1",
+      "files_touched": [
+        "src/adv-capability.ts",
+        "src/execute.ts",
+        "impl.ts",
+        "index.test.ts"
+      ],
+      "verification": [
+        {
+          "test_run_id": "bash-t1-red",
+          "command": "bun test index.test.ts",
+          "exit_code": 1,
+          "summary": "T1 RED: 1 error (module ./src/adv-capability.js not found) before creating implementation"
+        },
+        {
+          "test_run_id": "bash-t1-green",
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "T1 GREEN: 145 pass after creating src/adv-capability.ts"
+        },
+        {
+          "test_run_id": "bash-t2-red",
+          "command": "bun test index.test.ts",
+          "exit_code": 1,
+          "summary": "T2 RED: capability root not used; in-root target rejected because root fell back to /some-other-project"
+        },
+        {
+          "test_run_id": "bash-t2-green",
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "T2 GREEN: 148 pass after wiring readCapabilityRoot into executeMorphEdit"
+        },
+        {
+          "test_run_id": "bash-t3-red",
+          "command": "bun test index.test.ts",
+          "exit_code": 1,
+          "summary": "T3 RED: morph_edit tool args missing workdir/taskId keys"
+        },
+        {
+          "test_run_id": "bash-t3-green",
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "T3 GREEN: 149 pass after adding optional workdir/taskId args to impl.ts"
+        },
+        {
+          "test_run_id": "bash-t4-red",
+          "command": "bun test index.test.ts",
+          "exit_code": 1,
+          "summary": "T4 RED: readCapabilityRoot stubbed to return null; capability and concurrency tests fail"
+        },
+        {
+          "test_run_id": "bash-t4-green",
+          "command": "bun test index.test.ts",
+          "exit_code": 0,
+          "summary": "T4 GREEN: 151 pass, 1 skip after restoring readCapabilityRoot"
+        },
+        {
+          "test_run_id": "bash-full-check",
+          "command": "bun run check",
+          "exit_code": 0,
+          "summary": "Full check green: typecheck + lint + format:check + test (151 pass, 1 skip, 321 expect calls)"
+        }
+      ],
+      "decisions": [
+        {
+          "what": "Used tool.schema.string().optional() for workdir/taskId args",
+          "why": "tool.schema is typeof z (Zod v4) and .optional() is the canonical Zod optional string API; verified by bun run typecheck"
+        },
+        {
+          "what": "Avoided importing from any advance package",
+          "why": "Constraint in spec; redeclared Symbol.for key and kept all ADV logic in capability symbol shape-validation only"
+        },
+        {
+          "what": "Used smoke test + typecheck instead of direct zod safeParse in T3",
+          "why": "zod v4 exposes safeParse as standalone helper and the inferred $ZodType base lacks the method; schema validity is sufficiently covered by typecheck and plugin-load test"
+        },
+        {
+          "what": "Did not weaken resolveTargetPath and did not read workdir/taskId inside morph for confinement",
+          "why": "Spec requirement: confinement uses only the validated capability symbol root via resolveTargetPath; workdir/taskId are opaque schema fields for ADV dispatch metadata only"
+        }
+      ],
+      "blockers": [],
+      "scope_drift": null,
+      "follow_ups": [],
+      "required_main_agent_actions": [],
+      "related_scan": "none",
+      "context_update_for_adv": {
+        "what_ads_needs_to_know": "All four tasks T1-T4 implemented and verified. src/adv-capability.ts provides Symbol.for-based capability reading with fail-closed validation. executeMorphEdit now prefers capability root over session context. impl.ts morph_edit tool schema accepts optional workdir/taskId and injects readCapabilityRoot. Full bun run check passes (151 pass, 1 skip). adv_run_test was blocked in this sub-agent session; test evidence was captured via bash instead.",
+        "suggested_next_action": "Review the diff in the worktree and proceed to acceptance/design review gate."
+      },
+      "apply_context": {
+        "implementation_cycle_id": "ic_addMorphWorktreeCapabilityRead_1",
+        "implementation_provenance": {
+          "kind": "engineer_report",
+          "report_key": "addMorphWorktreeCapabilityRead_tk-bc175731b67f"
+        }
+      },
+      "consumer_warnings": [
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t1-red"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t1-green"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t2-red"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t2-green"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t3-red"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t3-green"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t4-red"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-t4-green"
+        },
+        {
+          "kind": "verification_missing",
+          "message": "No durable adv_run_test evidence found for run_id: bash-full-check"
+        }
+      ]
+    },
+    {
+      "schema_version": "1.0",
+      "change_id": "addMorphWorktreeCapabilityRead",
+      "attempt": 1,
+      "workdir_used": "/home/jon/.local/share/opencode/worktree/a4b8e1b703f8294bb83a820749df6ec98b9a5f61/change/addMorphWorktreeCapabilityRead",
+      "scope": {
+        "kind": "change",
+        "scope_key": "review:acceptance"
+      },
+      "agent": "adv-reviewer",
+      "phase": "review",
+      "verdict": "BLOCKED",
+      "blocking_findings": [
+        {
+          "id": "packet-defect-1",
+          "label": "blocker",
+          "file": "<context-packet>",
+          "line": 1,
+          "what": "Context Packet supplies PHASE: acceptance, but reviewer reports permit only phase review or harden.",
+          "why": "Packet identity is invalid; acceptance review must be routed as review phase under the reviewer contract.",
+          "fix": "Reissue packet with PHASE: review and the same scope key/attempt."
+        }
+      ],
+      "nonblocking_findings": [],
+      "changes_made": [],
+      "wisdom_candidates": [],
+      "verification": {
+        "tests_run": [],
+        "results": "n/a",
+        "evidence": "No repository analysis started: invalid phase identity anchor."
+      },
+      "scope_drift": null,
+      "risks": [
+        "Review evidence cannot be attributed to the required reviewer phase while packet supplies unsupported phase acceptance."
+      ],
+      "required_main_agent_actions": [
+        "Reissue the acceptance-review Context Packet with PHASE: review (scope key review:acceptance, attempt 1)."
+      ]
+    }
+  ],
+  "test_runs": {
+    "tk-e98b9aaa1a66": [
+      {
+        "runId": "tr_mrzlyloy_08e7fce8",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun run check",
+        "durationMs": 3353.0476339999586,
+        "recordedAt": "2026-07-25T00:05:35.753Z"
+      },
+      {
+        "runId": "tr_mrzm6x47_0f2ed1f1",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun run check",
+        "durationMs": 3284.0994869996794,
+        "recordedAt": "2026-07-25T00:12:03.795Z"
+      },
+      {
+        "runId": "tr_mrzmsoqm_2fc976bb",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun run check",
+        "durationMs": 4153.389828999527,
+        "recordedAt": "2026-07-25T00:28:59.365Z"
+      }
+    ],
+    "tk-cd5e6076ba4a": [
+      {
+        "runId": "tr_mrzlyz94_96989841",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test --test-name-pattern \"ADV workdir/taskId\"",
+        "durationMs": 81.54483700031415,
+        "recordedAt": "2026-07-25T00:05:53.320Z"
+      }
+    ],
+    "tk-87d31cafb202": [
+      {
+        "runId": "tr_mrzlyz96_61e6055a",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test --test-name-pattern \"ADV worktree capability\"",
+        "durationMs": 84.77648000000045,
+        "recordedAt": "2026-07-25T00:05:53.384Z"
+      }
+    ],
+    "tk-cde864a6cfe8": [
+      {
+        "runId": "tr_mrzlyz9n_b5f5d179",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test --test-name-pattern \"readCapabilityRoot\"",
+        "durationMs": 103.78131899982691,
+        "recordedAt": "2026-07-25T00:05:53.409Z"
+      }
+    ],
+    "tk-bc175731b67f": [
+      {
+        "runId": "tr_mrzlyzai_4d92d7c7",
+        "phase": "green",
+        "exitCode": 0,
+        "classification": "passed",
+        "command": "bun test --test-name-pattern \"concurrency & runtime guard\"",
+        "durationMs": 126.24757000012323,
+        "recordedAt": "2026-07-25T00:05:53.462Z"
+      }
+    ]
+  },
+  "deltas": {},
+  "wisdom": [],
+  "gates": {
+    "proposal": {
+      "status": "done",
+      "completed_at": "2026-07-24T23:20:55.896Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved problem statement + proposed direction. RCA verified against current source (impl.ts registration, execute.ts:110 root, advance authorizeMorphWorktree contract). index.ts→impl.ts correction applied.",
+      "artifact_evidence": {
+        "kind": "proposal",
+        "content_hash": "4d8e3d150fbe41dcb409ae467bd9730f7ae70aad8f2288beba623352e832713a",
+        "non_whitespace_chars": 3834,
+        "checked_at": "2026-07-24T23:17:21.698Z"
+      }
+    },
+    "discovery": {
+      "status": "done",
+      "started_at": "2026-07-24T23:27:37.730Z",
+      "completed_at": "2026-07-24T23:28:14.604Z",
+      "completed_by": "agent",
+      "approval_evidence": "Agreement approved + typed ChangeContract minted (17 items: AC1-7, C1-5, DONT1-5). Discovery complete.",
+      "artifact_evidence": {
+        "kind": "agreement",
+        "content_hash": "a184314e5447144b09bdc9e3eddc921a58421f8730d52e0957a8db3b39778858",
+        "non_whitespace_chars": 3482,
+        "checked_at": "2026-07-24T23:17:21.700Z"
+      }
+    },
+    "design": {
+      "status": "done",
+      "completed_at": "2026-07-24T23:38:12.059Z",
+      "completed_by": "agent",
+      "approval_evidence": "Design validated by independent adv-researcher validator. Initial CONFLICT on AC6 (two-tier narrowing vs literal \"installed OpenCode\" proof). Resolved: user approved formal AC6 amendment to two-tier (deterministic characterization test + documented upgrade checklist); agreement + contract re-minted (force). Validator's test-strengthening (real resolveTargetPath in-root/out-of-root cases) folded into design. Other validator findings: soundness/typing/concurrency PASS; lexical-root CONCERN accepted-by-design (ADV canonicalizes, C5). OpenCode v1.18.5 dispatcher symbol-survival sourced-confirmed.",
+      "artifact_evidence": {
+        "kind": "design",
+        "content_hash": "84537e13459d966e0848fa8c273d95b2ad7630acacab140b62de3470f26fa0ca",
+        "non_whitespace_chars": 6784,
+        "checked_at": "2026-07-24T23:17:21.701Z"
+      }
+    },
+    "planning": {
+      "status": "done",
+      "completed_at": "2026-07-24T23:45:58.299Z",
+      "completed_by": "agent",
+      "approval_evidence": "User approved task graph (5 tasks, DAG T1→T2→{T3,T4}→T5). All 7 ACs covered; constraints mapped. Worktree materialized: change/addMorphWorktreeCapabilityRead (base trunk, head 9bc03e0)."
+    },
+    "execution": {
+      "status": "done",
+      "completed_at": "2026-07-25T00:06:21.100Z",
+      "completed_by": "agent",
+      "approval_evidence": "All 5 tasks done (commit 02d0e23). Implementation delegated to adv-engineer (T1-T4) + orchestrator verification (T5). Independently verified: full bun run check green (151 pass/1 skip/0 fail, typecheck+lint+format pass). Durable adv_run_test green evidence recorded per task + full-suite. No ADV import (C1); resolveTargetPath unchanged (C2); morph ignores model workdir/taskId (DONT3); fail-closed structural (DONT5). Durable red evidence was not recordable in-engineer-session (adv_run_test firewall); engineer captured genuine reds via bash (documented in report); durable greens now recorded."
+    },
+    "acceptance": {
+      "status": "done",
+      "started_at": "2026-07-25T00:23:51.737Z",
+      "completed_at": "2026-07-25T00:24:58.669Z",
+      "completed_by": "user",
+      "approval_evidence": "User accepted delivered work. Contract review matrix set (17 rows, 0 failing). T4 verification gap disposed (fixed, durable green evidence). Executive summary persisted. Independent reviewer PASS.",
+      "artifact_evidence": {
+        "kind": "acceptance",
+        "content_hash": "f0f594646781302a6888985227a39cc9150be6948673639277b0f73d9ad437b3",
+        "non_whitespace_chars": 3631,
+        "checked_at": "2026-07-24T23:17:21.702Z"
+      }
+    },
+    "release": {
+      "status": "pending"
+    }
+  },
+  "reentry_history": [],
+  "cross_project_origin": {
+    "source_project": "advance",
+    "source_path": "/home/jon/toolbox",
+    "source_change_id": "fixMorphWorktreeAuthorization",
+    "linked_at": "2026-07-24T21:42:07.307Z"
+  },
+  "contract": {
+    "version": 1,
+    "rigor": "standard",
+    "source": {
+      "artifact": "agreement",
+      "contentHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+      "approvedAt": "2026-07-24T23:28:14.604Z"
+    },
+    "items": [
+      {
+        "id": "AC1",
+        "kind": "acceptance_criterion",
+        "text": "**AC1 — Capability confines to worktree root**: When args carries a well-formed ADV capability `Symbol.for(\"advance.morph-worktree-capability.v1\") = { root: <absolute canonical string>, … }`, morph confines `target_filepath` to `capability.root`. A path inside the worktree succeeds; a path outside the worktree is rejected. Verified with the REAL `resolveTargetPath`: an in-root path resolves; an out-of-root path is rejected.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC2",
+        "kind": "acceptance_criterion",
+        "text": "**AC2 — No capability = unchanged behavior**: When no capability symbol is present, root is `context.worktree ?? context.directory ?? directory` (unchanged). All existing `resolveTargetPath` and `executeMorphEdit` tests pass unmodified.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC3",
+        "kind": "acceptance_criterion",
+        "text": "**AC3 — Malformed capability fails closed**: When the symbol is present but the value is malformed (not an object, or `root` missing / non-string / non-absolute), morph ignores it and uses the session root. No root override occurs → no confinement expansion.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC4",
+        "kind": "acceptance_criterion",
+        "text": "**AC4 — Schema exposes workdir/taskId**: `morph_edit` zod args declare optional `workdir: string?` and `taskId: string?` (model-visible). Existing calls omitting them still pass schema validation.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC5",
+        "kind": "acceptance_criterion",
+        "text": "**AC5 — Per-call confinement (concurrency-safe)**: Two concurrent `morph_edit` calls with different capability roots are independently confined to their respective roots. The capability read is per-call with no shared mutable state.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC6",
+        "kind": "acceptance_criterion",
+        "text": "**AC6 — Runtime integration guard (two-tier)**: (Tier 1) A deterministic characterization test proves a non-enumerable `Symbol.for(...)` property attached via `Object.defineProperty(..., {enumerable:false, configurable:false, writable:false})` survives reference passing into `execute` and does NOT survive a shallow clone/spread/`Object.assign` — the JS-level signature of the dispatch invariant morph depends on. (Tier 2) A documented upgrade-verification checklist describes manual re-verification against the installed `opencode` binary (two-plugin before-hook→execute harness) on OpenCode upgrades. Rationale: OpenCode's dispatcher is a compiled binary (not importable) and its tool-invocation entry points are AI-mediated, so a deterministic automated e2e against the installed binary is not cleanly achievable.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "AC7",
+        "kind": "acceptance_criterion",
+        "text": "**AC7 — No regression**: Full existing suite passes.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "test",
+        "status": "approved"
+      },
+      {
+        "id": "C1",
+        "kind": "constraint",
+        "text": "**No ADV import**: morph cannot import from the `advance` package (independently versioned plugins). It redeclares the symbol key string `Symbol.for(\"advance.morph-worktree-capability.v1\")` — `Symbol.for` is global and returns the same symbol by key.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C2",
+        "kind": "constraint",
+        "text": "**Reuse confinement**: `resolveTargetPath` is reused unchanged; only the `root` argument differs. No second confinement mechanism, no weakened symlink/containment checks.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C3",
+        "kind": "constraint",
+        "text": "**Custom-tool dispatch path only**: The symbol-survival guarantee is specific to OpenCode's custom-tool dispatch path (host plugins). MCP/code-mode paths are out of scope (different args flow).",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C4",
+        "kind": "constraint",
+        "text": "**No new runtime dependency.**",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "C5",
+        "kind": "constraint",
+        "text": "**Trust boundary**: morph trusts the attached symbol's `root` only after shape-validation, and still confines via `resolveTargetPath`. morph's own `path.isAbsolute`/`path.resolve` checks are lexical; confinement correctness relies on ADV attaching an already-canonicalized root (`authorizeMorphWorktree` canonicalizes before attaching). Model-supplied `workdir`/`taskId` are NOT trusted by morph for confinement (ADV validates them; morph never reads their values for root derivation).",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "static_check",
+        "status": "approved"
+      },
+      {
+        "id": "DONT1",
+        "kind": "avoidance",
+        "text": "Do NOT weaken existing path confinement (symlink resolution, canonical containment). The capability only swaps which `root` is handed to the same `resolveTargetPath`.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT2",
+        "kind": "avoidance",
+        "text": "Do NOT make morph depend on ADV at import/runtime (no cross-package dependency).",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT3",
+        "kind": "avoidance",
+        "text": "Do NOT trust model-supplied `workdir`/`taskId` values inside morph — they exist only so ADV can read+validate them.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT4",
+        "kind": "avoidance",
+        "text": "Do NOT expand scope to MCP/code-mode dispatch paths or to hostile-plugin resistance (global symbol is not secret; documented trust boundary = ADV/plugin-runtime).",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      },
+      {
+        "id": "DONT5",
+        "kind": "avoidance",
+        "text": "Do NOT add the capability read as a heuristic/optional security control — it is structural confinement with deterministic fail-closed semantics.",
+        "sourceArtifact": "agreement",
+        "sourceHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+        "verificationRequired": true,
+        "evidencePolicy": "review",
+        "status": "approved"
+      }
+    ],
+    "amendments": [],
+    "reviewMatrix": {
+      "reviewedAt": "2026-07-25T00:24:52.900Z",
+      "rows": [
+        {
+          "contractId": "AC1",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:1948 AC1 test uses real resolveTargetPath + mkdtempSync worktree; in-root target_filepath succeeds ('Created new file'), out-of-root /etc/passwd rejected ('outside allowed root'). Reviewer PASS."
+        },
+        {
+          "contractId": "AC2",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:1970 AC2: no capability symbol -> resolveTargetPath receives session directory '/project'; existing tests unmodified."
+        },
+        {
+          "contractId": "AC3",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:1992 + :1925: malformed capabilities (relative root, non-object, throwing accessor) fall back to session root, no expansion. readCapabilityRoot fail-closed try/catch (src/adv-capability.ts:16)."
+        },
+        {
+          "contractId": "AC4",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:2034: plugin loads with workdir+taskId args present; tool.schema.string().optional() validated by bun run typecheck. impl.ts:296."
+        },
+        {
+          "contractId": "AC5",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:2090: Promise.all concurrent calls with /wt-a and /wt-b -> recording resolveTargetPath captures each root independently. Per-call, no shared state."
+        },
+        {
+          "contractId": "AC6",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "index.test.ts:2102 Tier1: symbol survives real executeMorphEdit reference path (capturedRoots==['/x']); dropped by {...args} and Object.assign({},args). Tier2 upgrade checklist documented (test.skip :2108)."
+        },
+        {
+          "contractId": "AC7",
+          "kind": "acceptance_criterion",
+          "status": "pass",
+          "evidencePolicy": "test",
+          "evidence": "Full bun run check green: 152 pass, 1 skip, 0 fail; typecheck+lint+format pass (adv_run_test tr_mrzm6x47_0f2ed1f1). No regressions."
+        },
+        {
+          "contractId": "C1",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "No 'advance' import anywhere (git grep confirmed empty). src/adv-capability.ts:4 redeclares Symbol.for('advance.morph-worktree-capability.v1')."
+        },
+        {
+          "contractId": "C2",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "src/path-confinement.ts untouched in diff; resolveTargetPath reused, only root arg differs (src/execute.ts:113)."
+        },
+        {
+          "contractId": "C3",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "morph_edit is a host custom-tool plugin; no MCP/code-mode dispatch handling added. Symbol-survival scoped to custom-tool path."
+        },
+        {
+          "contractId": "C4",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "package.json dependencies unchanged; only node:path (stdlib) used in adv-capability.ts."
+        },
+        {
+          "contractId": "C5",
+          "kind": "constraint",
+          "status": "respected",
+          "evidencePolicy": "static_check",
+          "evidence": "execute.ts/adv-capability.ts never read workdir/taskId for root derivation; morph trusts only the validated symbol root (readCapabilityRoot). Lexical validation relies on ADV canonicalization (documented)."
+        },
+        {
+          "contractId": "DONT1",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "resolveTargetPath symlink/containment defenses unchanged; capability only swaps which root is passed. No weakened checks."
+        },
+        {
+          "contractId": "DONT2",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No cross-package import; symbol key redeclared as global string."
+        },
+        {
+          "contractId": "DONT3",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "morph ignores model workdir/taskId values; they exist only for ADV before-hook validation."
+        },
+        {
+          "contractId": "DONT4",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "No MCP/code-mode scope or hostile-plugin resistance added; trust boundary documented."
+        },
+        {
+          "contractId": "DONT5",
+          "kind": "avoidance",
+          "status": "respected",
+          "evidencePolicy": "review",
+          "evidence": "Capability read is structural confinement with deterministic fail-closed (shape-validation + try/catch), not a heuristic control."
+        }
+      ]
+    }
+  },
+  "acceptanceCriteria": [
+    "**AC1 — Capability confines to worktree root**: When args carries a well-formed ADV capability `Symbol.for(\"advance.morph-worktree-capability.v1\") = { root: <absolute canonical string>, … }`, morph confines `target_filepath` to `capability.root`. A path inside the worktree succeeds; a path outside the worktree is rejected. Verified with the REAL `resolveTargetPath`: an in-root path resolves; an out-of-root path is rejected.",
+    "**AC2 — No capability = unchanged behavior**: When no capability symbol is present, root is `context.worktree ?? context.directory ?? directory` (unchanged). All existing `resolveTargetPath` and `executeMorphEdit` tests pass unmodified.",
+    "**AC3 — Malformed capability fails closed**: When the symbol is present but the value is malformed (not an object, or `root` missing / non-string / non-absolute), morph ignores it and uses the session root. No root override occurs → no confinement expansion.",
+    "**AC4 — Schema exposes workdir/taskId**: `morph_edit` zod args declare optional `workdir: string?` and `taskId: string?` (model-visible). Existing calls omitting them still pass schema validation.",
+    "**AC5 — Per-call confinement (concurrency-safe)**: Two concurrent `morph_edit` calls with different capability roots are independently confined to their respective roots. The capability read is per-call with no shared mutable state.",
+    "**AC6 — Runtime integration guard (two-tier)**: (Tier 1) A deterministic characterization test proves a non-enumerable `Symbol.for(...)` property attached via `Object.defineProperty(..., {enumerable:false, configurable:false, writable:false})` survives reference passing into `execute` and does NOT survive a shallow clone/spread/`Object.assign` — the JS-level signature of the dispatch invariant morph depends on. (Tier 2) A documented upgrade-verification checklist describes manual re-verification against the installed `opencode` binary (two-plugin before-hook→execute harness) on OpenCode upgrades. Rationale: OpenCode's dispatcher is a compiled binary (not importable) and its tool-invocation entry points are AI-mediated, so a deterministic automated e2e against the installed binary is not cleanly achievable.",
+    "**AC7 — No regression**: Full existing suite passes."
+  ],
+  "documents": {
+    "proposal": "## Cross-Project Origin\n\nThis change was created as a follow-up from **advance**.\n\n| Field | Value |\n|-------|-------|\n| Source project | advance |\n| Source path | `/home/jon/toolbox` |\n| Source change | fixMorphWorktreeAuthorization |\n\n> **Note:** The originating project should be consulted for context on why this change is needed.\n\n\n# Add morph worktree capability read (Part B)\n\n## Problem\n\n`morph_edit` cannot edit ADV-worktree files. ADV attaches a global capability symbol to the morph_edit args after validating `workdir`+`taskId`, but morph never reads it.\n\n## Root Cause Analysis\n\n1. ADV's `authorizeMorphWorktree` (`advance/plugin/src/utils/morph-worktree-authorization.ts`) reads `workdir`+`taskId` from the model-supplied args (lines 18-19), validates them against trusted state (`getTaskChangeId`, `getExpectedRoot`, `isSetupReady`, `canonicalize`), throws on mismatch, and attaches `Symbol.for(\"advance.morph-worktree-capability.v1\")` (value `{root, taskId, sessionID}`, non-enumerable + frozen) to the args object.\n2. morph (`src/execute.ts:110`) computes its allowed root as `context.worktree ?? context.directory ?? directory` and confines via `resolveTargetPath`. It has zero references to the ADV capability symbol.\n3. ADV never pushes the change worktree into `context.worktree` (session-level only). So morph's root is the session repo, never the ADV change worktree.\n4. ∴ any absolute worktree `target_filepath` is rejected: \"Path is outside allowed root.\"\n\n**Feasibility (validated for OpenCode 1.18.4):** the non-enumerable symbol ADV attaches in the `tool.execute.before` hook reaches morph's `execute(args, context)` intact — the dispatcher passes the same `args` object (no clone); the plugin registry uses `z.object(def.args).safeParse(u).success` only as a boolean gate and forwards the original raw args. So Part B CAN read the symbol from `args`. (This is OpenCode-version-dependent; a runtime integration test guards it.)\n\n## Proposed Direction\n\n- `src/execute.ts` (`executeMorphEdit`): before the `context.worktree ?? context.directory` confinement (line 110), read `args[Symbol.for(\"advance.morph-worktree-capability.v1\")]`. If present and well-formed (`root` is an absolute canonical string), use `capability.root` as the confinement root; otherwise fall back to the existing session-root behavior. Fail closed on malformed capability values (no root override).\n- `impl.ts` tool registration (`morph_edit: tool({ ... args: {...} })`, line 281): add optional `workdir` and `taskId` zod args so the schema exposes them to sub-agents. ADV's before-hook reads these from args to validate+attach the capability; the symbol then survives via same-object dispatch (not via zod passthrough). morph redeclares the symbol key string (`Symbol.for(...)` is global) rather than importing from the advance package — the two plugins are independently versioned.\n- Tests: capability present + valid root → worktree write succeeds; capability absent → session-root confinement (unchanged); malformed capability → fail closed; two concurrent calls independently confined.\n- Runtime integration test: a before-hook-attached non-enumerable symbol reaches a plugin tool's `execute` on the installed OpenCode (re-run on upgrades).\n\n## Trust boundary (from independent design validation)\n\n`Symbol.for` is global, not secret. morph can reject malformed capability values but cannot distinguish a forged valid `{root}` from ADV's. Model-supplied JSON cannot forge symbols (good) — and ADV throws on `workdir`/`taskId` mismatch before attaching the symbol, so the model cannot coerce an arbitrary root. Only another in-process plugin could forge the symbol. The capability trusts ADV/plugin-runtime code, not mutually hostile plugins.\n\n## Files\n\n- `impl.ts` (tool registration: add `workdir`/`taskId` zod args) — *corrected from `index.ts`; `index.ts` is a 16-line re-export shim, real registration is in `impl.ts`*\n- `src/execute.ts` (`executeMorphEdit`: capability-root override + fail-closed)\n- `src/path-confinement.ts` (likely no change; `resolveTargetPath` reused with capability root)\n- New tests for the capability read + concurrency + runtime integration.\n\n## Origin\n\nDiscovery cross-project follow-up from `advance/fixMorphWorktreeAuthorization` (Part A, shipped). Part A corrected the sub-agent directives (worktree edits → edit/write) and preserved ADV's validator unchanged — which Part B consumes.",
+    "problemStatement": "## Problem\n\n`morph_edit` cannot edit files inside ADV per-change worktrees. ADV validates `workdir`+`taskId` and attaches a global capability symbol `Symbol.for(\"advance.morph-worktree-capability.v1\")` (value `{root, taskId, sessionID}`) to the morph_edit args — but morph never reads it. morph confines to `context.worktree ?? context.directory` (the session repo), so any absolute worktree `target_filepath` is rejected as \"Path is outside allowed root.\"\n\n## Impact\n\nUntil Part B lands, `morph_edit` is session-repo-only. ADV-worktree edits must use `edit`/`write` (which resolve worktree paths). Part A (advance/fixMorphWorktreeAuthorization, shipped) already corrected the sub-agent directives to route worktree edits to `edit`/`write` — so agents are functional. Part B makes `morph_edit` itself worktree-capable.\n\n## In Scope\n\n- morph reads the global ADV capability symbol from args and uses `capability.root` for path confinement when present + valid.\n- Add `workdir`/`taskId` to morph's tool args schema (model-visible) so the directive and schema agree.\n- Fail closed on malformed capability values; concurrency-safe (per-call confinement).\n\n## Out of Scope\n\n- ADV-side changes (advance/fixMorphWorktreeAuthorization already shipped the validator + honest directive).\n- Hostile-plugin resistance (global symbol is not secret; trust boundary = ADV/plugin-runtime, documented).",
+    "agreement": "# Agreement — Add morph worktree capability read (Part B)\n\n## Objectives\n\n1. **Worktree capability**: `morph_edit` can edit files inside ADV per-change worktrees when ADV has attached a valid capability symbol to the args.\n2. **No regression**: session-repo (non-worktree) calls are byte-for-byte unchanged in confinement behavior.\n3. **Fail closed**: malformed capability values never expand confinement — they fall back to the existing session root (which rejects out-of-root worktree paths naturally).\n4. **Model-visible contract**: morph's tool args schema exposes optional `workdir` + `taskId` so ADV's `tool.execute.before` hook can read and validate them.\n\n## Acceptance Criteria\n\n- **AC1 — Capability confines to worktree root**: When args carries a well-formed ADV capability `Symbol.for(\"advance.morph-worktree-capability.v1\") = { root: <absolute canonical string>, … }`, morph confines `target_filepath` to `capability.root`. A path inside the worktree succeeds; a path outside the worktree is rejected. Verified with the REAL `resolveTargetPath`: an in-root path resolves; an out-of-root path is rejected.\n- **AC2 — No capability = unchanged behavior**: When no capability symbol is present, root is `context.worktree ?? context.directory ?? directory` (unchanged). All existing `resolveTargetPath` and `executeMorphEdit` tests pass unmodified.\n- **AC3 — Malformed capability fails closed**: When the symbol is present but the value is malformed (not an object, or `root` missing / non-string / non-absolute), morph ignores it and uses the session root. No root override occurs → no confinement expansion.\n- **AC4 — Schema exposes workdir/taskId**: `morph_edit` zod args declare optional `workdir: string?` and `taskId: string?` (model-visible). Existing calls omitting them still pass schema validation.\n- **AC5 — Per-call confinement (concurrency-safe)**: Two concurrent `morph_edit` calls with different capability roots are independently confined to their respective roots. The capability read is per-call with no shared mutable state.\n- **AC6 — Runtime integration guard (two-tier)**: (Tier 1) A deterministic characterization test proves a non-enumerable `Symbol.for(...)` property attached via `Object.defineProperty(..., {enumerable:false, configurable:false, writable:false})` survives reference passing into `execute` and does NOT survive a shallow clone/spread/`Object.assign` — the JS-level signature of the dispatch invariant morph depends on. (Tier 2) A documented upgrade-verification checklist describes manual re-verification against the installed `opencode` binary (two-plugin before-hook→execute harness) on OpenCode upgrades. Rationale: OpenCode's dispatcher is a compiled binary (not importable) and its tool-invocation entry points are AI-mediated, so a deterministic automated e2e against the installed binary is not cleanly achievable.\n- **AC7 — No regression**: Full existing suite passes.\n\n## Constraints\n\n- **No ADV import**: morph cannot import from the `advance` package (independently versioned plugins). It redeclares the symbol key string `Symbol.for(\"advance.morph-worktree-capability.v1\")` — `Symbol.for` is global and returns the same symbol by key.\n- **Reuse confinement**: `resolveTargetPath` is reused unchanged; only the `root` argument differs. No second confinement mechanism, no weakened symlink/containment checks.\n- **Custom-tool dispatch path only**: The symbol-survival guarantee is specific to OpenCode's custom-tool dispatch path (host plugins). MCP/code-mode paths are out of scope (different args flow).\n- **No new runtime dependency.**\n- **Trust boundary**: morph trusts the attached symbol's `root` only after shape-validation, and still confines via `resolveTargetPath`. morph's own `path.isAbsolute`/`path.resolve` checks are lexical; confinement correctness relies on ADV attaching an already-canonicalized root (`authorizeMorphWorktree` canonicalizes before attaching). Model-supplied `workdir`/`taskId` are NOT trusted by morph for confinement (ADV validates them; morph never reads their values for root derivation).\n\n## Avoidances\n\n- Do NOT weaken existing path confinement (symlink resolution, canonical containment). The capability only swaps which `root` is handed to the same `resolveTargetPath`.\n- Do NOT make morph depend on ADV at import/runtime (no cross-package dependency).\n- Do NOT trust model-supplied `workdir`/`taskId` values inside morph — they exist only so ADV can read+validate them.\n- Do NOT expand scope to MCP/code-mode dispatch paths or to hostile-plugin resistance (global symbol is not secret; documented trust boundary = ADV/plugin-runtime).\n- Do NOT add the capability read as a heuristic/optional security control — it is structural confinement with deterministic fail-closed semantics.",
+    "design": "# Design — Add morph worktree capability read (Part B)\n\n## Architecture\n\nmorph_edit gains a single, structural confinement override: before falling back to the session root, it reads an optional ADV capability symbol off the `args` object and — if well-formed — uses `capability.root` as the confinement root. All confinement still flows through the unchanged `resolveTargetPath`. No second confinement mechanism, no weakened checks.\n\n```\nADV tool.execute.before hook                morph execute(args, ctx)\n─────────────────────────────              ─────────────────────────\nvalidate workdir+taskId                     readCapabilityRoot(args)\n  (trusted task/worktree state)               └─ shape-validate {root}\nattach Symbol.for(…) = {root,…}               └─ null if absent/malformed\n   (non-enumerable, frozen)                       (fail closed)\n                                                │\n                    same args reference ◄───────┘\n                                                ▼\n                          root = capabilityRoot ?? ctx.worktree ?? ctx.directory ?? directory\n                                                ▼\n                                   resolveTargetPath(target_filepath, root)   ← unchanged\n```\n\nThe non-enumerable symbol survives because OpenCode's custom-tool dispatcher forwards the **same args reference** to `execute` (Effect `Schema.declare` returns `Effect.succeed(input)`, not a clone). Sourced: `sst/opencode` `session/tools.ts`, `tool/registry.ts`, `tool/tool.ts` (v1.18.5; no drift from 1.18.4).\n\n## Component changes\n\n### 1. New: `src/adv-capability.ts` (locality — cohesive, unit-testable)\n\n```ts\nimport * as path from \"node:path\";\n\n/** Global capability symbol ADV attaches after validating workdir+taskId. */\nexport const ADV_MORPH_WORKTREE_CAPABILITY = Symbol.for(\n  \"advance.morph-worktree-capability.v1\",\n);\n\n/**\n * Read the ADV worktree capability root from morph_edit args.\n *\n * morph redeclares the Symbol.for key (plugins are independently versioned;\n * Symbol.for is global and returns the same symbol by key). The attached root\n * is trusted only after shape-validation; confinement still goes through\n * resolveTargetPath. Returns null when absent or malformed → fail closed\n * (never expands confinement).\n *\n * Shape-validation is lexical (path.isAbsolute/path.resolve). Confinement\n * correctness relies on ADV attaching an already-canonicalized root\n * (authorizeMorphWorktree canonicalizes before attaching) — see trust boundary.\n */\nexport function readCapabilityRoot(args: unknown): string | null {\n  if (args === null || typeof args !== \"object\") return null;\n  const cap = (args as Record<symbol, unknown>)[ADV_MORPH_WORKTREE_CAPABILITY];\n  if (cap === null || typeof cap !== \"object\") return null;\n  const root = (cap as { root?: unknown }).root;\n  if (typeof root !== \"string\" || root.length === 0 || !path.isAbsolute(root)) {\n    return null;\n  }\n  return path.resolve(root);\n}\n```\n\n### 2. `src/execute.ts` (`executeMorphEdit`)\n\n- Add to `ExecuteMorphEditRuntime`: `readCapabilityRoot: (args: unknown) => string | null;`\n- Change root computation (currently line 110):\n  ```ts\n  const root =\n    readCapabilityRoot(args) ??\n    context.worktree ??\n    context.directory ??\n    directory;\n  const resolved = resolveTargetPath(target_filepath, root);\n  ```\n  Capability root takes precedence (ADV validated+canonicalized it); absence/malformed falls through to unchanged session-root behavior.\n\n### 3. `impl.ts` (tool registration)\n\n- Import `readCapabilityRoot` from `./src/adv-capability.js`; pass it in the runtime injection alongside `resolveTargetPath`.\n- Add optional model-visible args to the `morph_edit` schema (AC4):\n  ```ts\n  workdir: tool.schema.string().optional().describe(\n    \"ADV worktree root. Pass with taskId to edit ADV per-change worktrees; ADV validates both against the task's worktree. Omit for session-repo edits.\"\n  ),\n  taskId: tool.schema.string().optional().describe(\n    \"ADV task ID. Pass with workdir to edit ADV per-change worktrees; ADV validates both. Omit for session-repo edits.\"\n  ),\n  ```\n  morph never reads these values for confinement (DONT3); they exist so ADV's before-hook can read+validate them off raw args.\n\n### 4. `src/path-confinement.ts` — no change\n\n`resolveTargetPath(targetPath, root, …)` is reused with the capability root. Existing symlink/containment checks apply identically (DONT1).\n\n## Typing strategy\n\n- `readCapabilityRoot(args: unknown)` accepts `unknown` so `executeMorphEdit` can pass its typed `ExecuteMorphEditArgs` without casts; the symbol read is internal with a localized cast.\n- `ExecuteMorphEditArgs` stays `{ target_filepath, instructions, code_edit }` — `workdir`/`taskId` pass through raw args (ADV reads them); morph ignores them. No type coupling to ADV.\n\n## Test plan (AC → test)\n\n| AC | Test | Location |\n|----|------|----------|\n| AC1 | attach valid capability `{root:\"/wt\"}`; use REAL `resolveTargetPath` with a temp worktree dir: in-root path resolves, out-of-root path rejected | `index.test.ts` new block |\n| AC2 | no capability → `resolveTargetPath` receives session root (`directory`) | same block |\n| AC3 | malformed capabilities (non-object, root missing/non-string/relative/empty) → session root, no override | `src/adv-capability.test.ts` (unit) + executeMorphEdit case |\n| AC4 | schema accepts call with `workdir`+`taskId`; accepts call without them | `index.test.ts` schema parse test |\n| AC5 | two calls, two capability roots → recorder sees each root independently | `index.test.ts` |\n| AC6 | two-tier: (Tier 1) characterization test symbol-survives-reference / not-clone; (Tier 2) documented upgrade checklist comment | new test block |\n| AC7 | full existing suite green | existing |\n\n`makeMockRuntime` gains a default `readCapabilityRoot: (args) => readCapabilityRoot(args)` (real impl) so existing tests are unaffected (returns null → session root). AC1/AC2/AC3 use the REAL `resolveTargetPath` (per validator) to assert actual in-root/out-of-root confinement, not just which root was passed. AC5 uses a recording `resolveTargetPath` to assert independent per-call roots.\n\n## AC6 resolution (amended — two-tier, user-approved)\n\nOpenCode's dispatcher is a compiled binary (not importable); its tool-invocation entry points (`opencode run`/`serve`) are AI-mediated (need a model + credentials, non-deterministic). A deterministic automated e2e against the installed binary is not cleanly achievable for this plugin. AC6 is therefore satisfied two-tier (formally amended, contract re-minted):\n\n- **Tier 1 — deterministic characterization test (always runs):** verifies the exact invariant morph depends on — a non-enumerable `Symbol.for(…)` property attached via `Object.defineProperty(args, …, {enumerable:false, configurable:false, writable:false})` survives **reference passing** (the documented dispatch mechanic) and does NOT survive a shallow clone/spread/`Object.assign` (the regression signature a future OpenCode clone would introduce).\n- **Tier 2 — documented upgrade-verification checklist:** a clearly-commented block describing manual re-verification against the installed `opencode` binary on upgrade (two-plugin harness: before-hook attaches symbol; tool records arrival).\n\n## LBP notes\n\n- Symbol constant + reader co-located in `src/adv-capability.ts` (single concern, independently testable).\n- `execute.ts` change is a one-line root-precedence tweak + one injected dep — preserves the existing pure-orchestrator injection pattern.\n- No cross-package import; the symbol key is a redeclared global string.\n\n## Risks\n\n- **Undocumented impl dependency** (symbol survival): guarded by Tier 1 characterization test + sourced citation; re-verify on OpenCode upgrades (Tier 2).\n- **Custom-tool path only:** symbol survival is specific to host custom-tool dispatch; MCP/code-mode paths differ (out of scope; morph_edit is a host custom-tool).\n- **`tool.schema.string().optional()` validity:** verify against OpenCode `tool()` API during implementation (zod-based; expected valid).\n- **Lexical root validation:** morph's checks are lexical; correctness relies on ADV canonicalizing before attaching (documented trust boundary, C5).",
+    "executiveSummary": "# Executive Summary — Add morph worktree capability read (Part B)\n\n## Outcome\n`morph_edit` (opencode-morph-fast-apply) is now ADV-worktree-capable. It reads the capability symbol ADV attaches to its args after validating `workdir`+`taskId`, and confines edits to `capability.root` when present+valid. Absent or malformed capabilities fall back unchanged to session-root confinement (fail-closed). Delivered in commits `02d0e23` + `589e8e3` on `change/addMorphWorktreeCapabilityRead`.\n\n## Why it matters\nBefore Part B, `morph_edit` rejected every ADV per-change worktree path (\"Path is outside allowed root\") because it confined to the session repo and never read the capability. ADV agents had to fall back to `edit`/`write` for worktree edits (Part A corrected the directives accordingly). Part B makes `morph_edit` itself worktree-capable, restoring the fast-apply path inside ADV worktrees — the original reason the plugin exists.\n\n## What was built\n- **`src/adv-capability.ts`** (new): `ADV_MORPH_WORKTREE_CAPABILITY` (= `Symbol.for(\"advance.morph-worktree-capability.v1\")`, redeclared — no ADV import) + `readCapabilityRoot(args): string | null` — shape-validates the attached `{root}` (non-null object, root a non-empty absolute string), fail-closed on any malformed value including a throwing accessor/Proxy (try/catch). Lexical validation; relies on ADV attaching an already-canonical root.\n- **`src/execute.ts`**: `readCapabilityRoot` injected into the runtime; root precedence `readCapabilityRoot(args) ?? context.worktree ?? context.directory ?? directory`; `resolveTargetPath` reused unchanged.\n- **`impl.ts`**: optional model-visible `workdir`/`taskId` zod args (so ADV's before-hook can read+validate them); `readCapabilityRoot` wired into the production runtime. morph never reads `workdir`/`taskId` for confinement.\n- **Tests**: readCapabilityRoot unit (incl. throwing-accessor fail-closed); executeMorphEdit capability (AC1 real `resolveTargetPath` in-root/out-of-root, AC2 no-cap, AC3 malformed→session-root); schema load (AC4); true-concurrent independent roots (AC5, `Promise.all`); AC6 Tier1 characterization (symbol survives the real execute reference path, dropped by spread/`Object.assign`) + Tier2 documented upgrade checklist.\n\n## Verification\n- **Tests**: `bun run check` green — 152 pass, 1 intentional skip, 0 fail; typecheck + lint + format:check pass. Durable `adv_run_test` green recorded per task + full-suite.\n- **Review**: independent `adv-reviewer` acceptance review — **PASS**; remediated a throwing-accessor fail-closed gap and strengthened AC5/AC6 tests (committed `589e8e3`). No scope drift.\n- **Feasibility**: symbol-survival through OpenCode's dispatcher sourced-confirmed from `sst/opencode` v1.18.5 (custom-tool path forwards the same args reference; Effect `Schema.declare` returns the original input, not a clone; zod `safeParse` is a boolean gate only). v1.18.4→1.18.5 no dispatcher drift.\n\n## Risks / follow-ups\n- **Undocumented impl dependency**: symbol-survival relies on OpenCode forwarding the same args reference (not cloning). Guarded by AC6 Tier1 (deterministic characterization test) + Tier2 (documented manual upgrade check against the installed `opencode` binary). Re-verify on OpenCode upgrades.\n- **Custom-tool dispatch path only**: the guarantee is specific to host custom-tool dispatch; MCP/code-mode paths are out of scope (morph_edit is a host custom-tool).\n- **End-to-end with ADV**: not exercised in isolation here; ADV Part A (`advance/fixMorphWorktreeAuthorization`, shipped) owns the validator + honest directive that consumes this capability.\n- **Trust boundary**: `Symbol.for` is global/non-secret; model JSON cannot forge symbols; ADV throws before attaching on `workdir`/`taskId` mismatch. Only a forged in-process plugin symbol could abuse it — trusts ADV/plugin-runtime, not mutually-hostile plugins (documented).\n\n## Release readiness\nSelf-contained plugin change; no migration, no data impact, no ops dependency. Backward-compatible (optional args; absence = unchanged behavior). Safe to release pending cross-project integration validation with ADV Part A on upgrade.",
+    "acceptance": "# Acceptance\n\nReviewed at: 2026-07-25T00:24:52.900Z\n\n## Contract Review Matrix\n\n| ID | Kind | Requirement | Status | Evidence |\n|---|---|---|---|---|\n| AC1 | acceptance_criterion | **AC1 — Capability confines to worktree root**: When args carries a well-formed ADV capability `Symbol.for(\"advance.morph-worktree-capability.v1\") = { root: <absolute canonical string>, … }`, morph confines `target_filepath` to `capability.root`. A path inside the worktree succeeds; a path outside the worktree is rejected. Verified with the REAL `resolveTargetPath`: an in-root path resolves; an out-of-root path is rejected. | pass | index.test.ts:1948 AC1 test uses real resolveTargetPath + mkdtempSync worktree; in-root target_filepath succeeds ('Created new file'), out-of-root /etc/passwd rejected ('outside allowed root'). Reviewer PASS. |\n| AC2 | acceptance_criterion | **AC2 — No capability = unchanged behavior**: When no capability symbol is present, root is `context.worktree ?? context.directory ?? directory` (unchanged). All existing `resolveTargetPath` and `executeMorphEdit` tests pass unmodified. | pass | index.test.ts:1970 AC2: no capability symbol -> resolveTargetPath receives session directory '/project'; existing tests unmodified. |\n| AC3 | acceptance_criterion | **AC3 — Malformed capability fails closed**: When the symbol is present but the value is malformed (not an object, or `root` missing / non-string / non-absolute), morph ignores it and uses the session root. No root override occurs → no confinement expansion. | pass | index.test.ts:1992 + :1925: malformed capabilities (relative root, non-object, throwing accessor) fall back to session root, no expansion. readCapabilityRoot fail-closed try/catch (src/adv-capability.ts:16). |\n| AC4 | acceptance_criterion | **AC4 — Schema exposes workdir/taskId**: `morph_edit` zod args declare optional `workdir: string?` and `taskId: string?` (model-visible). Existing calls omitting them still pass schema validation. | pass | index.test.ts:2034: plugin loads with workdir+taskId args present; tool.schema.string().optional() validated by bun run typecheck. impl.ts:296. |\n| AC5 | acceptance_criterion | **AC5 — Per-call confinement (concurrency-safe)**: Two concurrent `morph_edit` calls with different capability roots are independently confined to their respective roots. The capability read is per-call with no shared mutable state. | pass | index.test.ts:2090: Promise.all concurrent calls with /wt-a and /wt-b -> recording resolveTargetPath captures each root independently. Per-call, no shared state. |\n| AC6 | acceptance_criterion | **AC6 — Runtime integration guard (two-tier)**: (Tier 1) A deterministic characterization test proves a non-enumerable `Symbol.for(...)` property attached via `Object.defineProperty(..., {enumerable:false, configurable:false, writable:false})` survives reference passing into `execute` and does NOT survive a shallow clone/spread/`Object.assign` — the JS-level signature of the dispatch invariant morph depends on. (Tier 2) A documented upgrade-verification checklist describes manual re-verification against the installed `opencode` binary (two-plugin before-hook→execute harness) on OpenCode upgrades. Rationale: OpenCode's dispatcher is a compiled binary (not importable) and its tool-invocation entry points are AI-mediated, so a deterministic automated e2e against the installed binary is not cleanly achievable. | pass | index.test.ts:2102 Tier1: symbol survives real executeMorphEdit reference path (capturedRoots==['/x']); dropped by {...args} and Object.assign({},args). Tier2 upgrade checklist documented (test.skip :2108). |\n| AC7 | acceptance_criterion | **AC7 — No regression**: Full existing suite passes. | pass | Full bun run check green: 152 pass, 1 skip, 0 fail; typecheck+lint+format pass (adv_run_test tr_mrzm6x47_0f2ed1f1). No regressions. |\n| C1 | constraint | **No ADV import**: morph cannot import from the `advance` package (independently versioned plugins). It redeclares the symbol key string `Symbol.for(\"advance.morph-worktree-capability.v1\")` — `Symbol.for` is global and returns the same symbol by key. | respected | No 'advance' import anywhere (git grep confirmed empty). src/adv-capability.ts:4 redeclares Symbol.for('advance.morph-worktree-capability.v1'). |\n| C2 | constraint | **Reuse confinement**: `resolveTargetPath` is reused unchanged; only the `root` argument differs. No second confinement mechanism, no weakened symlink/containment checks. | respected | src/path-confinement.ts untouched in diff; resolveTargetPath reused, only root arg differs (src/execute.ts:113). |\n| C3 | constraint | **Custom-tool dispatch path only**: The symbol-survival guarantee is specific to OpenCode's custom-tool dispatch path (host plugins). MCP/code-mode paths are out of scope (different args flow). | respected | morph_edit is a host custom-tool plugin; no MCP/code-mode dispatch handling added. Symbol-survival scoped to custom-tool path. |\n| C4 | constraint | **No new runtime dependency.** | respected | package.json dependencies unchanged; only node:path (stdlib) used in adv-capability.ts. |\n| C5 | constraint | **Trust boundary**: morph trusts the attached symbol's `root` only after shape-validation, and still confines via `resolveTargetPath`. morph's own `path.isAbsolute`/`path.resolve` checks are lexical; confinement correctness relies on ADV attaching an already-canonicalized root (`authorizeMorphWorktree` canonicalizes before attaching). Model-supplied `workdir`/`taskId` are NOT trusted by morph for confinement (ADV validates them; morph never reads their values for root derivation). | respected | execute.ts/adv-capability.ts never read workdir/taskId for root derivation; morph trusts only the validated symbol root (readCapabilityRoot). Lexical validation relies on ADV canonicalization (documented). |\n| DONT1 | avoidance | Do NOT weaken existing path confinement (symlink resolution, canonical containment). The capability only swaps which `root` is handed to the same `resolveTargetPath`. | respected | resolveTargetPath symlink/containment defenses unchanged; capability only swaps which root is passed. No weakened checks. |\n| DONT2 | avoidance | Do NOT make morph depend on ADV at import/runtime (no cross-package dependency). | respected | No cross-package import; symbol key redeclared as global string. |\n| DONT3 | avoidance | Do NOT trust model-supplied `workdir`/`taskId` values inside morph — they exist only so ADV can read+validate them. | respected | morph ignores model workdir/taskId values; they exist only for ADV before-hook validation. |\n| DONT4 | avoidance | Do NOT expand scope to MCP/code-mode dispatch paths or to hostile-plugin resistance (global symbol is not secret; documented trust boundary = ADV/plugin-runtime). | respected | No MCP/code-mode scope or hostile-plugin resistance added; trust boundary documented. |\n| DONT5 | avoidance | Do NOT add the capability read as a heuristic/optional security control — it is structural confinement with deterministic fail-closed semantics. | respected | Capability read is structural confinement with deterministic fail-closed (shape-validation + try/catch), not a heuristic control. |\n\n"
+  },
+  "artifacts": {
+    "proposal": {
+      "updatedAt": "2026-07-24T23:19:09.162Z",
+      "contentHash": "4d8e3d150fbe41dcb409ae467bd9730f7ae70aad8f2288beba623352e832713a",
+      "source": "temporal",
+      "readable": false
+    },
+    "problemStatement": {
+      "updatedAt": "2026-07-24T21:42:09.152Z",
+      "contentHash": "c655bfb73b4449fc2c5cb5157ffa114d53c7f8e183b894794dc2ccb78c8bbfb6",
+      "source": "temporal",
+      "readable": false
+    },
+    "agreement": {
+      "updatedAt": "2026-07-24T23:37:52.437Z",
+      "contentHash": "f7ffcc58217047286ff4057a394c8fdb7242af04027fee6dbaaf004dddbe52c8",
+      "source": "temporal",
+      "readable": false
+    },
+    "design": {
+      "updatedAt": "2026-07-24T23:37:52.439Z",
+      "contentHash": "84537e13459d966e0848fa8c273d95b2ad7630acacab140b62de3470f26fa0ca",
+      "source": "temporal",
+      "readable": false
+    },
+    "executiveSummary": {
+      "updatedAt": "2026-07-25T00:12:42.519Z",
+      "contentHash": "f0f594646781302a6888985227a39cc9150be6948673639277b0f73d9ad437b3",
+      "source": "temporal",
+      "readable": false
+    }
+  },
+  "lastSignalAt": "2026-07-25T00:28:59.365Z",
+  "adv_project_id": "a4b8e1b703f8294bb83a820749df6ec98b9a5f61",
+  "same_project_dependencies": [],
+  "clarify_findings": [
+    {
+      "code": "CLARIFY_UNCLEAR_SCOPE",
+      "severity": "warning",
+      "message": "Proposal has no Scope section. What files and modules will be affected?",
+      "recorded_at": "2026-07-24T23:17:24.401Z"
+    },
+    {
+      "code": "CLARIFY_ASSUMPTION_HEAVY",
+      "severity": "warning",
+      "message": "Proposal references authentication/authorization without specifying the model. What auth mechanism will be used?",
+      "recorded_at": "2026-07-24T23:17:24.401Z"
+    },
+    {
+      "code": "CLARIFY_MISSING_ERROR_HANDLING",
+      "severity": "warning",
+      "message": "Proposal describes behavior that could fail but doesn't mention error handling or rollback. What happens when things go wrong?",
+      "recorded_at": "2026-07-24T23:17:24.401Z"
+    }
+  ]
+}
