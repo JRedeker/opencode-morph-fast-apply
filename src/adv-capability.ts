@@ -14,11 +14,23 @@ export const ADV_MORPH_WORKTREE_CAPABILITY = Symbol.for(
  */
 export function readCapabilityRoot(args: unknown): string | null {
   if (args === null || typeof args !== "object") return null;
-  const cap = (args as Record<symbol, unknown>)[ADV_MORPH_WORKTREE_CAPABILITY];
-  if (cap === null || typeof cap !== "object") return null;
-  const root = (cap as { root?: unknown }).root;
-  if (typeof root !== "string" || root.length === 0 || !path.isAbsolute(root)) {
+  try {
+    const cap = (args as Record<symbol, unknown>)[
+      ADV_MORPH_WORKTREE_CAPABILITY
+    ];
+    if (cap === null || typeof cap !== "object") return null;
+    const root = (cap as { root?: unknown }).root;
+    if (
+      typeof root !== "string" ||
+      root.length === 0 ||
+      !path.isAbsolute(root)
+    ) {
+      return null;
+    }
+    return path.resolve(root);
+  } catch {
+    // Accessors/proxies are malformed capabilities: do not let them escape the
+    // validation boundary or override the normal session-root confinement.
     return null;
   }
-  return path.resolve(root);
 }

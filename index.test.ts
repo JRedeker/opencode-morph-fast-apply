@@ -1922,6 +1922,16 @@ describe("readCapabilityRoot", () => {
     expect(readCapabilityRoot(args)).toBeNull();
   });
 
+  test("fails closed when capability root accessor throws", () => {
+    const args: Record<symbol, unknown> = {};
+    args[ADV_MORPH_WORKTREE_CAPABILITY] = {
+      get root(): never {
+        throw new Error("malformed capability");
+      },
+    };
+    expect(readCapabilityRoot(args)).toBeNull();
+  });
+
   test("normalizes path with dot segments and trailing slash", () => {
     const args: Record<symbol, unknown> = {};
     args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: "/abs/wt/../other/" };
@@ -2080,14 +2090,16 @@ describe("executeMorphEdit - concurrency & runtime guard", () => {
       },
     });
 
-    await executeMorphEdit(makeArgsWithCapability("/wt-a"), runtime);
-    await executeMorphEdit(makeArgsWithCapability("/wt-b"), runtime);
+    await Promise.all([
+      executeMorphEdit(makeArgsWithCapability("/wt-a"), runtime),
+      executeMorphEdit(makeArgsWithCapability("/wt-b"), runtime),
+    ]);
 
     expect(capturedRoots).toContain("/wt-a");
     expect(capturedRoots).toContain("/wt-b");
   });
 
-  test("AC6 Tier 1: non-enumerable symbol survives reference but not shallow clone", () => {
+  test("AC6 Tier 1: non-enumerable symbol survives execute reference passing but not shallow clone", async () => {
     const args: ExecuteMorphEditArgs = {
       target_filepath: "src/foo.ts",
       instructions: "add bar",
@@ -2100,7 +2112,16 @@ describe("executeMorphEdit - concurrency & runtime guard", () => {
       writable: false,
     });
 
-    expect(readCapabilityRoot(args)).toBe("/x");
+    const capturedRoots: string[] = [];
+    const runtime = makeMockRuntime({
+      resolveTargetPath: (targetPath, root) => {
+        capturedRoots.push(root);
+        return { path: join(root, targetPath) };
+      },
+    });
+
+    await executeMorphEdit(args, runtime);
+    expect(capturedRoots).toEqual(["/x"]);
     expect(readCapabilityRoot({ ...args })).toBeNull();
     expect(readCapabilityRoot(Object.assign({}, args))).toBeNull();
   });
