@@ -60,6 +60,53 @@ export interface ExecuteMorphEditRuntime {
   };
 }
 
+export type ParsedMorphEditArgs =
+  { ok: true; args: ExecuteMorphEditArgs } | { ok: false; error: string };
+
+/**
+ * Validate raw morph_edit arguments before the execution law runs.
+ *
+ * OpenCode V2 registers morph_edit with a JSON Schema, so its execute()
+ * receives untyped arguments. This boundary check recognizes the input once,
+ * next to the shared V1/V2 execution law, instead of trusting the schema
+ * declaration alone.
+ *
+ * On success the validated raw object is returned unchanged: the ADV
+ * worktree capability is attached non-enumerably (symbol key) to the
+ * caller's argument object, so any rebuilt copy would drop it before
+ * readCapabilityRoot can see it. Extra validated properties (workdir,
+ * taskId) are inert; the execution law reads only the three required
+ * fields plus the capability symbol.
+ */
+export function parseMorphEditArgs(raw: unknown): ParsedMorphEditArgs {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return {
+      ok: false,
+      error:
+        "morph_edit requires a JSON object with target_filepath, instructions, and code_edit",
+    };
+  }
+  const record = raw as Record<string, unknown>;
+  for (const key of ["target_filepath", "instructions", "code_edit"] as const) {
+    if (typeof record[key] !== "string") {
+      return {
+        ok: false,
+        error: `morph_edit argument '${key}' is required and must be a string`,
+      };
+    }
+  }
+  for (const key of ["workdir", "taskId"] as const) {
+    const value = record[key];
+    if (value !== undefined && typeof value !== "string") {
+      return {
+        ok: false,
+        error: `morph_edit argument '${key}' must be a string`,
+      };
+    }
+  }
+  return { ok: true, args: raw as ExecuteMorphEditArgs };
+}
+
 /**
  * Production implementation of morph_edit execution.
  *

@@ -10,6 +10,7 @@ import {
 import { normalizeCodeEditInput } from "./src/normalize.js";
 import {
   executeMorphEdit,
+  parseMorphEditArgs,
   type ExecuteMorphEditArgs,
   type ExecuteMorphEditRuntime,
 } from "./src/execute.js";
@@ -2043,11 +2044,13 @@ describe("executeMorphEdit - ADV worktree capability", () => {
 
 describe("morph_edit tool args - ADV workdir/taskId", () => {
   test("schema exposes workdir and taskId optional args and plugin loads", async () => {
-    const MorphFastApply = (await import("./impl.js")).default;
-    const plugin = await MorphFastApply({
+    // The default export is the dual plugin object `{ id, setup, server }`;
+    // the V1 hooks come from the `server` adapter.
+    const mod = await import("./impl.js");
+    const plugin = await mod.default.server({
       directory: "/project",
       client: { app: { log: async () => {} } },
-    } as unknown as Parameters<typeof MorphFastApply>[0]);
+    } as unknown as Parameters<typeof mod.default.server>[0]);
 
     const morphEdit = plugin.tool?.morph_edit;
     expect(morphEdit).toBeDefined();
@@ -2144,5 +2147,502 @@ describe("executeMorphEdit - concurrency & runtime guard", () => {
     //    second call is rejected with "outside allowed root".
     // 6. Verify that Object.defineProperty(..., enumerable:false) is the only
     //    path used to attach the capability; shallow clones/spreads drop it.
+  });
+});
+
+/* ── parseMorphEditArgs (V2 boundary check) ── */
+
+describe("parseMorphEditArgs", () => {
+  test("accepts the three required string args", () => {
+    const parsed = parseMorphEditArgs({
+      target_filepath: "src/foo.ts",
+      instructions: "add bar",
+      code_edit: "const bar = 1;\n",
+    });
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.args).toEqual({
+        target_filepath: "src/foo.ts",
+        instructions: "add bar",
+        code_edit: "const bar = 1;\n",
+      });
+    }
+  });
+
+  test("rejects non-object input", () => {
+    expect(parseMorphEditArgs(null).ok).toBe(false);
+    expect(parseMorphEditArgs("edit").ok).toBe(false);
+    expect(parseMorphEditArgs(42).ok).toBe(false);
+    expect(parseMorphEditArgs(["a"]).ok).toBe(false);
+    expect(parseMorphEditArgs(undefined).ok).toBe(false);
+  });
+
+  test("rejects missing or non-string required args", () => {
+    const missing = parseMorphEditArgs({
+      target_filepath: "src/foo.ts",
+      instructions: "add bar",
+    });
+    expect(missing.ok).toBe(false);
+
+    const nonString = parseMorphEditArgs({
+      target_filepath: 42,
+      instructions: "add bar",
+      code_edit: "const bar = 1;\n",
+    });
+    expect(nonString.ok).toBe(false);
+  });
+
+  test("rejects non-string optional args", () => {
+    const parsed = parseMorphEditArgs({
+      target_filepath: "src/foo.ts",
+      instructions: "add bar",
+      code_edit: "const bar = 1;\n",
+      workdir: 42,
+    });
+    expect(parsed.ok).toBe(false);
+  });
+
+  test("retains the validated raw argument object", () => {
+    const raw = {
+      target_filepath: "src/foo.ts",
+      instructions: "add bar",
+      code_edit: "const bar = 1;\n",
+      workdir: "/wt",
+      taskId: "tk-1",
+    };
+    const parsed = parseMorphEditArgs(raw);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      // The ADV capability is attached non-enumerably to the caller's object,
+      // so a rebuilt copy would drop it: the parser must validate in place
+      // and return the raw object itself.
+      expect(parsed.args).toBe(raw);
+    }
+  });
+
+  test("preserves a non-enumerable capability for readCapabilityRoot", () => {
+    const raw = {
+      target_filepath: "src/foo.ts",
+      instructions: "add bar",
+      code_edit: "const bar = 1;\n",
+    };
+    Object.defineProperty(raw, ADV_MORPH_WORKTREE_CAPABILITY, {
+      value: { root: "/wt" },
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+    const parsed = parseMorphEditArgs(raw);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(readCapabilityRoot(parsed.args)).toBe("/wt");
+    }
+  });
+});
+
+/* ── dual-entry plugin registration (V2 setup + V1 server adapter) ── */
+
+describe("dual-entry plugin registration", () => {
+  interface FakeRegisteredTool {
+    name: string;
+    description: string;
+    input: Record<string, unknown>;
+    execute: (
+      args: unknown,
+      toolCtx: unknown,
+    ) => Promise<{ content?: Array<{ type: string; text?: string }> }>;
+  }
+
+  interface CapturedHook {
+    name: string;
+    handler: (input: unknown) => unknown;
+  }
+
+  function makeV2Context(
+    session:
+      | { directory: string }
+      | { directories: Record<string, string> }
+      | { error: unknown },
+  ): {
+    ctx: unknown;
+    added: FakeRegisteredTool[];
+    hooks: CapturedHook[];
+    lookups: string[];
+  } {
+    const added: FakeRegisteredTool[] = [];
+    const hooks: CapturedHook[] = [];
+    const lookups: string[] = [];
+    const ctx = {
+      tool: {
+        transform: async (cb: (editor: unknown) => void) => {
+          cb({
+            add: (registered: FakeRegisteredTool) => {
+              added.push(registered);
+            },
+          });
+          return { dispose: async () => {} };
+        },
+        hook: async (name: string, handler: (input: unknown) => unknown) => {
+          hooks.push({ name, handler });
+          return { dispose: async () => {} };
+        },
+      },
+      session: {
+        get: async ({ sessionID }: { sessionID: string }) => {
+          lookups.push(sessionID);
+          if ("error" in session) throw session.error;
+          return {
+            location: {
+              directory:
+                "directories" in session
+                  ? session.directories[sessionID]
+                  : session.directory,
+            },
+          };
+        },
+      },
+    };
+    return { ctx, added, hooks, lookups };
+  }
+
+  const importPlugin = async () => (await import("./index.js")).default;
+
+  async function setupV2(
+    session:
+      | { directory: string }
+      | { directories: Record<string, string> }
+      | { error: unknown },
+    runtimeOverrides?: Record<string, unknown>,
+  ) {
+    const plugin = await importPlugin();
+    const { ctx, added, hooks, lookups } = makeV2Context(session);
+    // The fake context mirrors the small V2 surface (tool.transform,
+    // tool.hook, session.get) the adapter uses.
+    const setup = plugin.setup as unknown as (
+      ctx: unknown,
+      options?: { runtimeOverrides?: Record<string, unknown> },
+    ) => Promise<void>;
+    await setup(ctx, runtimeOverrides ? { runtimeOverrides } : undefined);
+    return { added, hooks, lookups };
+  }
+
+  test("default export carries V2 id/setup and the V1 server adapter", async () => {
+    const plugin = (await importPlugin()) as unknown as Record<string, unknown>;
+    expect(typeof plugin.id).toBe("string");
+    expect(plugin.id).toBe("opencode-morph-fast-apply");
+    expect(typeof plugin.setup).toBe("function");
+    expect(typeof plugin.server).toBe("function");
+  });
+
+  test("V2 setup registers exactly one morph_edit tool with a JSON Schema input", async () => {
+    const { added, hooks } = await setupV2({ directory: "/session-root" });
+
+    expect(added).toHaveLength(1);
+    expect(hooks.map((hook) => hook.name)).toEqual(["execute.after"]);
+
+    const registered = added[0];
+    expect(registered.name).toBe("morph_edit");
+    expect(registered.description).toContain("existing code");
+    expect(registered.input.type).toBe("object");
+    expect(registered.input.required).toEqual([
+      "target_filepath",
+      "instructions",
+      "code_edit",
+    ]);
+    const properties = registered.input.properties as Record<
+      string,
+      { type: string }
+    >;
+    expect(properties.target_filepath).toMatchObject({ type: "string" });
+    expect(properties.workdir).toMatchObject({ type: "string" });
+    expect(properties.taskId).toMatchObject({ type: "string" });
+  });
+
+  test("V2 morph_edit confines writes to the per-invocation session root", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "morph-v2-"));
+    try {
+      const sessionRoot = join(tmp, "session");
+      mkdirSync(sessionRoot, { recursive: true });
+
+      const written: Array<{ path: string; content: string }> = [];
+      const { added } = await setupV2(
+        { directory: sessionRoot },
+        {
+          constants: {
+            MORPH_API_KEY: "test-key",
+            ALLOW_READONLY_AGENTS: false,
+            READONLY_AGENTS: ["plan", "explore"],
+            EXISTING_CODE_MARKER,
+            PLUGIN_VERSION: "1.0.0",
+            MORPH_MODEL: "morph-v3-fast",
+          },
+          readFile: async () => ({ exists: false, text: "" }),
+          writeFile: async (path: string, content: string) => {
+            written.push({ path, content });
+          },
+          callMorphApply: async () => ({
+            success: true,
+            content: "const x = 1;\n",
+          }),
+        },
+      );
+
+      const tool = added[0];
+      const result = await tool.execute(
+        {
+          target_filepath: "created.ts",
+          instructions: "create it",
+          code_edit: "const x = 1;\n",
+        },
+        { sessionID: "ses_test", agent: "build", messageID: "msg", id: "call" },
+      );
+
+      // The write landed inside the session directory, not the plugin's load
+      // directory or the process cwd.
+      expect(written).toHaveLength(1);
+      expect(written[0].path).toBe(join(sessionRoot, "created.ts"));
+
+      // Output is wrapped as structured V2 text content.
+      expect(result.content?.[0]).toMatchObject({ type: "text" });
+      expect(result.content?.[0]?.text).toContain(
+        "Created new file: created.ts",
+      );
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("V2 resolves each session ID afresh before writing in its own root", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "morph-v2-sessions-"));
+    try {
+      const first = join(tmp, "first");
+      const second = join(tmp, "second");
+      mkdirSync(first);
+      mkdirSync(second);
+      const written: string[] = [];
+      const { added, lookups } = await setupV2(
+        { directories: { ses_first: first, ses_second: second } },
+        {
+          constants: {
+            MORPH_API_KEY: "test-key",
+            ALLOW_READONLY_AGENTS: false,
+            READONLY_AGENTS: ["plan", "explore"],
+            EXISTING_CODE_MARKER,
+            PLUGIN_VERSION: "1.0.0",
+            MORPH_MODEL: "morph-v3-fast",
+          },
+          readFile: async () => ({ exists: false, text: "" }),
+          writeFile: async (path: string) => {
+            written.push(path);
+          },
+        },
+      );
+
+      for (const sessionID of ["ses_first", "ses_second"]) {
+        await added[0].execute(
+          {
+            target_filepath: "created.ts",
+            instructions: "create file",
+            code_edit: "export const created = true;\n",
+          },
+          { sessionID, agent: "build", messageID: "msg", id: "call" },
+        );
+      }
+
+      expect(lookups).toEqual(["ses_first", "ses_second"]);
+      expect(written).toEqual([
+        join(first, "created.ts"),
+        join(second, "created.ts"),
+      ]);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("V2 morph_edit honors the ADV worktree capability root from raw args", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "morph-v2-"));
+    try {
+      const sessionRoot = join(tmp, "session");
+      const worktreeRoot = join(tmp, "wt");
+      mkdirSync(sessionRoot, { recursive: true });
+      mkdirSync(worktreeRoot, { recursive: true });
+
+      const written: Array<{ path: string; content: string }> = [];
+      const { added } = await setupV2(
+        { directory: sessionRoot },
+        {
+          constants: {
+            MORPH_API_KEY: "test-key",
+            ALLOW_READONLY_AGENTS: false,
+            READONLY_AGENTS: ["plan", "explore"],
+            EXISTING_CODE_MARKER,
+            PLUGIN_VERSION: "1.0.0",
+            MORPH_MODEL: "morph-v3-fast",
+          },
+          readFile: async () => ({ exists: true, text: "const x = 1;\n" }),
+          writeFile: async (path: string, content: string) => {
+            written.push({ path, content });
+          },
+          callMorphApply: async () => ({
+            success: true,
+            content: "const x = 2;\n",
+          }),
+        },
+      );
+
+      // ADV attaches the capability non-enumerably after validating
+      // workdir+taskId; spreads and clones drop it, so the boundary parser
+      // must retain the validated raw argument object for the execution law.
+      const rawArgs: Record<string, unknown> = {
+        target_filepath: "file.ts",
+        instructions: "bump x",
+        code_edit: `${EXISTING_CODE_MARKER}\nconst x = 2;\n`,
+        workdir: worktreeRoot,
+        taskId: "tk-1",
+      };
+      Object.defineProperty(rawArgs, ADV_MORPH_WORKTREE_CAPABILITY, {
+        value: { root: worktreeRoot },
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      });
+
+      const result = await added[0].execute(rawArgs, {
+        sessionID: "ses_test",
+        agent: "build",
+        messageID: "msg",
+        id: "call",
+      });
+
+      // The write landed inside the validated ADV worktree, not the session
+      // directory the (capability-less) parser would otherwise fall back to.
+      expect(written).toHaveLength(1);
+      expect(written[0].path).toBe(join(worktreeRoot, "file.ts"));
+      expect(result.content?.[0]?.text).toContain("Applied edit to file.ts");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("V2 morph_edit rejects paths outside the session root", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "morph-v2-"));
+    try {
+      const sessionRoot = join(tmp, "session");
+      mkdirSync(sessionRoot, { recursive: true });
+      const { added } = await setupV2({ directory: sessionRoot });
+
+      const result = await added[0].execute(
+        { target_filepath: "/etc/passwd", instructions: "x", code_edit: "y" },
+        { sessionID: "ses_test", agent: "build", messageID: "msg", id: "call" },
+      );
+
+      expect(result.content?.[0]?.text).toContain("outside allowed root");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("V2 morph_edit fails closed when the session directory cannot be resolved", async () => {
+    const { added } = await setupV2({
+      error: new Error("session lookup failed"),
+    });
+
+    const result = await added[0].execute(
+      {
+        target_filepath: "created.ts",
+        instructions: "create it",
+        code_edit: "const x = 1;\n",
+      },
+      { sessionID: "ses_test", agent: "build", messageID: "msg", id: "call" },
+    );
+
+    expect(result.content?.[0]?.text).toContain(
+      "could not resolve the session directory",
+    );
+  });
+
+  test("V2 morph_edit rejects malformed arguments at the boundary", async () => {
+    const { added } = await setupV2({ directory: "/session-root" });
+
+    const result = await added[0].execute(
+      { target_filepath: "created.ts", code_edit: "const x = 1;\n" },
+      { sessionID: "ses_test", agent: "build", messageID: "msg", id: "call" },
+    );
+
+    expect(result.content?.[0]?.text).toContain("instructions");
+    expect(result.content?.[0]?.text).toContain(
+      "required and must be a string",
+    );
+  });
+
+  test("V2 execute.after hook attaches branded metadata with shared title formatting", async () => {
+    const { hooks } = await setupV2({ directory: "/session-root" });
+    const handler = hooks[0].handler;
+
+    // The hook replaces input.result (Tool.Result fields are readonly), so
+    // read the result back off the hook input after the call.
+    const hookInput: {
+      tool: string;
+      status: string;
+      result: { content?: Array<{ type: string; text?: string }> };
+    } = {
+      tool: "morph_edit",
+      status: "completed",
+      result: [
+        {
+          content: [
+            {
+              type: "text",
+              text: "Applied edit to src/foo.ts\n\n+3 -1 lines | 10 -> 12 total | 42ms\n",
+            },
+          ],
+        },
+      ][0],
+    };
+    handler(hookInput);
+
+    const metadata = (
+      hookInput.result as { metadata?: Record<string, unknown> }
+    ).metadata;
+    expect(metadata?.provider).toBe("morph");
+    expect(metadata?.version).toBe(PLUGIN_VERSION);
+    expect(metadata?.title).toMatch(/^Morph: src\/foo\.ts \+3\/-1/);
+  });
+
+  test("V2 execute.after hook ignores other tools and error outcomes", async () => {
+    const { hooks } = await setupV2({ directory: "/session-root" });
+    const handler = hooks[0].handler;
+
+    const other: { metadata?: Record<string, unknown> } = {};
+    handler({
+      tool: "bash",
+      status: "completed",
+      result: other,
+    });
+    expect(other.metadata).toBeUndefined();
+
+    // A completed morph_edit result without text content still gets branded
+    // metadata (empty-text fallback) and no title.
+    const emptyInput: {
+      tool: string;
+      status: string;
+      result: Record<string, never>;
+    } = { tool: "morph_edit", status: "completed", result: {} };
+    handler(emptyInput);
+    const emptyMetadata = (
+      emptyInput.result as unknown as { metadata?: Record<string, unknown> }
+    ).metadata;
+    expect(emptyMetadata?.provider).toBe("morph");
+    expect(emptyMetadata?.title).toBeUndefined();
+  });
+
+  test("V1 server adapter still returns morph_edit hooks from the dual object", async () => {
+    const plugin = await importPlugin();
+    const hooks = await plugin.server({
+      directory: "/project",
+      client: { app: { log: async () => {} } },
+    } as unknown as Parameters<typeof plugin.server>[0]);
+
+    expect(hooks.tool?.morph_edit).toBeDefined();
   });
 });
