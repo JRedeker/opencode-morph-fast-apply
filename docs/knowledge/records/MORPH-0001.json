@@ -1,0 +1,32 @@
+{
+  "authority": {
+    "tier": "derived"
+  },
+  "date": "2026-09-23T00:00:00Z",
+  "evidence": [
+    "README.md",
+    "impl.ts",
+    "src/execute.ts"
+  ],
+  "home_domain_id": "product-root:opencode-morph-fast-apply",
+  "id": "MORPH-0001",
+  "kind": "spec",
+  "path": "docs/specs/editing-boundary.md",
+  "product_wide_rationale": "The editing boundary governs the plugin's OpenCode registrations and the shared editing implementation. No child Domain exists yet.",
+  "scopes": {
+    "domain_ids": [],
+    "mode": "home",
+    "product_ids": [],
+    "project_ids": [],
+    "tag_ids": []
+  },
+  "sha256": "sha256:bd45ce911ac219ed90bc134eff9176c8080f7145abd20fe413753f355f316c83",
+  "status": "accepted",
+  "summary": "The tool confines edits to the invoking session or a validated ADV worktree, blocks read-only agents by default, and refuses unsafe merge results before any write.",
+  "tags": [
+    "editing",
+    "safety",
+    "opencode"
+  ],
+  "title": "Morph editing boundary"
+}
