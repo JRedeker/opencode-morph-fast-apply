@@ -14,17 +14,38 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 - **Pre-flight validation** - prevents accidental file deletions when markers are missing
 - **Unified diff output** with context for easy review
 - **Custom TUI display** - branded titles like `Morph: src/file.ts +15/-3 (450ms)`
+- **OpenCode V2 native** - registers through the V2 plugin API; edits are confined to the session's directory per invocation
 - **Graceful fallback** - suggests native `edit` tool on API failure
 
 > **Note:** This is an OpenCode plugin that wraps Morph's Fast Apply API. For the official Morph MCP server (which includes WarpGrep search), see [@morphllm/morphmcp](https://www.npmjs.com/package/@morphllm/morphmcp). This plugin uses `morph_edit` as the tool name to avoid conflicts if you have both installed.
 
 ## Installation
 
+### OpenCode version support
+
+| OpenCode version      | Support | Notes                                                                                                                                           |
+| --------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| V2 (2.x)              | Yes     | Loads through the V2 plugin API (`setup`). Edits are confined to the session's directory, resolved per invocation.                              |
+| V1 1.18.29+           | Yes     | Loads through the V1 `default.server` adapter with the same `morph_edit` behavior.                                                              |
+| V1 older than 1.18.29 | **No**  | These loaders do not read the dual-entry default export, so the plugin silently does not load. Upgrade OpenCode or pin an older plugin release. |
+
 ### 1. Add the plugin and always-on instruction to your OpenCode config
 
 Preferred when your setup syncs packaged instructions into `~/.config/opencode/instructions/`:
 
-Add to your global config (`~/.config/opencode/opencode.json`):
+OpenCode V2 (2.x) reads the plural `plugins` key. Add to your global config (`~/.config/opencode/opencode.json`):
+
+```json
+{
+  "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
+  "plugins": ["github:JRedeker/opencode-morph-fast-apply"]
+}
+```
+
+Pin only a release that contains the V2 entrypoint. Version `v1.11.0` contains
+the V1-only entrypoint and cannot load on V2.
+
+OpenCode V1 (1.18.29+) reads the singular `plugin` key. Do not use `plugin` on V2 — V2 ignores it and the plugin will not load:
 
 ```json
 {
@@ -33,11 +54,10 @@ Add to your global config (`~/.config/opencode/opencode.json`):
 }
 ```
 
-Or pin to a specific version:
+To keep the existing V1 release on OpenCode V1, pin its tag:
 
 ```json
 {
-  "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
   "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.11.0"]
 }
 ```
@@ -50,7 +70,16 @@ Recommended setup summary:
 
 If you are installing the plugin directly and do not sync packaged instructions into
 `~/.config/opencode/instructions/`, you can point OpenCode at the packaged file
-instead:
+instead. Use `plugins` on V2 and `plugin` on V1:
+
+```json
+{
+  "instructions": [
+    "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
+  ],
+  "plugins": ["github:JRedeker/opencode-morph-fast-apply"]
+}
+```
 
 ```json
 {
@@ -175,7 +204,7 @@ The plugin blocks unsafe Morph responses before writing files:
 - **Marker leakage guard**: If merged output contains `// ... existing code ...` but the original file did not, the write is aborted.
 - **Catastrophic truncation guard**: If merged output loses more than 60% of characters **and** more than 50% of lines (for marker-based edits), the write is aborted.
 - **Dropped imports guard**: If top-level import identifiers present in the original file are missing from the merged output, the write is aborted. This catches silent import loss that can occur when edits fall outside the anchoring context.
-- **Path confinement**: All target paths are resolved and confined to the project root. Symlinks are followed and validated; paths that resolve outside the root are rejected.
+- **Path confinement**: Target paths stay within the invoking session directory or a validated ADV worktree root. Symlinks are followed and validated; paths that resolve outside that root are rejected.
 - **Secret scrubbing**: API error messages are automatically scrubbed to prevent leaking your `MORPH_API_KEY` or Bearer tokens in tool output.
 
 In all guard cases, `morph_edit` returns a detailed error with recovery options (retry with tighter anchors, use native `edit`, or split into smaller edits).

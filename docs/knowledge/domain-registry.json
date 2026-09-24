@@ -1,0 +1,14 @@
+{
+  "domains": [
+    {
+      "architecture_relations": [],
+      "domain_id": "product-root:opencode-morph-fast-apply",
+      "name": "OpenCode Morph Fast Apply",
+      "purpose": "Product-wide editing contract for the plugin and its OpenCode integrations.",
+      "status": "current"
+    }
+  ],
+  "product_key": "opencode-morph-fast-apply",
+  "root_domain_id": "product-root:opencode-morph-fast-apply",
+  "schema_version": "1.0"
+}
