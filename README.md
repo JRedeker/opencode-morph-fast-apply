@@ -226,7 +226,15 @@ The `morph_edit` tool is disabled in readonly agent modes (`plan`, `explore`). S
 
 ## Changelog
 
-### Unreleased
+For the full release history, see [CHANGELOG.md](CHANGELOG.md).
+
+### v1.12.0
+
+- **OpenCode V2 support** — Registers `morph_edit` through the V2 plugin API and resolves the invoking session directory for each edit. OpenCode V1 1.18.29+ remains supported; older V1 loaders are unsupported.
+- **Structured edit outcomes** — Returns `status`, a stable `code`, `truncated`, and readable `text`. V1 exposes machine fields in metadata; V2 exposes schema-declared output and metadata. The truncation flag identifies shortened diff output, not shortened file writes.
+- **File I/O errors** — Creation write failures report `write_failed` instead of a read failure. File I/O errors are scrubbed before returning them.
+
+### v1.10.2
 
 - **Native edit recovery policy** — The embedded `morph_edit` description, the packaged always-on instruction, and the README now share the same bounded recovery sequence for a failed native exact `edit`: re-read the target, do not repeat unchanged input, allow at most one corrected native edit only when still small and exact, otherwise hand off to `morph_edit` for contextual repair. The existing Morph API-error/timeout → native `edit` fallback is preserved.
 - **Drift regression tests** — Content-level tests assert the recovery policy is present and consistent across all three routing surfaces.
