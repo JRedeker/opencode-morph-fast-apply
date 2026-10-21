@@ -27,6 +27,7 @@ import {
   executeMorphEdit,
   parseMorphEditArgs,
   type ExecuteMorphEditRuntime,
+  type MorphEditResult,
 } from "./src/execute.js";
 import { readCapabilityRoot } from "./src/adv-capability.js";
 
@@ -209,6 +210,18 @@ export function morphEditMetadata(text: string): Record<string, unknown> {
   const title = formatMorphEditTitle(text);
   if (title) metadata.title = title;
   return metadata;
+}
+
+function resultMetadata({ status, code, truncated }: MorphEditResult) {
+  return { status, code, truncated };
+}
+
+function v2Result(result: MorphEditResult) {
+  return {
+    output: result,
+    content: [{ type: "text" as const, text: result.text }],
+    metadata: resultMetadata(result),
+  };
 }
 
 /**
@@ -431,7 +444,7 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
         },
 
         async execute(args, context) {
-          return executeMorphEdit(args, {
+          const result = await executeMorphEdit(args, {
             log,
             directory,
             context,
@@ -463,6 +476,7 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
               MORPH_MODEL,
             },
           });
+          return { output: result.text, metadata: resultMetadata(result) };
         },
       }),
     },
@@ -548,15 +562,29 @@ export async function setupMorphEditV2(
         },
         required: ["target_filepath", "instructions", "code_edit"],
       },
+      output: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["success", "refused", "error"] },
+          code: { type: ["string", "null"] },
+          truncated: { type: "boolean" },
+          text: { type: "string" },
+        },
+        required: ["status", "code", "truncated", "text"],
+        additionalProperties: false,
+      },
 
       async execute(rawArgs, toolContext) {
         // Untrusted tool input is recognized at the boundary before the
         // shared execution law runs.
         const parsed = parseMorphEditArgs(rawArgs);
         if (!parsed.ok) {
-          return {
-            content: [{ type: "text", text: `Error: ${parsed.error}` }],
-          };
+          return v2Result({
+            status: "error",
+            code: "invalid_arguments",
+            truncated: false,
+            text: `Error: ${parsed.error}`,
+          });
         }
 
         // Confinement root, resolved per invocation: the V2 tool context
@@ -572,17 +600,15 @@ export async function setupMorphEditV2(
           await log("warn", `session lookup failed: ${scrubSecrets(err)}`);
         }
         if (!directory) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: "Error: could not resolve the session directory for morph_edit.\nNo file was modified. Check the session state before retrying the edit.",
-              },
-            ],
-          };
+          return v2Result({
+            status: "error",
+            code: "session_unavailable",
+            truncated: false,
+            text: "Error: could not resolve the session directory for morph_edit.\nNo file was modified. Check the session state before retrying the edit.",
+          });
         }
 
-        const text = await executeMorphEdit(parsed.args, {
+        const result = await executeMorphEdit(parsed.args, {
           log,
           directory,
           context: { agent: toolContext.agent },
@@ -616,9 +642,7 @@ export async function setupMorphEditV2(
           ...options?.runtimeOverrides,
         });
 
-        // V2 consumes structured content; the shared text grammar is wrapped,
-        // not duplicated.
-        return { content: [{ type: "text", text }] };
+        return v2Result(result);
       },
     });
   });

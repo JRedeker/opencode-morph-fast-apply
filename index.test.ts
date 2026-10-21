@@ -13,6 +13,7 @@ import {
   parseMorphEditArgs,
   type ExecuteMorphEditArgs,
   type ExecuteMorphEditRuntime,
+  type MorphEditResult,
 } from "./src/execute.js";
 import { generateUnifiedDiff, countChanges } from "./src/diff.js";
 import { callMorphApply, scrubSecrets } from "./impl.js";
@@ -1141,6 +1142,202 @@ function makeMockRuntime(
   };
 }
 
+describe("executeMorphEdit - structured results", () => {
+  const args = {
+    target_filepath: "src/foo.ts",
+    instructions: "update foo",
+    code_edit: `${EXISTING_CODE_MARKER}\nconst foo = 2;\n${EXISTING_CODE_MARKER}`,
+  };
+  const existing = async () => ({ exists: true, text: "const foo = 1;\n" });
+
+  test.each([
+    ["readonly_agent", "refused", { context: { agent: "plan" } }],
+    [
+      "path_refused",
+      "refused",
+      { resolveTargetPath: () => ({ error: "blocked" }) },
+    ],
+    ["file_not_found", "refused", {}],
+    [
+      "read_failed",
+      "error",
+      {
+        readFile: async () => {
+          throw new Error("unreadable");
+        },
+      },
+    ],
+    [
+      "marker_leakage",
+      "refused",
+      {
+        readFile: existing,
+        callMorphApply: async () => ({
+          success: true,
+          content: `const foo = 2;\n${EXISTING_CODE_MARKER}`,
+        }),
+      },
+    ],
+    [
+      "catastrophic_truncation",
+      "refused",
+      {
+        readFile: async () => ({
+          exists: true,
+          text: "const foo = 1;\n".repeat(20),
+        }),
+        callMorphApply: async () => ({ success: true, content: "x" }),
+      },
+    ],
+    [
+      "dropped_imports",
+      "refused",
+      {
+        readFile: async () => ({
+          exists: true,
+          text: 'import { foo } from "foo";\nconst x = 1;\n',
+        }),
+        callMorphApply: async () => ({
+          success: true,
+          content: "// no imports here\nconst x = 2;\n",
+        }),
+      },
+    ],
+    [
+      "write_failed",
+      "error",
+      {
+        readFile: existing,
+        callMorphApply: async () => ({
+          success: true,
+          content: "const foo = 2;\n",
+        }),
+        writeFile: async () => {
+          throw new Error("disk full");
+        },
+      },
+    ],
+  ] as const)(
+    "classifies %s without parsing prose",
+    async (code, status, overrides) => {
+      let writes = 0;
+      const result = await executeMorphEdit(
+        args,
+        makeMockRuntime({
+          writeFile: async () => {
+            writes++;
+          },
+          ...overrides,
+        }),
+      );
+      expect(result).toMatchObject({ status, code, truncated: false });
+      expect(writes).toBe(0);
+    },
+  );
+
+  test.each([
+    "api_timeout",
+    "api_http_error",
+    "api_parse_error",
+    "api_request_failed",
+    "api_empty_response",
+  ] as const)("preserves %s from the API", async (kind) => {
+    const result = await executeMorphEdit(
+      args,
+      makeMockRuntime({
+        readFile: existing,
+        callMorphApply: async () => ({
+          success: false,
+          kind,
+          error: "fake-key",
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      status: "error",
+      code: kind,
+      truncated: false,
+    });
+    expect(JSON.stringify(result)).not.toContain("fake-key");
+  });
+
+  test("classifies untyped API failures", async () => {
+    const result = await executeMorphEdit(
+      args,
+      makeMockRuntime({ readFile: existing }),
+    );
+    expect(result).toMatchObject({
+      status: "error",
+      code: "api_request_failed",
+      truncated: false,
+    });
+  });
+
+  test.each([undefined, ""])(
+    "classifies empty API content %j",
+    async (content) => {
+      const result = await executeMorphEdit(
+        args,
+        makeMockRuntime({
+          readFile: existing,
+          callMorphApply: async () => ({ success: true, content }),
+        }),
+      );
+      expect(result).toMatchObject({
+        status: "error",
+        code: "api_empty_response",
+        truncated: false,
+      });
+    },
+  );
+
+  test("classifies creation write errors as writes, not reads", async () => {
+    const result = await executeMorphEdit(
+      { ...args, code_edit: "new file" },
+      makeMockRuntime({
+        writeFile: async () => {
+          throw new Error("disk full");
+        },
+      }),
+    );
+    expect(result).toMatchObject({
+      status: "error",
+      code: "write_failed",
+      truncated: false,
+    });
+  });
+
+  test.each([2999, 3000, 3001])(
+    "flags diff truncation at %i characters",
+    async (length) => {
+      const merged = "const foo = 2;\n".repeat(300);
+      let written: string | undefined;
+      const result = await executeMorphEdit(
+        args,
+        makeMockRuntime({
+          readFile: existing,
+          callMorphApply: async () => ({
+            success: true,
+            content: merged,
+          }),
+          writeFile: async (_path, content) => {
+            written = content;
+          },
+          generateUnifiedDiff: () => "x".repeat(length),
+        }),
+      );
+      expect(result).toMatchObject({
+        status: "success",
+        code: null,
+        truncated: length > 3000,
+      });
+      expect(written).toBe(merged);
+      expect(result.text).toContain("x".repeat(Math.min(length, 3000)));
+      expect(result.text.includes("... (truncated)")).toBe(length > 3000);
+    },
+  );
+});
+
 describe("executeMorphEdit - missing API key", () => {
   test("returns error when MORPH_API_KEY is missing", async () => {
     const runtime = makeMockRuntime({
@@ -1163,7 +1360,12 @@ describe("executeMorphEdit - missing API key", () => {
       runtime,
     );
 
-    expect(result).toContain("MORPH_API_KEY not configured");
+    expect(result).toMatchObject({
+      status: "error",
+      code: "missing_api_key",
+      truncated: false,
+    });
+    expect(result.text).toContain("MORPH_API_KEY not configured");
   });
 });
 
@@ -1182,7 +1384,7 @@ describe("executeMorphEdit - readonly agent block", () => {
       runtime,
     );
 
-    expect(result).toContain("not available in plan mode");
+    expect(result.text).toContain("not available in plan mode");
   });
 
   test("blocks explore agent when ALLOW_READONLY_AGENTS is false", async () => {
@@ -1199,7 +1401,7 @@ describe("executeMorphEdit - readonly agent block", () => {
       runtime,
     );
 
-    expect(result).toContain("not available in explore mode");
+    expect(result.text).toContain("not available in explore mode");
   });
 
   test("allows build agent", async () => {
@@ -1224,7 +1426,7 @@ describe("executeMorphEdit - readonly agent block", () => {
       runtime,
     );
 
-    expect(result).toContain("Applied edit to");
+    expect(result.text).toContain("Applied edit to");
   });
 });
 
@@ -1244,8 +1446,13 @@ describe("executeMorphEdit - missing marker refusal", () => {
       runtime,
     );
 
-    expect(result).toContain("Missing");
-    expect(result).toContain(EXISTING_CODE_MARKER);
+    expect(result).toMatchObject({
+      status: "refused",
+      code: "missing_markers",
+      truncated: false,
+    });
+    expect(result.text).toContain("Missing");
+    expect(result.text).toContain(EXISTING_CODE_MARKER);
   });
 
   test("allows edit with no markers on file ≤3 lines", async () => {
@@ -1269,7 +1476,7 @@ describe("executeMorphEdit - missing marker refusal", () => {
       runtime,
     );
 
-    expect(result).toContain("Applied edit to");
+    expect(result.text).toContain("Applied edit to");
   });
 });
 
@@ -1293,8 +1500,8 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
       runtime,
     );
 
-    expect(result).toContain("unsafe output");
-    expect(result).toContain("placeholder marker text");
+    expect(result.text).toContain("unsafe output");
+    expect(result.text).toContain("placeholder marker text");
   });
 
   test("rejects catastrophic truncation", async () => {
@@ -1323,8 +1530,8 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
       runtime,
     );
 
-    expect(result).toContain("potentially destructive merge");
-    expect(result).toContain("% characters");
+    expect(result.text).toContain("potentially destructive merge");
+    expect(result.text).toContain("% characters");
   });
 
   test("rejects dropped import identifiers", async () => {
@@ -1348,8 +1555,8 @@ describe("executeMorphEdit - unsafe Morph output refusal", () => {
       runtime,
     );
 
-    expect(result).toContain("missing imports");
-    expect(result).toContain("bar");
+    expect(result.text).toContain("missing imports");
+    expect(result.text).toContain("bar");
   });
 });
 
@@ -1386,8 +1593,8 @@ describe("executeMorphEdit - no-marker guard coverage", () => {
       runtime,
     );
 
-    expect(result).toContain("potentially destructive merge");
-    expect(result).toContain("% characters");
+    expect(result.text).toContain("potentially destructive merge");
+    expect(result.text).toContain("% characters");
     expect(wrote).toBe(false);
   });
 
@@ -1416,7 +1623,7 @@ describe("executeMorphEdit - no-marker guard coverage", () => {
       runtime,
     );
 
-    expect(result).toContain("Applied edit to");
+    expect(result.text).toContain("Applied edit to");
     expect(wrote).toBe(true);
   });
 
@@ -1445,8 +1652,8 @@ describe("executeMorphEdit - no-marker guard coverage", () => {
       runtime,
     );
 
-    expect(result).toContain("unsafe output");
-    expect(result).toContain("placeholder marker text");
+    expect(result.text).toContain("unsafe output");
+    expect(result.text).toContain("placeholder marker text");
     expect(wrote).toBe(false);
   });
 });
@@ -1476,8 +1683,8 @@ describe("executeMorphEdit - write failure", () => {
       runtime,
     );
 
-    expect(result).toContain("Error writing file");
-    expect(result).toContain("disk full");
+    expect(result.text).toContain("Error writing file");
+    expect(result.text).toContain("disk full");
   });
 });
 
@@ -1513,12 +1720,16 @@ describe("executeMorphEdit - mocked successful write/diff flow", () => {
 
     expect(writtenPath).toBe(join("/project", "src/foo.ts"));
     expect(writtenContent).toBe(merged);
-    expect(result).toContain("Applied edit to src/foo.ts");
-    expect(result).toContain("+1");
-    expect(result).toContain("->");
-    expect(result).toContain("0ms"); // 1000 - 1000 if we call now() twice... wait
-    // Actually now() returns 1000 both times, so 0ms
-    expect(result).toContain("diff");
+    expect(result).toMatchObject({
+      status: "success",
+      code: null,
+      truncated: false,
+    });
+    expect(result.text).toContain("Applied edit to src/foo.ts");
+    expect(result.text).toContain("+1");
+    expect(result.text).toContain("->");
+    expect(result.text).toContain("0ms");
+    expect(result.text).toContain("diff");
   });
 
   test("creates new file when target does not exist and no markers", async () => {
@@ -1544,7 +1755,12 @@ describe("executeMorphEdit - mocked successful write/diff flow", () => {
 
     expect(writtenPath).toBe(join("/project", "src/new.ts"));
     expect(writtenContent).toBe("const x = 1;\n");
-    expect(result).toContain("Created new file: src/new.ts");
+    expect(result).toMatchObject({
+      status: "success",
+      code: null,
+      truncated: false,
+    });
+    expect(result.text).toContain("Created new file: src/new.ts");
   });
 });
 
@@ -1792,8 +2008,8 @@ describe("executeMorphEdit - API failure kind propagation", () => {
       runtime,
     );
 
-    expect(result).toContain("Morph API failed");
-    expect(result).toContain("timeout");
+    expect(result.text).toContain("Morph API failed");
+    expect(result.text).toContain("timeout");
   });
 
   test("propagates api_http_error from callMorphApply", async () => {
@@ -1815,8 +2031,8 @@ describe("executeMorphEdit - API failure kind propagation", () => {
       runtime,
     );
 
-    expect(result).toContain("Morph API failed");
-    expect(result).toContain("500");
+    expect(result.text).toContain("Morph API failed");
+    expect(result.text).toContain("500");
   });
 
   test("propagates api_parse_error from callMorphApply", async () => {
@@ -1838,8 +2054,8 @@ describe("executeMorphEdit - API failure kind propagation", () => {
       runtime,
     );
 
-    expect(result).toContain("Morph API failed");
-    expect(result).toContain("invalid JSON");
+    expect(result.text).toContain("Morph API failed");
+    expect(result.text).toContain("invalid JSON");
   });
 
   test("output does not leak secrets on API failure", async () => {
@@ -1870,7 +2086,7 @@ describe("executeMorphEdit - API failure kind propagation", () => {
       runtime,
     );
 
-    expect(result).not.toContain(secret);
+    expect(result.text).not.toContain(secret);
   });
 });
 
@@ -1970,12 +2186,12 @@ describe("executeMorphEdit - ADV worktree capability", () => {
     });
 
     const inRoot = await executeMorphEdit(args, runtime);
-    expect(inRoot).toContain("Created new file");
+    expect(inRoot.text).toContain("Created new file");
 
     const outArgs = makeArgsWithCapability(tmpWt);
     outArgs.target_filepath = "/etc/passwd";
     const outRoot = await executeMorphEdit(outArgs, runtime);
-    expect(outRoot).toContain("outside allowed root");
+    expect(outRoot.text).toContain("outside allowed root");
   });
 
   test("AC2: falls back to runtime directory when capability is absent", async () => {
@@ -2038,7 +2254,7 @@ describe("executeMorphEdit - ADV worktree capability", () => {
     });
 
     const result = await executeMorphEdit(args2, runtime);
-    expect(result).toContain("outside allowed root");
+    expect(result.text).toContain("outside allowed root");
   });
 });
 
@@ -2247,10 +2463,15 @@ describe("dual-entry plugin registration", () => {
     name: string;
     description: string;
     input: Record<string, unknown>;
+    output: Record<string, unknown>;
     execute: (
       args: unknown,
       toolCtx: unknown,
-    ) => Promise<{ content?: Array<{ type: string; text?: string }> }>;
+    ) => Promise<{
+      content?: Array<{ type: string; text?: string }>;
+      output: MorphEditResult;
+      metadata: Record<string, unknown>;
+    }>;
   }
 
   interface CapturedHook {
@@ -2312,7 +2533,7 @@ describe("dual-entry plugin registration", () => {
       | { directory: string }
       | { directories: Record<string, string> }
       | { error: unknown },
-    runtimeOverrides?: Record<string, unknown>,
+    runtimeOverrides?: Partial<ExecuteMorphEditRuntime>,
   ) {
     const plugin = await importPlugin();
     const { ctx, added, hooks, lookups } = makeV2Context(session);
@@ -2320,7 +2541,7 @@ describe("dual-entry plugin registration", () => {
     // tool.hook, session.get) the adapter uses.
     const setup = plugin.setup as unknown as (
       ctx: unknown,
-      options?: { runtimeOverrides?: Record<string, unknown> },
+      options?: { runtimeOverrides?: Partial<ExecuteMorphEditRuntime> },
     ) => Promise<void>;
     await setup(ctx, runtimeOverrides ? { runtimeOverrides } : undefined);
     return { added, hooks, lookups };
@@ -2356,6 +2577,12 @@ describe("dual-entry plugin registration", () => {
     expect(properties.target_filepath).toMatchObject({ type: "string" });
     expect(properties.workdir).toMatchObject({ type: "string" });
     expect(properties.taskId).toMatchObject({ type: "string" });
+    expect(registered.output.required).toEqual([
+      "status",
+      "code",
+      "truncated",
+      "text",
+    ]);
   });
 
   test("V2 morph_edit confines writes to the per-invocation session root", async () => {
@@ -2407,6 +2634,17 @@ describe("dual-entry plugin registration", () => {
       expect(result.content?.[0]?.text).toContain(
         "Created new file: created.ts",
       );
+      expect(result.output).toEqual({
+        status: "success",
+        code: null,
+        truncated: false,
+        text: "Created new file: created.ts\n\nLines: 2",
+      });
+      expect(result.metadata).toEqual({
+        status: "success",
+        code: null,
+        truncated: false,
+      });
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -2537,6 +2775,11 @@ describe("dual-entry plugin registration", () => {
       );
 
       expect(result.content?.[0]?.text).toContain("outside allowed root");
+      expect(result.output).toMatchObject({
+        status: "refused",
+        code: "path_refused",
+        truncated: false,
+      });
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -2559,6 +2802,11 @@ describe("dual-entry plugin registration", () => {
     expect(result.content?.[0]?.text).toContain(
       "could not resolve the session directory",
     );
+    expect(result.output).toMatchObject({
+      status: "error",
+      code: "session_unavailable",
+      truncated: false,
+    });
   });
 
   test("V2 morph_edit rejects malformed arguments at the boundary", async () => {
@@ -2573,6 +2821,11 @@ describe("dual-entry plugin registration", () => {
     expect(result.content?.[0]?.text).toContain(
       "required and must be a string",
     );
+    expect(result.output).toMatchObject({
+      status: "error",
+      code: "invalid_arguments",
+      truncated: false,
+    });
   });
 
   test("V2 execute.after hook attaches branded metadata with shared title formatting", async () => {
@@ -2636,13 +2889,79 @@ describe("dual-entry plugin registration", () => {
     expect(emptyMetadata?.title).toBeUndefined();
   });
 
-  test("V1 server adapter still returns morph_edit hooks from the dual object", async () => {
+  test("V2 hook preserves structured results and truncation metadata", async () => {
+    const { added, hooks } = await setupV2(
+      { directory: "/session-root" },
+      makeMockRuntime({
+        readFile: async () => ({ exists: true, text: "const x = 1;\n" }),
+        callMorphApply: async () => ({
+          success: true,
+          content: "const x = 2;\n",
+        }),
+        generateUnifiedDiff: () => "x".repeat(3001),
+      }),
+    );
+    const result = await added[0].execute(
+      {
+        target_filepath: "x.ts",
+        instructions: "bump x",
+        code_edit: "const x = 2;\n",
+      },
+      { sessionID: "ses_test", agent: "build" },
+    );
+    const input = { tool: "morph_edit", status: "completed", result };
+    hooks[0].handler(input);
+    expect(input.result.output).toMatchObject({
+      status: "success",
+      code: null,
+      truncated: true,
+    });
+    expect(input.result.metadata).toMatchObject({
+      status: "success",
+      code: null,
+      truncated: true,
+      provider: "morph",
+    });
+    expect(input.result.content?.[0]?.text).toContain("... (truncated)");
+  });
+
+  test("V1 exposes stable result metadata alongside readable output", async () => {
     const plugin = await importPlugin();
     const hooks = await plugin.server({
       directory: "/project",
       client: { app: { log: async () => {} } },
     } as unknown as Parameters<typeof plugin.server>[0]);
 
-    expect(hooks.tool?.morph_edit).toBeDefined();
+    const tool = hooks.tool!.morph_edit;
+    const result = await tool.execute(
+      { target_filepath: "x.ts", instructions: "bump x", code_edit: "x" },
+      {
+        agent: "plan",
+      } as Parameters<typeof tool.execute>[1],
+    );
+    expect(typeof result).toBe("object");
+    if (typeof result === "string")
+      throw new Error("Missing structured result metadata");
+    expect(result.metadata).toEqual({
+      status: "refused",
+      code: "readonly_agent",
+      truncated: false,
+    });
+    expect(result.output).toContain("not available in plan mode");
+    const output = {
+      title: "morph_edit",
+      output: result.output,
+      metadata: result.metadata!,
+    };
+    await hooks["tool.execute.after"]!(
+      { tool: "morph_edit", sessionID: "ses_test", callID: "call", args: {} },
+      output,
+    );
+    expect(output.metadata).toMatchObject({
+      status: "refused",
+      code: "readonly_agent",
+      truncated: false,
+      provider: "morph",
+    });
   });
 });
