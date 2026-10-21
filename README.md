@@ -68,7 +68,7 @@ instead. Use `plugins` on V2 and `plugin` on V1:
   "instructions": [
     "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
   ],
-  "plugins": ["github:JRedeker/opencode-morph-fast-apply"]
+  "plugins": ["github:JRedeker/opencode-morph-fast-apply#v1.12.0"]
 }
 ```
 
@@ -77,7 +77,7 @@ instead. Use `plugins` on V2 and `plugin` on V1:
   "instructions": [
     "~/.config/opencode/node_modules/opencode-morph-fast-apply/instructions/morph-tools.md"
   ],
-  "plugin": ["github:JRedeker/opencode-morph-fast-apply"]
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.12.0"]
 }
 ```
 

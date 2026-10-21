@@ -120,6 +120,7 @@ describe("release metadata consistency", () => {
 
     expect(version).toBe(EXPECTED_VERSION);
     expect(readme).toContain(`#v${version}`);
+    expect(readme).not.toContain('"github:JRedeker/opencode-morph-fast-apply"');
     // Guard against the previous release pin lingering in the install example.
     expect(readme).not.toContain("#v1.10.1");
   });
