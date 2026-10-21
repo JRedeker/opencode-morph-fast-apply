@@ -63,7 +63,7 @@ describe("packaged tool-selection instructions", () => {
     const content = readFileSync(join(import.meta.dir, "README.md"), "utf-8");
 
     expect(content).not.toContain("#v1.10.1");
-    expect(content).toContain("#v1.11.0");
+    expect(content).toContain("#v1.12.0");
     expect(content).toContain("Path confinement");
     expect(content).toContain("Secret scrubbing");
     expect(content).toContain("Dropped imports guard");
@@ -85,7 +85,7 @@ describe("release metadata consistency", () => {
   // the tag-release workflow (`gh release create --notes-file` fed by the
   // `## [version]` body) ships correct, non-empty notes. Pin the expected
   // version explicitly so a stale or partial bump fails loudly (SC4/SC5).
-  const EXPECTED_VERSION = "1.11.0";
+  const EXPECTED_VERSION = "1.12.0";
 
   const readSurface = (relativePath: string) =>
     readFileSync(join(import.meta.dir, relativePath), "utf-8");

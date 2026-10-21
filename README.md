@@ -38,27 +38,18 @@ OpenCode V2 (2.x) reads the plural `plugins` key. Add to your global config (`~/
 ```json
 {
   "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
-  "plugins": ["github:JRedeker/opencode-morph-fast-apply"]
+  "plugins": ["github:JRedeker/opencode-morph-fast-apply#v1.12.0"]
 }
 ```
 
-Pin only a release that contains the V2 entrypoint. Version `v1.11.0` contains
-the V1-only entrypoint and cannot load on V2.
+Version `v1.12.0` supports both OpenCode V2 and V1 1.18.29+.
 
 OpenCode V1 (1.18.29+) reads the singular `plugin` key. Do not use `plugin` on V2 — V2 ignores it and the plugin will not load:
 
 ```json
 {
   "instructions": ["~/.config/opencode/instructions/morph-tools.md"],
-  "plugin": ["github:JRedeker/opencode-morph-fast-apply"]
-}
-```
-
-To keep the existing V1 release on OpenCode V1, pin its tag:
-
-```json
-{
-  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.11.0"]
+  "plugin": ["github:JRedeker/opencode-morph-fast-apply#v1.12.0"]
 }
 ```
 

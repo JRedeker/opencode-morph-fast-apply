@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-21
+
+### Added
+
+- **OpenCode V2 support**: Registers `morph_edit` through the V2 plugin API and resolves the invoking session directory for every edit. The dual-entry plugin also supports OpenCode V1 1.18.29+; older V1 loaders are unsupported.
+- **Structured edit outcomes**: Execution returns `status`, `code`, `truncated`, and readable `text`. V1 exposes machine fields in metadata; V2 exposes schema-declared output and metadata. API failure codes survive transport, and the truncation flag identifies shortened diff output without shortening file writes.
+
+### Fixed
+
+- **Creation write errors**: File creation failures report `write_failed` rather than a read failure. File I/O errors are scrubbed before returning them.
+
 ## [1.11.0] - 2026-07-24
 
 ### Added
