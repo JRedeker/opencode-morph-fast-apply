@@ -939,6 +939,7 @@ describe("findDroppedIdentifiers", () => {
 import { resolveTargetPath } from "./src/path-confinement.js";
 import { tmpdir } from "node:os";
 import {
+  existsSync,
   mkdtempSync,
   writeFileSync,
   symlinkSync,
@@ -1033,6 +1034,82 @@ describe("resolveTargetPath", () => {
     if ("error" in result) {
       expect(result.error).toContain("outside");
     }
+  });
+
+  test("dangling symlink refuses before a new-file write outside root", async () => {
+    const outside = join(tmpDir, "outside");
+    mkdirSync(outside);
+    const escaped = join(outside, "escaped.ts");
+    symlinkSync("../outside/escaped.ts", join(root, "link.ts"));
+    let writes = 0;
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "link.ts",
+        instructions: "create file",
+        code_edit: "export const value = 1;\n",
+      },
+      makeMockRuntime({
+        directory: root,
+        resolveTargetPath,
+        writeFile: async (filepath, content) => {
+          writes++;
+          await Bun.write(filepath, content);
+        },
+      }),
+    );
+    expect(existsSync(escaped)).toBe(false);
+    expect(result).toMatchObject({ status: "refused", code: "path_refused" });
+    expect(writes).toBe(0);
+  });
+
+  test.each([undefined, false, true])(
+    "unresolvable symlinks fail closed with targetExists=%s",
+    (targetExists) => {
+      symlinkSync("../outside/missing", join(root, "dangling"));
+      symlinkSync("dangling", join(root, "chain"));
+      symlinkSync("loop", join(root, "loop"));
+      for (const target of [
+        "dangling",
+        "dangling/new/file.ts",
+        "chain",
+        "chain/new/file.ts",
+        "loop",
+        "loop/file.ts",
+      ]) {
+        expect(
+          "error" in resolveTargetPath(target, root, { targetExists }),
+        ).toBe(true);
+      }
+    },
+  );
+
+  test("an asserted existing target that cannot be resolved fails closed", () => {
+    expect(
+      "error" in resolveTargetPath("missing.ts", root, { targetExists: true }),
+    ).toBe(true);
+  });
+
+  test("new nested parents inside root can still be created", async () => {
+    mkdirSync(join(root, "real"));
+    symlinkSync("real", join(root, "link-in"));
+    const result = await executeMorphEdit(
+      {
+        target_filepath: "link-in/new/deep/file.ts",
+        instructions: "create file",
+        code_edit: "export const value = 1;\n",
+      },
+      makeMockRuntime({
+        directory: root,
+        resolveTargetPath,
+        writeFile: async (filepath, content) => {
+          await Bun.write(filepath, content);
+        },
+      }),
+    );
+    expect(result.status).toBe("success");
+    expect(await Bun.file(join(root, "real/new/deep/file.ts")).text()).toBe(
+      "export const value = 1;\n",
+    );
   });
 
   test("existing target allows symlink inside root", () => {

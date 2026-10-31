@@ -1,4 +1,4 @@
-import { existsSync, realpathSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import * as path from "node:path";
 
 export interface ResolveResult {
@@ -26,23 +26,15 @@ function isContained(resolved: string, root: string): boolean {
   );
 }
 
-/**
- * Find the nearest existing ancestor directory of `targetPath`.
- * Returns the path itself if it exists.
- */
+/** Find the nearest filesystem entry, including a dangling symlink. */
 function findNearestExistingParent(targetPath: string): string | null {
   let current = targetPath;
-  while (current !== path.dirname(current)) {
-    if (existsSync(current)) {
-      return current;
-    }
-    current = path.dirname(current);
+  while (true) {
+    if (lstatSync(current, { throwIfNoEntry: false })) return current;
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
   }
-  // Check root itself
-  if (existsSync(current)) {
-    return current;
-  }
-  return null;
 }
 
 /**
@@ -78,46 +70,32 @@ export function resolveTargetPath(
 
   const targetExists = options?.targetExists ?? false;
 
-  if (targetExists) {
-    // Existing target: follow symlinks on the target itself
-    try {
-      const canonical = realpathSync(resolved);
-      if (!isContained(canonical, normalizedRoot)) {
-        return {
-          error: `Path resolves outside allowed root via symlink: ${targetPath}`,
-        };
-      }
-      return { path: canonical };
-    } catch {
-      // If realpath fails, fall back to the resolved path (already checked)
-      return { path: resolved };
+  try {
+    const parent = targetExists
+      ? resolved
+      : findNearestExistingParent(resolved);
+    if (!parent) {
+      return {
+        error: `Cannot resolve path inside allowed root: ${targetPath}`,
+      };
     }
-  } else {
-    // New target: find nearest existing parent and follow symlinks on it
-    const parent = findNearestExistingParent(resolved);
-    if (parent) {
-      try {
-        const canonicalParent = realpathSync(parent);
-        if (!isContained(canonicalParent, normalizedRoot)) {
-          return {
-            error: `Nearest existing parent resolves outside allowed root via symlink: ${targetPath}`,
-          };
-        }
-        // Reconstruct the path using the canonical parent to ensure consistency
-        const relativeFromParent = path.relative(parent, resolved);
-        const effectivePath = path.resolve(canonicalParent, relativeFromParent);
-        if (!isContained(effectivePath, normalizedRoot)) {
-          return {
-            error: `Effective path resolves outside allowed root via symlink: ${targetPath}`,
-          };
-        }
-        return { path: effectivePath };
-      } catch {
-        // If realpath fails, fall back to resolved path (already checked)
-        return { path: resolved };
-      }
+    const canonicalParent = realpathSync(parent);
+    if (!isContained(canonicalParent, normalizedRoot)) {
+      return {
+        error: `Path resolves outside allowed root via symlink: ${targetPath}`,
+      };
     }
-    // No existing parent found (unlikely for valid roots), fall back
-    return { path: resolved };
+    const effectivePath = path.resolve(
+      canonicalParent,
+      path.relative(parent, resolved),
+    );
+    if (!isContained(effectivePath, normalizedRoot)) {
+      return {
+        error: `Effective path resolves outside allowed root via symlink: ${targetPath}`,
+      };
+    }
+    return { path: effectivePath };
+  } catch {
+    return { error: `Cannot resolve path inside allowed root: ${targetPath}` };
   }
 }
