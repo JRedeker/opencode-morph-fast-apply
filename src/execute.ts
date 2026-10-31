@@ -64,7 +64,6 @@ export interface ExecuteMorphEditRuntime {
     options?: { targetExists?: boolean },
   ) => ResolveTargetPathResult;
   normalizeCodeEditInput: (codeEdit: string) => string;
-  readCapabilityRoot: (args: unknown) => string | null;
   findDroppedIdentifiers: (
     originalCode: string,
     mergedCode: string,
@@ -92,17 +91,8 @@ export type ParsedMorphEditArgs =
 /**
  * Validate raw morph_edit arguments before the execution law runs.
  *
- * OpenCode V2 registers morph_edit with a JSON Schema, so its execute()
- * receives untyped arguments. This boundary check recognizes the input once,
- * next to the shared V1/V2 execution law, instead of trusting the schema
- * declaration alone.
- *
- * On success the validated raw object is returned unchanged: the ADV
- * worktree capability is attached non-enumerably (symbol key) to the
- * caller's argument object, so any rebuilt copy would drop it before
- * readCapabilityRoot can see it. Extra validated properties (workdir,
- * taskId) are inert; the execution law reads only the three required
- * fields plus the capability symbol.
+ * Both adapters check received input here instead of trusting their host's
+ * schema validation alone.
  */
 export function parseMorphEditArgs(raw: unknown): ParsedMorphEditArgs {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -113,20 +103,19 @@ export function parseMorphEditArgs(raw: unknown): ParsedMorphEditArgs {
     };
   }
   const record = raw as Record<string, unknown>;
+  for (const key of ["workdir", "taskId"] as const) {
+    if (key in record) {
+      return {
+        ok: false,
+        error: `morph_edit does not support '${key}' or selecting another root. No file was modified. Use native 'edit' or 'apply_patch' with the absolute target path only when that tool is exposed and permitted for the target. Do not retry a refused absolute target as a relative path.`,
+      };
+    }
+  }
   for (const key of ["target_filepath", "instructions", "code_edit"] as const) {
     if (typeof record[key] !== "string") {
       return {
         ok: false,
         error: `morph_edit argument '${key}' is required and must be a string`,
-      };
-    }
-  }
-  for (const key of ["workdir", "taskId"] as const) {
-    const value = record[key];
-    if (value !== undefined && typeof value !== "string") {
-      return {
-        ok: false,
-        error: `morph_edit argument '${key}' must be a string`,
       };
     }
   }
@@ -156,7 +145,6 @@ export async function executeMorphEdit(
     callMorphApply,
     resolveTargetPath,
     normalizeCodeEditInput,
-    readCapabilityRoot,
     findDroppedIdentifiers,
     generateUnifiedDiff,
     countChanges,
@@ -187,11 +175,7 @@ export async function executeMorphEdit(
   }
 
   // Resolve and confine target path to allowed root
-  const root =
-    readCapabilityRoot(args) ??
-    context.worktree ??
-    context.directory ??
-    directory;
+  const root = context.worktree ?? context.directory ?? directory;
   const resolved = resolveTargetPath(target_filepath, root);
   if ("error" in resolved) {
     await log("warn", `Blocked morph_edit: ${resolved.error}`);
@@ -199,7 +183,7 @@ export async function executeMorphEdit(
       status: "refused",
       code: "path_refused",
       truncated: false,
-      text: `Error: ${resolved.error}`,
+      text: `Error: ${resolved.error}\n\nAllowed root: ${root}\nNo file was modified. Use native 'edit' or 'apply_patch' with the absolute target path only when that tool is exposed and permitted for the target. Do not retry a refused absolute target as a relative path: it may name a different file inside the session root.`,
     };
   }
   const filepath = resolved.path;
