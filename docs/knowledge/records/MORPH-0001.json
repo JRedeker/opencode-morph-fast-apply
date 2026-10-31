@@ -20,9 +20,9 @@
     "project_ids": [],
     "tag_ids": []
   },
-  "sha256": "sha256:bd45ce911ac219ed90bc134eff9176c8080f7145abd20fe413753f355f316c83",
+  "sha256": "sha256:9acfc2b0d4e1412483efd2d1a8f11f2ebf4dff17a279338616417ff3146d7b44",
   "status": "accepted",
-  "summary": "The tool confines edits to the invoking session or a validated ADV worktree, blocks read-only agents by default, and refuses unsafe merge results before any write.",
+  "summary": "The tool confines edits to the invoking session's allowed root, rejects root-selection arguments, names permitted native recovery on root refusal, blocks read-only agents by default, and refuses unsafe merge results before any write.",
   "tags": [
     "editing",
     "safety",

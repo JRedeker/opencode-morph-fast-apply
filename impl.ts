@@ -29,7 +29,6 @@ import {
   type ExecuteMorphEditRuntime,
   type MorphEditResult,
 } from "./src/execute.js";
-import { readCapabilityRoot } from "./src/adv-capability.js";
 
 /**
  * Stable failure-kind classification for API/guard/write failures.
@@ -87,16 +86,17 @@ const FIELD_DESCRIPTIONS = {
     "Brief first-person description of what you're changing. Used to disambiguate uncertainty in the edit.",
   code_edit:
     'The code changes wrapped with "// ... existing code ..." markers for unchanged sections',
-  workdir:
-    "ADV worktree root. Pass with taskId to edit ADV per-change worktrees; ADV validates both against the task's worktree. Omit for session-repo edits.",
-  taskId:
-    "ADV task ID. Pass with workdir to edit ADV per-change worktrees; ADV validates both. Omit for session-repo edits.",
 } as const;
 
 /**
  * Shared morph_edit tool description (V1 tool + V2 registration).
  */
 const MORPH_EDIT_DESCRIPTION = `Edit existing files using partial code snippets with "// ... existing code ..." markers. Morph's AI merges your changes into the full file.
+
+ROOT BOUNDARY:
+- Targets must stay inside the invoking session's allowed root; arguments cannot select another root.
+- If a target is refused, use native 'edit' or 'apply_patch' with the absolute target path only when that tool is exposed and permitted for the target.
+- Do not retry a refused absolute target as a relative path: it may name a different file inside the session root.
 
 WHEN TO USE morph_edit vs edit:
 - morph_edit: large files (300+ lines), multiple scattered changes, complex refactoring, whitespace-sensitive edits
@@ -433,18 +433,20 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
           code_edit: tool.schema
             .string()
             .describe(FIELD_DESCRIPTIONS.code_edit),
-          workdir: tool.schema
-            .string()
-            .optional()
-            .describe(FIELD_DESCRIPTIONS.workdir),
-          taskId: tool.schema
-            .string()
-            .optional()
-            .describe(FIELD_DESCRIPTIONS.taskId),
         },
 
         async execute(args, context) {
-          const result = await executeMorphEdit(args, {
+          const parsed = parseMorphEditArgs(args);
+          if (!parsed.ok) {
+            const result: MorphEditResult = {
+              status: "error",
+              code: "invalid_arguments",
+              truncated: false,
+              text: `Error: ${parsed.error}`,
+            };
+            return { output: result.text, metadata: resultMetadata(result) };
+          }
+          const result = await executeMorphEdit(parsed.args, {
             log,
             directory,
             context,
@@ -463,7 +465,6 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
             callMorphApply,
             resolveTargetPath,
             normalizeCodeEditInput,
-            readCapabilityRoot,
             findDroppedIdentifiers,
             generateUnifiedDiff,
             countChanges,
@@ -551,14 +552,6 @@ export async function setupMorphEditV2(
             type: "string",
             description: FIELD_DESCRIPTIONS.code_edit,
           },
-          workdir: {
-            type: "string",
-            description: FIELD_DESCRIPTIONS.workdir,
-          },
-          taskId: {
-            type: "string",
-            description: FIELD_DESCRIPTIONS.taskId,
-          },
         },
         required: ["target_filepath", "instructions", "code_edit"],
       },
@@ -627,7 +620,6 @@ export async function setupMorphEditV2(
           callMorphApply,
           resolveTargetPath,
           normalizeCodeEditInput,
-          readCapabilityRoot,
           findDroppedIdentifiers,
           generateUnifiedDiff,
           countChanges,

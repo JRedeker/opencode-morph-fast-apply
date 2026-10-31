@@ -17,10 +17,6 @@ import {
 } from "./src/execute.js";
 import { generateUnifiedDiff, countChanges } from "./src/diff.js";
 import { callMorphApply, scrubSecrets } from "./impl.js";
-import {
-  ADV_MORPH_WORKTREE_CAPABILITY,
-  readCapabilityRoot,
-} from "./src/adv-capability.js";
 
 describe("EXISTING_CODE_MARKER", () => {
   test("is the canonical marker string", () => {
@@ -1126,7 +1122,6 @@ function makeMockRuntime(
       path: join(root, targetPath),
     }),
     normalizeCodeEditInput: (s) => normalizeCodeEditInput(s),
-    readCapabilityRoot: (args) => readCapabilityRoot(args),
     findDroppedIdentifiers: (orig, merged, fp) =>
       findDroppedIdentifiers(orig, merged, fp),
     generateUnifiedDiff: (fp, orig, mod) => generateUnifiedDiff(fp, orig, mod),
@@ -2091,176 +2086,8 @@ describe("executeMorphEdit - API failure kind propagation", () => {
   });
 });
 
-describe("readCapabilityRoot", () => {
-  test("returns normalized root for valid capability", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: "/abs/wt" };
-    expect(readCapabilityRoot(args)).toBe("/abs/wt");
-  });
-
-  test("returns null when symbol is absent", () => {
-    expect(readCapabilityRoot({})).toBeNull();
-  });
-
-  test("returns null when capability is not an object", () => {
-    const args1: Record<symbol, unknown> = {};
-    args1[ADV_MORPH_WORKTREE_CAPABILITY] = "not-an-object";
-    expect(readCapabilityRoot(args1)).toBeNull();
-
-    const args2: Record<symbol, unknown> = {};
-    args2[ADV_MORPH_WORKTREE_CAPABILITY] = 42;
-    expect(readCapabilityRoot(args2)).toBeNull();
-
-    const args3: Record<symbol, unknown> = {};
-    args3[ADV_MORPH_WORKTREE_CAPABILITY] = null;
-    expect(readCapabilityRoot(args3)).toBeNull();
-  });
-
-  test("returns null when root is missing", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = {};
-    expect(readCapabilityRoot(args)).toBeNull();
-  });
-
-  test("returns null when root is not a string", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: 42 };
-    expect(readCapabilityRoot(args)).toBeNull();
-  });
-
-  test("returns null when root is relative", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: "rel/path" };
-    expect(readCapabilityRoot(args)).toBeNull();
-  });
-
-  test("returns null when root is empty", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: "" };
-    expect(readCapabilityRoot(args)).toBeNull();
-  });
-
-  test("fails closed when capability root accessor throws", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = {
-      get root(): never {
-        throw new Error("malformed capability");
-      },
-    };
-    expect(readCapabilityRoot(args)).toBeNull();
-  });
-
-  test("normalizes path with dot segments and trailing slash", () => {
-    const args: Record<symbol, unknown> = {};
-    args[ADV_MORPH_WORKTREE_CAPABILITY] = { root: "/abs/wt/../other/" };
-    expect(readCapabilityRoot(args)).toBe("/abs/other");
-  });
-});
-
-describe("executeMorphEdit - ADV worktree capability", () => {
-  function makeArgsWithCapability(root: string): ExecuteMorphEditArgs {
-    const args: ExecuteMorphEditArgs = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(args, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: { root },
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
-    return args;
-  }
-
-  test("AC1: confines to capability root when present and valid", async () => {
-    const tmpWt = mkdtempSync(join(tmpdir(), "morph-cap-"));
-    const args = makeArgsWithCapability(tmpWt);
-
-    const runtime = makeMockRuntime({
-      directory: "/some-other-project",
-      resolveTargetPath,
-      callMorphApply: async () => ({
-        success: true,
-        content: "const bar = 1;\n",
-      }),
-    });
-
-    const inRoot = await executeMorphEdit(args, runtime);
-    expect(inRoot.text).toContain("Created new file");
-
-    const outArgs = makeArgsWithCapability(tmpWt);
-    outArgs.target_filepath = "/etc/passwd";
-    const outRoot = await executeMorphEdit(outArgs, runtime);
-    expect(outRoot.text).toContain("outside allowed root");
-  });
-
-  test("AC2: falls back to runtime directory when capability is absent", async () => {
-    const capturedRoots: string[] = [];
-    const runtime = makeMockRuntime({
-      directory: "/project",
-      resolveTargetPath: (targetPath, root, options?) => {
-        capturedRoots.push(root);
-        return resolveTargetPath(targetPath, root, options);
-      },
-    });
-
-    await executeMorphEdit(
-      {
-        target_filepath: "src/foo.ts",
-        instructions: "add bar",
-        code_edit: "const bar = 1;\n",
-      },
-      runtime,
-    );
-
-    expect(capturedRoots).toContain("/project");
-  });
-
-  test("AC3: malformed capability falls back to session directory", async () => {
-    const capturedRoots: string[] = [];
-    const runtime = makeMockRuntime({
-      directory: "/project",
-      resolveTargetPath: (targetPath, root, options?) => {
-        capturedRoots.push(root);
-        return resolveTargetPath(targetPath, root, options);
-      },
-    });
-
-    const args: ExecuteMorphEditArgs = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(args, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: { root: "rel/path" },
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
-
-    await executeMorphEdit(args, runtime);
-    expect(capturedRoots).toContain("/project");
-
-    const args2: ExecuteMorphEditArgs = {
-      target_filepath: "/etc/passwd",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(args2, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: "not-an-object",
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
-
-    const result = await executeMorphEdit(args2, runtime);
-    expect(result.text).toContain("outside allowed root");
-  });
-});
-
-describe("morph_edit tool args - ADV workdir/taskId", () => {
-  test("schema exposes workdir and taskId optional args and plugin loads", async () => {
+describe("morph_edit tool args - session root", () => {
+  test("schema exposes only the three editing inputs and plugin loads", async () => {
     // The default export is the dual plugin object `{ id, setup, server }`;
     // the V1 hooks come from the `server` adapter.
     const mod = await import("./impl.js");
@@ -2277,99 +2104,96 @@ describe("morph_edit tool args - ADV workdir/taskId", () => {
     expect(args.target_filepath).toBeDefined();
     expect(args.instructions).toBeDefined();
     expect(args.code_edit).toBeDefined();
-    expect(args.workdir).toBeDefined();
-    expect(args.taskId).toBeDefined();
-    // Full schema validity (optional string fields, accepted with/without) is
-    // covered by `bun run typecheck` against the plugin's `tool()` API.
+    expect(Object.keys(args).sort()).toEqual([
+      "code_edit",
+      "instructions",
+      "target_filepath",
+    ]);
   });
 });
 
-describe("executeMorphEdit - concurrency & runtime guard", () => {
-  function makeArgsWithCapability(root: string): ExecuteMorphEditArgs {
-    const args: ExecuteMorphEditArgs = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(args, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: { root },
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
-    return args;
-  }
+describe("executeMorphEdit - session roots & concurrency", () => {
+  const args: ExecuteMorphEditArgs = {
+    target_filepath: "src/foo.ts",
+    instructions: "add bar",
+    code_edit: "const bar = 1;\n",
+  };
 
-  test("AC5: independent capability roots per concurrent call", async () => {
+  test.each([
+    [
+      { agent: "build", worktree: "/worktree", directory: "/session" },
+      "/worktree",
+    ],
+    [{ agent: "build", directory: "/session" }, "/session"],
+    [{ agent: "build" }, "/project"],
+  ] as const)(
+    "selects the existing root for %j",
+    async (context, expectedRoot) => {
+      const roots: string[] = [];
+      await executeMorphEdit(
+        args,
+        makeMockRuntime({
+          context,
+          resolveTargetPath: (targetPath, root) => {
+            roots.push(root);
+            return { path: join(root, targetPath) };
+          },
+        }),
+      );
+      expect(roots).toEqual([expectedRoot]);
+    },
+  );
+
+  test("independent session roots per concurrent call", async () => {
     const capturedRoots: string[] = [];
     const runtime = makeMockRuntime({
       directory: "/project",
-      resolveTargetPath: (targetPath, root, options?) => {
-        capturedRoots.push(root);
-        return resolveTargetPath(targetPath, root, options);
-      },
-    });
-
-    await Promise.all([
-      executeMorphEdit(makeArgsWithCapability("/wt-a"), runtime),
-      executeMorphEdit(makeArgsWithCapability("/wt-b"), runtime),
-    ]);
-
-    expect(capturedRoots).toContain("/wt-a");
-    expect(capturedRoots).toContain("/wt-b");
-  });
-
-  test("AC6 Tier 1: non-enumerable symbol survives execute reference passing but not shallow clone", async () => {
-    const args: ExecuteMorphEditArgs = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(args, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: { root: "/x" },
-      enumerable: false,
-      configurable: false,
-      writable: false,
-    });
-
-    const capturedRoots: string[] = [];
-    const runtime = makeMockRuntime({
       resolveTargetPath: (targetPath, root) => {
         capturedRoots.push(root);
         return { path: join(root, targetPath) };
       },
     });
 
-    await executeMorphEdit(args, runtime);
-    expect(capturedRoots).toEqual(["/x"]);
-    expect(readCapabilityRoot({ ...args })).toBeNull();
-    expect(readCapabilityRoot(Object.assign({}, args))).toBeNull();
-  });
+    await Promise.all([
+      executeMorphEdit(args, {
+        ...runtime,
+        context: { agent: "build", worktree: "/wt-a" },
+      }),
+      executeMorphEdit(args, {
+        ...runtime,
+        context: { agent: "build", directory: "/wt-b" },
+      }),
+    ]);
 
-  test.skip("AC6 Tier 2: manual upgrade verification against installed opencode binary", () => {
-    // This test is intentionally skipped in automated CI because it requires
-    // the full OpenCode binary + two-plugin before-hook→execute harness. The
-    // dispatcher is a compiled binary and AI-mediated tool invocation, so a
-    // deterministic end-to-end regression test is infeasible here.
-    //
-    // Manual verification procedure:
-    // 1. Build/install this plugin version into an OpenCode workspace.
-    // 2. Install the companion ADV plugin that attaches
-    //    ADV_MORPH_WORKTREE_CAPABILITY before invoking morph_edit.
-    // 3. Create an ADV-managed worktree for a change.
-    // 4. From the ADV orchestrator, dispatch a morph_edit call targeting a
-    //    file inside the worktree, then a second call targeting a file outside
-    //    the worktree (e.g. /etc/passwd or the trunk checkout).
-    // 5. Verify the first call succeeds and writes inside the worktree, and the
-    //    second call is rejected with "outside allowed root".
-    // 6. Verify that Object.defineProperty(..., enumerable:false) is the only
-    //    path used to attach the capability; shallow clones/spreads drop it.
+    expect(capturedRoots).toContain("/wt-a");
+    expect(capturedRoots).toContain("/wt-b");
   });
 });
 
-/* ── parseMorphEditArgs (V2 boundary check) ── */
+/* ── parseMorphEditArgs (shared adapter boundary check) ── */
 
 describe("parseMorphEditArgs", () => {
+  test.each(["workdir", "taskId"])(
+    "rejects received %s by presence, including undefined",
+    (key) => {
+      for (const value of [undefined, null, "", "/other", 42, false, {}]) {
+        const parsed = parseMorphEditArgs({
+          target_filepath: "file.ts",
+          instructions: "create file",
+          code_edit: "content",
+          [key]: value,
+        });
+        expect(parsed.ok).toBe(false);
+        if (!parsed.ok) {
+          expect(parsed.error).toContain(key);
+          expect(parsed.error).toContain("native 'edit'");
+          expect(parsed.error).toContain("apply_patch");
+          expect(parsed.error).toContain("permitted");
+        }
+      }
+    },
+  );
+
   test("accepts the three required string args", () => {
     const parsed = parseMorphEditArgs({
       target_filepath: "src/foo.ts",
@@ -2407,53 +2231,6 @@ describe("parseMorphEditArgs", () => {
       code_edit: "const bar = 1;\n",
     });
     expect(nonString.ok).toBe(false);
-  });
-
-  test("rejects non-string optional args", () => {
-    const parsed = parseMorphEditArgs({
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-      workdir: 42,
-    });
-    expect(parsed.ok).toBe(false);
-  });
-
-  test("retains the validated raw argument object", () => {
-    const raw = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-      workdir: "/wt",
-      taskId: "tk-1",
-    };
-    const parsed = parseMorphEditArgs(raw);
-    expect(parsed.ok).toBe(true);
-    if (parsed.ok) {
-      // The ADV capability is attached non-enumerably to the caller's object,
-      // so a rebuilt copy would drop it: the parser must validate in place
-      // and return the raw object itself.
-      expect(parsed.args).toBe(raw);
-    }
-  });
-
-  test("preserves a non-enumerable capability for readCapabilityRoot", () => {
-    const raw = {
-      target_filepath: "src/foo.ts",
-      instructions: "add bar",
-      code_edit: "const bar = 1;\n",
-    };
-    Object.defineProperty(raw, ADV_MORPH_WORKTREE_CAPABILITY, {
-      value: { root: "/wt" },
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    });
-    const parsed = parseMorphEditArgs(raw);
-    expect(parsed.ok).toBe(true);
-    if (parsed.ok) {
-      expect(readCapabilityRoot(parsed.args)).toBe("/wt");
-    }
   });
 });
 
@@ -2529,6 +2306,79 @@ describe("dual-entry plugin registration", () => {
 
   const importPlugin = async () => (await import("./index.js")).default;
 
+  test("V1 root refusal names the effective root and permitted native recovery", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "morph-v1-root-"));
+    try {
+      const sessionRoot = join(tmp, "session");
+      const otherRoot = join(tmp, "other");
+      mkdirSync(sessionRoot);
+      mkdirSync(otherRoot);
+      const plugin = await importPlugin();
+      const hooks = await plugin.server({
+        directory: otherRoot,
+        client: { app: { log: async () => {} } },
+      } as unknown as Parameters<typeof plugin.server>[0]);
+      const tool = hooks.tool!.morph_edit;
+      const result = await tool.execute(
+        {
+          target_filepath: join(otherRoot, "file.ts"),
+          instructions: "create file",
+          code_edit: "content",
+        },
+        {
+          agent: "build",
+          worktree: sessionRoot,
+          directory: otherRoot,
+        } as Parameters<typeof tool.execute>[1],
+      );
+      expect(result).toMatchObject({
+        metadata: { status: "refused", code: "path_refused", truncated: false },
+      });
+      if (typeof result === "string")
+        throw new Error("Missing result metadata");
+      expect(result.output).toContain(`Allowed root: ${sessionRoot}`);
+      expect(result.output).toContain("native 'edit'");
+      expect(result.output).toContain("apply_patch");
+      expect(result.output).toContain("exposed and permitted");
+      expect(result.output).toContain("Do not retry");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test.each(["workdir", "taskId"])(
+    "V1 rejects received %s before entering execution",
+    async (key) => {
+      const plugin = await importPlugin();
+      const hooks = await plugin.server({
+        directory: "/project",
+        client: { app: { log: async () => {} } },
+      } as unknown as Parameters<typeof plugin.server>[0]);
+      const tool = hooks.tool!.morph_edit;
+      const result = await tool.execute(
+        {
+          target_filepath: "file.ts",
+          instructions: "create file",
+          code_edit: "content",
+          [key]: undefined,
+        },
+        {
+          get agent(): never {
+            throw new Error("execution reached context");
+          },
+        } as unknown as Parameters<typeof tool.execute>[1],
+      );
+      expect(result).toMatchObject({
+        output: expect.stringContaining("native 'edit'"),
+        metadata: {
+          status: "error",
+          code: "invalid_arguments",
+          truncated: false,
+        },
+      });
+    },
+  );
+
   async function setupV2(
     session:
       | { directory: string }
@@ -2576,8 +2426,11 @@ describe("dual-entry plugin registration", () => {
       { type: string }
     >;
     expect(properties.target_filepath).toMatchObject({ type: "string" });
-    expect(properties.workdir).toMatchObject({ type: "string" });
-    expect(properties.taskId).toMatchObject({ type: "string" });
+    expect(Object.keys(properties).sort()).toEqual([
+      "code_edit",
+      "instructions",
+      "target_filepath",
+    ]);
     expect(registered.output.required).toEqual([
       "status",
       "code",
@@ -2698,7 +2551,7 @@ describe("dual-entry plugin registration", () => {
     }
   });
 
-  test("V2 morph_edit honors the ADV worktree capability root from raw args", async () => {
+  test("V2 morph_edit ignores a retired capability root from raw args", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "morph-v2-"));
     try {
       const sessionRoot = join(tmp, "session");
@@ -2729,22 +2582,21 @@ describe("dual-entry plugin registration", () => {
         },
       );
 
-      // ADV attaches the capability non-enumerably after validating
-      // workdir+taskId; spreads and clones drop it, so the boundary parser
-      // must retain the validated raw argument object for the execution law.
       const rawArgs: Record<string, unknown> = {
         target_filepath: "file.ts",
         instructions: "bump x",
         code_edit: `${EXISTING_CODE_MARKER}\nconst x = 2;\n`,
-        workdir: worktreeRoot,
-        taskId: "tk-1",
       };
-      Object.defineProperty(rawArgs, ADV_MORPH_WORKTREE_CAPABILITY, {
-        value: { root: worktreeRoot },
-        enumerable: false,
-        writable: false,
-        configurable: false,
-      });
+      Object.defineProperty(
+        rawArgs,
+        Symbol.for("advance.morph-worktree-capability.v1"),
+        {
+          value: { root: worktreeRoot },
+          enumerable: false,
+          writable: false,
+          configurable: false,
+        },
+      );
 
       const result = await added[0].execute(rawArgs, {
         sessionID: "ses_test",
@@ -2753,10 +2605,8 @@ describe("dual-entry plugin registration", () => {
         id: "call",
       });
 
-      // The write landed inside the validated ADV worktree, not the session
-      // directory the (capability-less) parser would otherwise fall back to.
       expect(written).toHaveLength(1);
-      expect(written[0].path).toBe(join(worktreeRoot, "file.ts"));
+      expect(written[0].path).toBe(join(sessionRoot, "file.ts"));
       expect(result.content?.[0]?.text).toContain("Applied edit to file.ts");
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -2828,6 +2678,44 @@ describe("dual-entry plugin registration", () => {
       truncated: false,
     });
   });
+
+  test.each(["workdir", "taskId"])(
+    "V2 rejects received %s before session lookup or I/O",
+    async (key) => {
+      let io = 0;
+      const { added, lookups } = await setupV2(
+        { directory: "/project" },
+        {
+          readFile: async () => {
+            io++;
+            return { exists: false, text: "" };
+          },
+          writeFile: async () => {
+            io++;
+          },
+          callMorphApply: async () => {
+            io++;
+            return { success: false };
+          },
+        },
+      );
+      const result = await added[0].execute(
+        {
+          target_filepath: "file.ts",
+          instructions: "create file",
+          code_edit: "content",
+          [key]: undefined,
+        },
+        { sessionID: "ses_test", agent: "build" },
+      );
+      expect(result.output).toMatchObject({
+        status: "error",
+        code: "invalid_arguments",
+      });
+      expect(lookups).toEqual([]);
+      expect(io).toBe(0);
+    },
+  );
 
   test("V2 execute.after hook attaches branded metadata with shared title formatting", async () => {
     const { hooks } = await setupV2({ directory: "/session-root" });

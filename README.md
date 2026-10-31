@@ -195,10 +195,10 @@ The plugin blocks unsafe Morph responses before writing files:
 - **Marker leakage guard**: If merged output contains `// ... existing code ...` but the original file did not, the write is aborted.
 - **Catastrophic truncation guard**: If merged output loses more than 60% of characters **and** more than 50% of lines (for marker-based edits), the write is aborted.
 - **Dropped imports guard**: If top-level import identifiers present in the original file are missing from the merged output, the write is aborted. This catches silent import loss that can occur when edits fall outside the anchoring context.
-- **Path confinement**: Target paths stay within the invoking session directory or a validated ADV worktree root. Symlinks are followed and validated; paths that resolve outside that root are rejected.
+- **Path confinement**: Target paths stay within the invoking session's allowed root (V1 context worktree/directory, or V2 session directory). Symlinks are followed and validated; paths outside that root, including sibling worktrees, are rejected. Start a session in an ad-hoc worktree to edit within it. Arguments cannot select another root.
 - **Secret scrubbing**: API error messages are automatically scrubbed to prevent leaking your `MORPH_API_KEY` or Bearer tokens in tool output.
 
-In all guard cases, `morph_edit` returns a detailed error with recovery options (retry with tighter anchors, use native `edit`, or split into smaller edits).
+Merge-guard errors include recovery options such as tighter anchors or native `edit`. A root refusal names the allowed root and directs you to native `edit` or `apply_patch` with the absolute path, only when that tool is exposed and permitted for the target. Never retry a refused absolute target as a relative path: that can name a different file inside the session root. `workdir` and `taskId` are unsupported and are rejected when received by either adapter.
 
 ### Markdown-fenced `code_edit` input
 

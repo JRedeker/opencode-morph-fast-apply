@@ -35,6 +35,7 @@ faster or more reliable than exact-string replacement.
 ### Fallback Policy
 
 - If `morph_edit` fails due to API error or timeout, use native `edit`
+- If Morph refuses a target outside its allowed root, use native `edit` or `apply_patch` with the absolute path only when that tool is exposed and permitted for the target. Do not retry the refused absolute target as a relative path: it may name a different file inside the session root.
 - If `morph_edit` is blocked in readonly agents, switch to a write-capable agent
 - If the change requires replacing the entire file, use `write`
 

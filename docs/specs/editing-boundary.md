@@ -1,18 +1,35 @@
 # Morph editing boundary
 
-The `morph_edit` tool edits a file only inside the directory of the invoking
-OpenCode session. An authorized ADV worktree capability can select its validated
-worktree root instead. The plugin must not use the plugin-load directory or the
-process working directory as a substitute for the invoking session's directory.
+The `morph_edit` tool confines edits to the invoking session's allowed root.
+V1 uses the invocation context's worktree root, then its directory, then the
+plugin-provided directory when neither context field exists. V2 resolves the
+invoking session's directory on every call and fails closed if it is unavailable.
+V2 must not substitute the plugin-load directory or process working directory.
+Arguments and attached symbols cannot select another root.
 
 The tool blocks read-only agents unless the operator explicitly allows them.
 Before writing a merged result, it refuses placeholder-marker leakage,
 catastrophic truncation, and the loss of imported identifiers. A refused edit
 does not write a file. These boundaries apply to both V1 and V2 registrations.
 
+## Arguments and root refusal
+
+The tool exposes only `target_filepath`, `instructions`, and `code_edit`.
+Both adapters reject received `workdir` or `taskId` properties before file I/O
+or API calls, including properties whose value is undefined. No capability
+symbol can redirect an edit. The ADV capability and optional-argument route is
+retired, together with its capability validation and propagation obligations.
+
+Relative targets resolve inside the allowed root. Absolute targets, traversal
+and symlinks outside that root stay refused, including sibling worktrees of
+the same repository. A session rooted in an ad-hoc worktree can edit inside
+that root; starting in the main checkout does not admit its sibling worktrees.
+
 The tool returns a readable result for accepted edits and a specific reason for
-refused edits. Its interface retains the `target_filepath`, `instructions`,
-`code_edit`, `workdir`, and `taskId` arguments.
+refused edits. A root refusal states the allowed root, confirms no write, and
+names native `edit` or `apply_patch` with the absolute path as recovery only
+when the named tool is exposed and permitted for that target. It warns against
+retrying a refused absolute target as a relative path, which can name another file.
 
 ## Result contract
 
