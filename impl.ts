@@ -22,7 +22,7 @@ import {
 import { countChanges, generateUnifiedDiff } from "./src/diff.js";
 import { findDroppedIdentifiers } from "./src/imports.js";
 import { normalizeCodeEditInput } from "./src/normalize.js";
-import { resolveTargetPath } from "./src/path-confinement.js";
+import { openConfinedTarget } from "./src/path-confinement.js";
 import {
   executeMorphEdit,
   parseMorphEditArgs,
@@ -378,7 +378,10 @@ export async function callMorphApply(
   }
 }
 
-const MorphFastApply: Plugin = async ({ directory, client }) => {
+export async function setupMorphEditV1(
+  { directory, client }: Parameters<Plugin>[0],
+  options?: MorphEditSetupOptions,
+): Promise<Awaited<ReturnType<Plugin>>> {
   /**
    * Helper for structured logging with stderr fallback
    */
@@ -451,19 +454,8 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
             directory,
             context,
             now: () => Date.now(),
-            readFile: async (filepath) => {
-              const file = Bun.file(filepath);
-              const exists = await file.exists();
-              return {
-                exists,
-                text: exists ? await file.text() : "",
-              };
-            },
-            writeFile: async (filepath, content) => {
-              await Bun.write(filepath, content);
-            },
+            openTarget: openConfinedTarget,
             callMorphApply,
-            resolveTargetPath,
             normalizeCodeEditInput,
             findDroppedIdentifiers,
             generateUnifiedDiff,
@@ -476,6 +468,7 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
               PLUGIN_VERSION,
               MORPH_MODEL,
             },
+            ...options?.runtimeOverrides,
           });
           return { output: result.text, metadata: resultMetadata(result) };
         },
@@ -500,16 +493,16 @@ const MorphFastApply: Plugin = async ({ directory, client }) => {
       }
     },
   };
-};
+}
 
 /**
- * Options for the OpenCode V2 adapter setup.
+ * Runtime dependencies shared by both adapter registrations.
  */
-export interface MorphEditV2SetupOptions {
+export interface MorphEditSetupOptions {
   /**
    * Partial runtime overrides merged into the production runtime on every
    * tool execution. Production callers omit it; adapter tests inject mock
-   * fs/API dependencies so the V2 path is verifiable without network access.
+   * object-I/O/API dependencies without making real network requests.
    */
   runtimeOverrides?: Partial<ExecuteMorphEditRuntime>;
 }
@@ -522,7 +515,7 @@ export interface MorphEditV2SetupOptions {
  */
 export async function setupMorphEditV2(
   ctx: PluginV2.Context,
-  options?: MorphEditV2SetupOptions,
+  options?: MorphEditSetupOptions,
 ): Promise<void> {
   // The V2 plugin context exposes no client or log domain; logging falls
   // back to stderr for both adapters' shared log signature.
@@ -606,19 +599,8 @@ export async function setupMorphEditV2(
           directory,
           context: { agent: toolContext.agent },
           now: () => Date.now(),
-          readFile: async (filepath) => {
-            const file = Bun.file(filepath);
-            const exists = await file.exists();
-            return {
-              exists,
-              text: exists ? await file.text() : "",
-            };
-          },
-          writeFile: async (filepath, content) => {
-            await Bun.write(filepath, content);
-          },
+          openTarget: openConfinedTarget,
           callMorphApply,
-          resolveTargetPath,
           normalizeCodeEditInput,
           findDroppedIdentifiers,
           generateUnifiedDiff,
@@ -676,8 +658,8 @@ export const MORPH_PLUGIN_ID = "opencode-morph-fast-apply";
 const morphFastApplyPlugin = {
   id: MORPH_PLUGIN_ID,
   setup: setupMorphEditV2,
-  server: MorphFastApply,
-} satisfies PluginV2.Plugin & { server: typeof MorphFastApply };
+  server: setupMorphEditV1,
+} satisfies PluginV2.Plugin & { server: typeof setupMorphEditV1 };
 
 // Default export for OpenCode plugin loader
 export default morphFastApplyPlugin;

@@ -2,11 +2,13 @@
   "authority": {
     "tier": "derived"
   },
-  "date": "2026-09-23T00:00:00Z",
+  "date": "2026-11-01T00:00:00Z",
   "evidence": [
     "README.md",
     "impl.ts",
-    "src/execute.ts"
+    "src/execute.ts",
+    "src/path-confinement.ts",
+    "concurrent-confinement.test.ts"
   ],
   "home_domain_id": "product-root:opencode-morph-fast-apply",
   "id": "MORPH-0001",
@@ -20,9 +22,9 @@
     "project_ids": [],
     "tag_ids": []
   },
-  "sha256": "sha256:9acfc2b0d4e1412483efd2d1a8f11f2ebf4dff17a279338616417ff3146d7b44",
+  "sha256": "sha256:e37759e7ec08ce4a6aaeac4a13620e365e145cb8ab8f3d5b47601077b0cded71",
   "status": "accepted",
-  "summary": "The tool confines edits to the invoking session's allowed root, rejects root-selection arguments, names permitted native recovery on root refusal, blocks read-only agents by default, and refuses unsafe merge results before any write.",
+  "summary": "The tool acquires object-bound editing authority beneath the session root, refuses symlinks and unsupported confinement, publishes fresh files without modifying hard-link aliases, rejects root-selection arguments, and preserves read-only and merge-safety guards.",
   "tags": [
     "editing",
     "safety",

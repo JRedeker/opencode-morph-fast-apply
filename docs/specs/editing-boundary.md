@@ -1,6 +1,7 @@
 # Morph editing boundary
 
-The `morph_edit` tool confines edits to the invoking session's allowed root.
+The `morph_edit` tool acquires editing authority beneath the invoking session's
+allowed root, then confines I/O to the acquired directory and file objects.
 V1 uses the invocation context's worktree root, then its directory, then the
 plugin-provided directory when neither context field exists. V2 resolves the
 invoking session's directory on every call and fails closed if it is unavailable.
@@ -24,6 +25,25 @@ Relative targets resolve inside the allowed root. Absolute targets, traversal
 and symlinks outside that root stay refused, including sibling worktrees of
 the same repository. A session rooted in an ad-hoc worktree can edit inside
 that root; starting in the main checkout does not admit its sibling worktrees.
+
+The tool refuses all symlinks in the root or target path, including symlinks
+pointing inside the root. It refuses nonregular targets and files with multiple
+hard links before reading their contents. Unsupported hosts or unavailable
+confinement support fail closed, without pathname-based I/O as a fallback.
+
+Authority follows the acquired objects, not their former pathnames. Another
+process may move an acquired file or directory outside the root without
+revoking that authority. Reads and edits may continue there, including creation
+of new files and directories through an acquired directory. Replacing a former
+pathname with an outside symlink must not redirect I/O to its referent.
+
+The tool publishes content as a fresh file in the acquired parent directory;
+it must not overwrite the original inode's hard-link aliases. Publication
+requires a writable parent, preserves ordinary permission bits, and replaces
+inode identity and ownership. It does not preserve ACLs, extended attributes
+or special mode bits. It does not serialize concurrent in-place writers or
+guarantee crash durability. Privileged mount replacement and hostile code in
+the plugin process are outside this boundary.
 
 The tool returns a readable result for accepted edits and a specific reason for
 refused edits. A root refusal states the allowed root, confirms no write, and
