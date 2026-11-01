@@ -1,3 +1,14 @@
+---
+{
+  "id": "MORPH-0001",
+  "title": "Morph editing boundary",
+  "authority": { "tier": "derived" },
+  "home_domain_id": "product-root:opencode-morph-fast-apply",
+  "applies_to_domain_ids": [],
+  "product_wide_rationale": "The editing boundary governs the plugin's OpenCode registrations and the shared editing implementation. No child Domain exists yet."
+}
+---
+
 # Morph editing boundary
 
 The `morph_edit` tool acquires editing authority beneath the invoking session's
