@@ -13,7 +13,7 @@
   "home_domain_id": "product-root:opencode-morph-fast-apply",
   "id": "MORPH-0001",
   "kind": "spec",
-  "path": "docs/specs/editing-boundary.md",
+  "path": ".concord/law/specs/editing-boundary.md",
   "product_wide_rationale": "The editing boundary governs the plugin's OpenCode registrations and the shared editing implementation. No child Domain exists yet.",
   "scopes": {
     "domain_ids": [],
@@ -22,7 +22,7 @@
     "project_ids": [],
     "tag_ids": []
   },
-  "sha256": "sha256:4dff951c5c581ca5e626584cd3955d36149a26260a4f4f2de2ef3e173f472395",
+  "sha256": "sha256:0563cea92e73392c7131dc0976e6564f8ca4fe2503c73c25656c1d712d724744",
   "status": "accepted",
   "summary": "The tool acquires object-bound editing authority beneath the session root, refuses symlinks and unsupported confinement, publishes fresh files without modifying hard-link aliases, rejects root-selection arguments, and preserves read-only and merge-safety guards.",
   "tags": [

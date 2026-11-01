@@ -9,3 +9,6 @@ bun.lock
 
 # Generated docs (not source)
 docs/
+
+# Law bodies retain their accepted bytes and JSON frontmatter
+.concord/law/
