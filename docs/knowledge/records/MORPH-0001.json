@@ -22,7 +22,7 @@
     "project_ids": [],
     "tag_ids": []
   },
-  "sha256": "sha256:e37759e7ec08ce4a6aaeac4a13620e365e145cb8ab8f3d5b47601077b0cded71",
+  "sha256": "sha256:4dff951c5c581ca5e626584cd3955d36149a26260a4f4f2de2ef3e173f472395",
   "status": "accepted",
   "summary": "The tool acquires object-bound editing authority beneath the session root, refuses symlinks and unsupported confinement, publishes fresh files without modifying hard-link aliases, rejects root-selection arguments, and preserves read-only and merge-safety guards.",
   "tags": [

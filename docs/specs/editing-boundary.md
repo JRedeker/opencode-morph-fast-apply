@@ -39,11 +39,19 @@ pathname with an outside symlink must not redirect I/O to its referent.
 
 The tool publishes content as a fresh file in the acquired parent directory;
 it must not overwrite the original inode's hard-link aliases. Publication
-requires a writable parent, preserves ordinary permission bits, and replaces
-inode identity and ownership. It does not preserve ACLs, extended attributes
-or special mode bits. It does not serialize concurrent in-place writers or
-guarantee crash durability. Privileged mount replacement and hostile code in
-the plugin process are outside this boundary.
+requires a writable parent and write permission on an existing target.
+Existing files require descriptor-based access-metadata inspection; unavailable
+inspection, inspection errors, or visible extended attributes, including ACLs,
+refuse the edit before content is read. Changed source access metadata,
+inherited replacement attributes, or replacement owner/group differences abort
+publication. Successful replacements preserve ordinary permission bits and
+owner/group, but replace inode identity and drop special mode bits. New files
+retain normal kernel-applied creation permissions and default ACLs.
+
+Inspection cannot detect attributes the kernel hides from the caller. The tool
+does not serialize concurrent content or metadata changes or guarantee crash
+durability. Privileged mount or metadata changes and hostile code in the plugin
+process are outside this boundary.
 
 The tool returns a readable result for accepted edits and a specific reason for
 refused edits. A root refusal states the allowed root, confirms no write, and

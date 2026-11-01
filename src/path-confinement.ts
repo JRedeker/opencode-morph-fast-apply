@@ -1,4 +1,5 @@
 import {
+  accessSync,
   closeSync,
   constants,
   fchmodSync,
@@ -16,6 +17,7 @@ import {
 } from "node:fs";
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
+import { dlopen } from "bun:ffi";
 
 export interface ResolveResult {
   path: string;
@@ -128,6 +130,15 @@ export type OpenTargetResult = { target: ConfinedTarget } | RejectResult;
 
 const errorCode = (err: unknown) => (err as NodeJS.ErrnoException).code;
 
+function openMetadataInspection() {
+  // size_t/ssize_t use the 64-bit Linux ABI on these supported architectures.
+  if (process.arch !== "x64" && process.arch !== "arm64")
+    throw new Error("Access metadata inspection requires 64-bit Linux glibc");
+  return dlopen("libc.so.6", {
+    flistxattr: { args: ["i32", "ptr", "u64"], returns: "i64" },
+  });
+}
+
 /**
  * Acquire directory objects without following user-tree symlinks. Authority
  * stays with those objects after rename, not with their former pathnames.
@@ -138,6 +149,18 @@ export function openConfinedTarget(
   root: string,
 ): OpenTargetResult {
   const descriptors = new Set<number>();
+  let metadata: ReturnType<typeof openMetadataInspection> | undefined;
+  const requireNoAttributes = (fd: number) => {
+    if (!metadata) throw new Error("Access metadata inspection is unavailable");
+    // Zero size only queries the length; no native buffer or attribute copying.
+    const size = metadata.symbols.flistxattr(fd, null, 0);
+    if (size !== 0n)
+      throw new Error(
+        size < 0n
+          ? "Cannot inspect extended attributes; refusing replacement"
+          : "Extended attributes or ACLs prevent safe replacement",
+      );
+  };
   const hold = (fd: number) => {
     descriptors.add(fd);
     return fd;
@@ -155,6 +178,12 @@ export function openConfinedTarget(
         failure ??= err;
       }
     }
+    try {
+      metadata?.close();
+    } catch (err) {
+      failure ??= err;
+    }
+    metadata = undefined;
     if (failure) throw failure;
   };
   try {
@@ -170,14 +199,15 @@ export function openConfinedTarget(
     const directoryFlags =
       constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW;
     let parent = hold(openSync("/", directoryFlags));
-    const proc = `/proc/${process.pid}/fd`;
+    // The kernel resolves self to the caller; process.pid can name another
+    // process when this procfs belongs to a different PID namespace.
+    const proc = "/proc/self/fd";
     // /proc is a kernel mount, not an application directory or symlink alias.
     // Privileged mount-namespace changes are outside this process's boundary.
     const procFd = hold(openSync("/proc", directoryFlags));
     if (
       statfsSync("/proc").type !== 0x9fa0 ||
       statfsSync(proc).type !== 0x9fa0 ||
-      !lstatSync(`/proc/${process.pid}`).isDirectory() ||
       !lstatSync(proc).isDirectory()
     ) {
       throw new Error("Cannot verify Linux procfs for confined editing");
@@ -244,6 +274,21 @@ export function openConfinedTarget(
         "Target must be a regular file without hard-link aliases",
       );
     }
+    if (fileFd !== undefined) {
+      metadata = openMetadataInspection();
+      requireNoAttributes(fileFd);
+    }
+    const requireOriginalMetadata = () => {
+      if (fileFd === undefined || !original) return;
+      requireNoAttributes(fileFd);
+      const current = fstatSync(fileFd, { bigint: true });
+      if (
+        current.uid !== original.uid ||
+        current.gid !== original.gid ||
+        current.mode !== original.mode
+      )
+        throw new Error("Target access metadata changed during the edit");
+    };
     let closed = false;
     let writeStarted = false;
     let snapshot: { exists: boolean; text: string } | undefined;
@@ -259,6 +304,7 @@ export function openConfinedTarget(
             return (snapshot = { exists: false, text: "" });
           if (fstatSync(fileFd, { bigint: true }).nlink > 1n)
             throw new Error("Target acquired hard-link aliases before read");
+          requireOriginalMetadata();
           return (snapshot = {
             exists: true,
             text: readFileSync(fileFd, "utf8"),
@@ -294,7 +340,14 @@ export function openConfinedTarget(
           ) {
             throw new Error("Target changed during the edit");
           }
+          // Replacing the name needs only a writable parent; keep the
+          // acquired file's own write permission as a precondition.
+          if (fileFd !== undefined)
+            accessSync(`${proc}/${fileFd}`, constants.W_OK);
+          requireOriginalMetadata();
           const temporary = at(parent, `.morph-${randomUUID()}.tmp`);
+          // The kernel applies umask and default ACLs to a new file's mode.
+          // Reading process.umask() briefly sets the process umask to 0.
           const fd = hold(
             openSync(
               temporary,
@@ -302,19 +355,29 @@ export function openConfinedTarget(
                 constants.O_CREAT |
                 constants.O_EXCL |
                 constants.O_NOFOLLOW,
-              0o600,
+              original ? 0o600 : 0o666,
             ),
           );
           let published = false;
           let failure: unknown;
           try {
+            const requireReplacementMetadata = () => {
+              if (!original) return;
+              requireNoAttributes(fd);
+              const replacement = fstatSync(fd, { bigint: true });
+              if (
+                replacement.uid !== original.uid ||
+                replacement.gid !== original.gid
+              )
+                throw new Error(
+                  "Replacement owner or group differs from target",
+                );
+            };
+            requireReplacementMetadata();
             writeFileSync(fd, content, "utf8");
-            fchmodSync(
-              fd,
-              original
-                ? Number(original.mode & 0o777n)
-                : 0o666 & ~process.umask(),
-            );
+            if (original) fchmodSync(fd, Number(original.mode & 0o777n));
+            requireOriginalMetadata();
+            requireReplacementMetadata();
             // A fresh inode avoids modifying any hard-link alias of the
             // original. Both names resolve through the held parent object.
             renameSync(temporary, destination);

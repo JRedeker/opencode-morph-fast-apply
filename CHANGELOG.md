@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Concurrent root confinement**: Both adapters use acquired file/directory objects instead of reopening target pathnames. Concurrent outside-symlink substitutions cannot redirect reads, writes or parent creation.
+
+### Changed
+
+- **Object-bound authority**: An acquired directory remains authorized after another process moves it outside the root, including for new file and directory creation.
+- **Fail-closed compatibility**: Editing requires Linux procfs and refuses every root/target symlink, nonregular target and multiply linked file. Existing-file replacement also requires x64/arm64 glibc metadata inspection, refuses visible extended attributes/ACLs and unsafe replacement access metadata, and requires a writable parent and target. Successful publication replaces inode identity, preserves ordinary permissions and owner/group, and drops special mode bits. See the README safety guards for inspection limits.
+
 ## [1.12.0] - 2026-10-21
 
 ### Added

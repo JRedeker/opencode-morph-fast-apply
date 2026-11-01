@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import * as ffi from "bun:ffi";
 import * as fs from "node:fs";
 import {
   closeSync,
@@ -22,7 +23,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import plugin, { setupMorphEditV2 } from "./impl.js";
+import plugin, { setupMorphEditV1, setupMorphEditV2 } from "./impl.js";
 import {
   type ExecuteMorphEditRuntime,
   type MorphEditResult,
@@ -53,6 +54,66 @@ afterEach(() => {
 });
 
 const read = (p: string) => readFileSync(p, "utf8");
+
+function setAttribute(file: string, name: string, value: Uint8Array) {
+  const native = ffi.dlopen("libc.so.6", {
+    fsetxattr: { args: ["i32", "ptr", "ptr", "u64", "i32"], returns: "i32" },
+  });
+  const fd = openSync(file, fsc.O_RDONLY | fsc.O_NOFOLLOW);
+  try {
+    expect(
+      native.symbols.fsetxattr(
+        fd,
+        Buffer.from(`${name}\0`),
+        value,
+        value.length,
+        0,
+      ),
+    ).toBe(0);
+  } finally {
+    closeSync(fd);
+    native.close();
+  }
+}
+
+function attributeNames(file: string) {
+  const native = ffi.dlopen("libc.so.6", {
+    flistxattr: { args: ["i32", "ptr", "u64"], returns: "i64" },
+  });
+  const fd = openSync(file, fsc.O_RDONLY | fsc.O_NOFOLLOW);
+  try {
+    const names = Buffer.alloc(4096);
+    const size = Number(native.symbols.flistxattr(fd, names, names.length));
+    expect(size).toBeGreaterThanOrEqual(0);
+    return names.subarray(0, size).toString().split("\0").filter(Boolean);
+  } finally {
+    closeSync(fd);
+    native.close();
+  }
+}
+
+function namedUserAcl() {
+  // Linux UAPI: little-endian version 2 header, then tag/permissions/id entries.
+  const entries = [
+    [0x01, 7, 0xffffffff],
+    [0x02, 4, 65534],
+    [0x04, 0, 0xffffffff],
+    [0x10, 4, 0xffffffff],
+    [0x20, 0, 0xffffffff],
+  ];
+  const acl = Buffer.alloc(4 + entries.length * 8);
+  acl.writeUInt32LE(2, 0);
+  entries.forEach(([tag, permissions, id], index) => {
+    acl.writeUInt16LE(tag, 4 + index * 8);
+    acl.writeUInt16LE(permissions, 6 + index * 8);
+    acl.writeUInt32LE(id, 8 + index * 8);
+  });
+  return acl;
+}
+
+function setDefaultAcl(directory: string) {
+  setAttribute(directory, "system.posix_acl_default", namedUserAcl());
+}
 
 interface Seams {
   afterResolve?: () => void;
@@ -98,11 +159,11 @@ async function morph(adapter: "V1" | "V2", seams: Seams = {}) {
     raw: unknown,
   ) => Promise<Pick<MorphEditResult, "status" | "code">>;
   if (adapter === "V1") {
-    const hooks = await plugin.server(
+    const hooks = await setupMorphEditV1(
       {
         directory: root,
         client: { app: { log: async () => {} } },
-      } as unknown as Parameters<typeof plugin.server>[0],
+      } as unknown as Parameters<typeof setupMorphEditV1>[0],
       { runtimeOverrides },
     );
     const tool = hooks.tool!.morph_edit;
@@ -153,6 +214,222 @@ function swapForSymlink(pathname: string, target: string) {
 }
 
 for (const adapter of ["V1", "V2"] as const) {
+  describe(`${adapter}: replacement access metadata`, () => {
+    test.each(["user.morph-test", "system.posix_acl_access"])(
+      "source %s is refused before content read or API disclosure",
+      async (attribute) => {
+        const file = join(root, "src", "file.ts");
+        setAttribute(
+          file,
+          attribute,
+          attribute.startsWith("system.")
+            ? namedUserAcl()
+            : Buffer.from("private"),
+        );
+        const originalInode = statSync(file).ino;
+        const { edit, apiInputs } = await morph(adapter);
+        const readFile = fs.readFileSync;
+        let contentReads = 0;
+        const spy = spyOn(fs, "readFileSync").mockImplementation(((
+          target,
+          options,
+        ) => {
+          if (typeof target === "number") contentReads++;
+          return readFile(target, options);
+        }) as typeof fs.readFileSync);
+        try {
+          expect((await edit("src/file.ts")).code).toBe("path_refused");
+          expect(contentReads).toBe(0);
+        } finally {
+          spy.mockRestore();
+        }
+        expect(apiInputs).toEqual([]);
+        expect(read(file)).toBe(ORIGINAL);
+        expect(statSync(file).ino).toBe(originalInode);
+        expect(attributeNames(file)).toContain(attribute);
+      },
+    );
+    test.each(["before-read", "during-api"])(
+      "source attributes added %s are refused",
+      async (stage) => {
+        const file = join(root, "src", "file.ts");
+        const originalInode = statSync(file).ino;
+        const change = () =>
+          setAttribute(file, "user.morph-test", Buffer.from("private"));
+        const { edit, apiInputs } = await morph(
+          adapter,
+          stage === "before-read"
+            ? { afterResolve: change }
+            : { duringApi: change },
+        );
+        expect((await edit("src/file.ts")).code).toBe(
+          stage === "before-read" ? "read_failed" : "write_failed",
+        );
+        expect(apiInputs).toEqual(stage === "before-read" ? [] : [ORIGINAL]);
+        expect(statSync(file).ino).toBe(originalInode);
+        expect(read(file)).toBe(ORIGINAL);
+        expect(attributeNames(file)).toContain("user.morph-test");
+        expect(readdirSync(join(root, "src"))).toEqual(["file.ts"]);
+      },
+    );
+    test("source permission changes during the API wait are not replaced with stale permissions", async () => {
+      const file = join(root, "src", "file.ts");
+      chmodSync(file, 0o640);
+      const { edit } = await morph(adapter, {
+        duringApi: () => chmodSync(file, 0o600),
+      });
+      expect((await edit("src/file.ts")).code).toBe("write_failed");
+      expect(read(file)).toBe(ORIGINAL);
+      expect(statSync(file).mode & 0o777).toBe(0o600);
+    });
+    test.each(["owner", "group"])(
+      "a replacement %s mismatch is refused before writing content",
+      async (kind) => {
+        const stat = fs.fstatSync;
+        const write = fs.writeFileSync;
+        let contentWrites = 0;
+        const statSpy = spyOn(fs, "fstatSync").mockImplementation(((
+          fd,
+          options,
+        ) => {
+          const result = stat(fd, options);
+          if (fs.readlinkSync(`/proc/self/fd/${fd}`).includes("/.morph-"))
+            return {
+              ...result,
+              [kind === "owner" ? "uid" : "gid"]: 0x7fffffffn,
+            };
+          return result;
+        }) as typeof fs.fstatSync);
+        const writeSpy = spyOn(fs, "writeFileSync").mockImplementation(
+          (target, content, options) => {
+            if (typeof target === "number") contentWrites++;
+            return write(target, content, options);
+          },
+        );
+        try {
+          const { edit } = await morph(adapter);
+          expect((await edit("src/file.ts")).code).toBe("write_failed");
+          expect(contentWrites).toBe(0);
+          expect(read(join(root, "src", "file.ts"))).toBe(ORIGINAL);
+          expect(readdirSync(join(root, "src"))).toEqual(["file.ts"]);
+        } finally {
+          statSpy.mockRestore();
+          writeSpy.mockRestore();
+        }
+      },
+    );
+    test("unavailable native inspection refuses existing edits but not new files", async () => {
+      const before = readdirSync("/proc/self/fd").sort();
+      const spy = spyOn(ffi, "dlopen").mockImplementation(() => {
+        throw new Error("synthetic unavailable libc");
+      });
+      try {
+        const { edit, apiInputs } = await morph(adapter);
+        expect((await edit("src/file.ts")).code).toBe("path_refused");
+        expect(apiInputs).toEqual([]);
+        expect((await edit("src/new.ts", CREATED)).status).toBe("success");
+        expect(read(join(root, "src", "file.ts"))).toBe(ORIGINAL);
+        expect(readdirSync("/proc/self/fd").sort()).toEqual(before);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+    test("native inspection errors fail closed", async () => {
+      const before = readdirSync("/proc/self/fd").sort();
+      let closed = false;
+      const spy = spyOn(ffi, "dlopen").mockImplementation((() => ({
+        symbols: { flistxattr: () => -1n },
+        close: () => {
+          closed = true;
+        },
+      })) as unknown as typeof ffi.dlopen);
+      try {
+        const { edit, apiInputs } = await morph(adapter);
+        expect((await edit("src/file.ts")).code).toBe("path_refused");
+        expect(apiInputs).toEqual([]);
+        expect(closed).toBe(true);
+        expect(readdirSync("/proc/self/fd").sort()).toEqual(before);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+    test.each(["source", "replacement"])(
+      "%s attributes added during the content write prevent publication",
+      async (kind) => {
+        const file = join(root, "src", "file.ts");
+        const originalInode = statSync(file).ino;
+        const write = fs.writeFileSync;
+        let changed = false;
+        const spy = spyOn(fs, "writeFileSync").mockImplementation(
+          (target, content, options) => {
+            const result = write(target, content, options);
+            if (typeof target === "number") {
+              changed = true;
+              expect(statSync(`/proc/self/fd/${target}`).mode & 0o777).toBe(
+                0o600,
+              );
+              setAttribute(
+                kind === "source"
+                  ? file
+                  : fs.readlinkSync(`/proc/self/fd/${target}`),
+                "user.morph-test",
+                Buffer.from("private"),
+              );
+            }
+            return result;
+          },
+        );
+        try {
+          const { edit } = await morph(adapter);
+          expect((await edit("src/file.ts")).code).toBe("write_failed");
+          expect(changed).toBe(true);
+          expect(read(file)).toBe(ORIGINAL);
+          expect(statSync(file).ino).toBe(originalInode);
+          expect(readdirSync(join(root, "src"))).toEqual(["file.ts"]);
+        } finally {
+          spy.mockRestore();
+        }
+      },
+    );
+    test("new files keep kernel default ACLs", async () => {
+      setDefaultAcl(join(root, "src"));
+      const { edit } = await morph(adapter);
+      expect((await edit("src/new.ts", CREATED)).status).toBe("success");
+      expect(read(join(root, "src", "new.ts"))).toBe(CREATED);
+      expect(attributeNames(join(root, "src", "new.ts"))).toContain(
+        "system.posix_acl_access",
+      );
+    });
+    test("inherited named-user ACLs never reach replacement content or publication", async () => {
+      const file = join(root, "src", "file.ts");
+      chmodSync(file, 0o640);
+      const originalInode = statSync(file).ino;
+      setDefaultAcl(join(root, "src"));
+      expect(attributeNames(file)).toEqual([]);
+      const before = readdirSync("/proc/self/fd").sort();
+      const write = fs.writeFileSync;
+      let contentWrites = 0;
+      const spy = spyOn(fs, "writeFileSync").mockImplementation(
+        (target, data, options) => {
+          if (typeof target === "number") contentWrites++;
+          return write(target, data, options);
+        },
+      );
+      try {
+        const { edit, apiInputs } = await morph(adapter);
+        expect((await edit("src/file.ts")).code).toBe("write_failed");
+        expect(apiInputs).toEqual([ORIGINAL]);
+        expect(contentWrites).toBe(0);
+      } finally {
+        spy.mockRestore();
+      }
+      expect(statSync(file).ino).toBe(originalInode);
+      expect(read(file)).toBe(ORIGINAL);
+      expect(attributeNames(file)).toEqual([]);
+      expect(readdirSync(join(root, "src"))).toEqual(["file.ts"]);
+      expect(readdirSync("/proc/self/fd").sort()).toEqual(before);
+    });
+  });
   describe(`${adapter}: unchanged trees and static symlinks`, () => {
     test("existing file edit stays inside", async () => {
       const { edit } = await morph(adapter);
@@ -345,6 +622,34 @@ for (const adapter of ["V1", "V2"] as const) {
       expect(read(join(outside, "src", "file.ts"))).toBe(SENTINEL);
       expect(read(`${leaf}.parked`)).toBe(ORIGINAL);
     });
+    test.skipIf(process.getuid?.() === 0)(
+      "a target without write permission is not replaced",
+      async () => {
+        const file = join(root, "src", "file.ts");
+        chmodSync(file, 0o444);
+        const originalInode = statSync(file).ino;
+        const { edit, apiInputs } = await morph(adapter);
+        expect((await edit("src/file.ts")).code).toBe("write_failed");
+        expect(apiInputs).toEqual([ORIGINAL]);
+        expect(read(file)).toBe(ORIGINAL);
+        expect(statSync(file).ino).toBe(originalInode);
+        expect(statSync(file).mode & 0o777).toBe(0o444);
+        expect(readdirSync(join(root, "src"))).toEqual(["file.ts"]);
+      },
+    );
+    test("a new file takes its mode from the kernel umask without reading it", async () => {
+      const previous = process.umask(0o027);
+      const umask = spyOn(process, "umask");
+      try {
+        const { edit } = await morph(adapter);
+        expect((await edit("src/new.ts", CREATED)).status).toBe("success");
+        expect(umask).not.toHaveBeenCalled();
+        expect(statSync(join(root, "src", "new.ts")).mode & 0o777).toBe(0o640);
+      } finally {
+        umask.mockRestore();
+        process.umask(previous);
+      }
+    });
     test.each([
       "relative-leaf",
       "absolute-leaf",
@@ -528,7 +833,7 @@ for (const adapter of ["V1", "V2"] as const) {
         options,
       ) => {
         const result = stat(pathname, options);
-        if (String(pathname).startsWith(`/proc/${process.pid}/fd/`))
+        if (String(pathname).startsWith("/proc/self/fd/"))
           return { ...result, ino: 0n };
         return result;
       }) as typeof fs.statSync);
@@ -731,6 +1036,71 @@ describe("confined target lifecycle", () => {
     } finally {
       acquired.target.close();
     }
+  });
+});
+
+describe("confinement inputs outside the process's control", () => {
+  test("descriptor paths resolve through this process, not process.pid", async () => {
+    const child = Bun.spawn(["sleep", "30"]);
+    const pid = Object.getOwnPropertyDescriptor(process, "pid")!;
+    Object.defineProperty(process, "pid", {
+      value: child.pid,
+      configurable: true,
+    });
+    try {
+      const acquired = openConfinedTarget("src/file.ts", root);
+      if ("error" in acquired) throw new Error(acquired.error);
+      try {
+        expect(await acquired.target.read()).toEqual({
+          exists: true,
+          text: ORIGINAL,
+        });
+      } finally {
+        acquired.target.close();
+      }
+    } finally {
+      Object.defineProperty(process, "pid", pid);
+      child.kill();
+      await child.exited;
+    }
+  });
+  test("V1 host plugin options cannot replace the edit runtime", async () => {
+    // The V1 host passes config-supplied plugin options here.
+    const server = plugin.server as (
+      input: Parameters<typeof plugin.server>[0],
+      options: unknown,
+    ) => ReturnType<typeof plugin.server>;
+    const hooks = await server(
+      {
+        directory: root,
+        client: { app: { log: async () => {} } },
+      } as unknown as Parameters<typeof plugin.server>[0],
+      {
+        runtimeOverrides: {
+          context: { agent: "build", worktree: outside },
+          constants: {
+            MORPH_API_KEY: undefined,
+            ALLOW_READONLY_AGENTS: false,
+            READONLY_AGENTS: [],
+            EXISTING_CODE_MARKER: "// ... existing code ...",
+            PLUGIN_VERSION: "test",
+            MORPH_MODEL: "test",
+          },
+        },
+      },
+    );
+    const tool = hooks.tool!.morph_edit;
+    const result = await tool.execute(
+      {
+        target_filepath: join(outside, "src", "created.ts"),
+        instructions: "fixture",
+        code_edit: CREATED,
+      },
+      { agent: "build", worktree: root } as Parameters<typeof tool.execute>[1],
+    );
+    if (typeof result === "string") throw new Error("Missing V1 metadata");
+    expect(result.metadata).toMatchObject({ code: "path_refused" });
+    expect(existsSync(join(outside, "src", "created.ts"))).toBe(false);
   });
 });
 

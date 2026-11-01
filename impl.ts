@@ -658,8 +658,10 @@ export const MORPH_PLUGIN_ID = "opencode-morph-fast-apply";
 const morphFastApplyPlugin = {
   id: MORPH_PLUGIN_ID,
   setup: setupMorphEditV2,
-  server: setupMorphEditV1,
-} satisfies PluginV2.Plugin & { server: typeof setupMorphEditV1 };
+  // V1 hosts pass config-supplied plugin options as the second argument;
+  // they must never reach the runtime overrides that select the root.
+  server: (input: Parameters<Plugin>[0]) => setupMorphEditV1(input),
+} satisfies PluginV2.Plugin & { server: Plugin };
 
 // Default export for OpenCode plugin loader
 export default morphFastApplyPlugin;
