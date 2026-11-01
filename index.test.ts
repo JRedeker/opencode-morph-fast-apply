@@ -936,7 +936,10 @@ describe("findDroppedIdentifiers", () => {
   });
 });
 
-import { resolveTargetPath } from "./src/path-confinement.js";
+import {
+  openConfinedTarget,
+  resolveTargetPath,
+} from "./src/path-confinement.js";
 import { tmpdir } from "node:os";
 import {
   existsSync,
@@ -947,7 +950,7 @@ import {
   rmSync,
 } from "node:fs";
 
-describe("resolveTargetPath", () => {
+describe("pathname diagnostics (not I/O authority)", () => {
   let tmpDir: string;
   let root: string;
 
@@ -1050,10 +1053,16 @@ describe("resolveTargetPath", () => {
       },
       makeMockRuntime({
         directory: root,
-        resolveTargetPath,
-        writeFile: async (filepath, content) => {
-          writes++;
-          await Bun.write(filepath, content);
+        openTarget: (target, allowed) => {
+          const result = openConfinedTarget(target, allowed);
+          if ("target" in result) {
+            const write = result.target.write;
+            result.target.write = async (content) => {
+              writes++;
+              await write(content);
+            };
+          }
+          return result;
         },
       }),
     );
@@ -1089,7 +1098,7 @@ describe("resolveTargetPath", () => {
     ).toBe(true);
   });
 
-  test("new nested parents inside root can still be created", async () => {
+  test("new nested parents through an in-root symlink are refused", async () => {
     mkdirSync(join(root, "real"));
     symlinkSync("real", join(root, "link-in"));
     const result = await executeMorphEdit(
@@ -1100,19 +1109,14 @@ describe("resolveTargetPath", () => {
       },
       makeMockRuntime({
         directory: root,
-        resolveTargetPath,
-        writeFile: async (filepath, content) => {
-          await Bun.write(filepath, content);
-        },
+        openTarget: openConfinedTarget,
       }),
     );
-    expect(result.status).toBe("success");
-    expect(await Bun.file(join(root, "real/new/deep/file.ts")).text()).toBe(
-      "export const value = 1;\n",
-    );
+    expect(result).toMatchObject({ status: "refused", code: "path_refused" });
+    expect(existsSync(join(root, "real/new"))).toBe(false);
   });
 
-  test("existing target allows symlink inside root", () => {
+  test("diagnostic canonicalization of an in-root symlink does not authorize object I/O", () => {
     const realDir = join(root, "real-dir");
     mkdirSync(realDir, { recursive: true });
     writeFileSync(join(realDir, "file.txt"), "hello");
@@ -1124,6 +1128,12 @@ describe("resolveTargetPath", () => {
     if ("path" in result) {
       expect(result.path).toBe(join(realDir, "file.txt"));
     }
+    const acquired = openConfinedTarget(
+      join(root, "link-in", "file.txt"),
+      root,
+    );
+    if ("target" in acquired) acquired.target.close();
+    expect("error" in acquired).toBe(true);
   });
 
   test("new target rejects when nearest existing parent is symlink outside root", () => {
@@ -1178,8 +1188,46 @@ describe("resolveTargetPath", () => {
 
 /* ── executeMorphEdit no-network tests ── */
 
+type MockRuntimeOptions = Partial<ExecuteMorphEditRuntime> & {
+  readFile?: () => Promise<{ exists: boolean; text: string }>;
+  writeFile?: (filepath: string, content: string) => Promise<void>;
+  resolveTargetPath?: typeof resolveTargetPath;
+};
+
+function mockTargetRuntime(
+  overrides: MockRuntimeOptions,
+): Partial<ExecuteMorphEditRuntime> {
+  const {
+    readFile,
+    writeFile,
+    resolveTargetPath: resolve,
+    ...runtime
+  } = overrides;
+  return {
+    ...runtime,
+    ...((readFile || writeFile || resolve) && !runtime.openTarget
+      ? {
+          openTarget: (targetPath: string, root: string) => {
+            const resolved = resolve
+              ? resolve(targetPath, root)
+              : { path: join(root, targetPath) };
+            if ("error" in resolved) return resolved;
+            return {
+              target: {
+                read: readFile ?? (async () => ({ exists: false, text: "" })),
+                write: (content: string) =>
+                  writeFile?.(resolved.path, content) ?? Promise.resolve(),
+                close: () => {},
+              },
+            };
+          },
+        }
+      : {}),
+  };
+}
+
 function makeMockRuntime(
-  overrides: Partial<ExecuteMorphEditRuntime> = {},
+  overrides: MockRuntimeOptions = {},
 ): ExecuteMorphEditRuntime {
   const logs: Array<{ level: string; message: string }> = [];
   return {
@@ -1189,14 +1237,16 @@ function makeMockRuntime(
     directory: "/project",
     context: { agent: "build" },
     now: () => 42,
-    readFile: async () => ({ exists: false, text: "" }),
-    writeFile: async () => {},
+    openTarget: () => ({
+      target: {
+        read: async () => ({ exists: false, text: "" }),
+        write: async () => {},
+        close: () => {},
+      },
+    }),
     callMorphApply: async () => ({
       success: false,
       error: "mock-not-configured",
-    }),
-    resolveTargetPath: (targetPath, root, _options?) => ({
-      path: join(root, targetPath),
     }),
     normalizeCodeEditInput: (s) => normalizeCodeEditInput(s),
     findDroppedIdentifiers: (orig, merged, fp) =>
@@ -1211,7 +1261,7 @@ function makeMockRuntime(
       PLUGIN_VERSION: "1.0.0",
       MORPH_MODEL: "morph-v3-fast",
     },
-    ...overrides,
+    ...mockTargetRuntime(overrides),
   };
 }
 
@@ -2461,7 +2511,7 @@ describe("dual-entry plugin registration", () => {
       | { directory: string }
       | { directories: Record<string, string> }
       | { error: unknown },
-    runtimeOverrides?: Partial<ExecuteMorphEditRuntime>,
+    runtimeOverrides?: MockRuntimeOptions,
   ) {
     const plugin = await importPlugin();
     const { ctx, added, hooks, lookups } = makeV2Context(session);
@@ -2471,7 +2521,12 @@ describe("dual-entry plugin registration", () => {
       ctx: unknown,
       options?: { runtimeOverrides?: Partial<ExecuteMorphEditRuntime> },
     ) => Promise<void>;
-    await setup(ctx, runtimeOverrides ? { runtimeOverrides } : undefined);
+    await setup(
+      ctx,
+      runtimeOverrides
+        ? { runtimeOverrides: mockTargetRuntime(runtimeOverrides) }
+        : undefined,
+    );
     return { added, hooks, lookups };
   }
 

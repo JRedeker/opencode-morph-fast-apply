@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import plugin, { setupMorphEditV2 } from "./impl.js";
 import { parseMorphEditArgs, type MorphEditResult } from "./src/execute.js";
+import { openConfinedTarget } from "./src/path-confinement.js";
 
 const args = {
   target_filepath: "file.ts",
@@ -44,12 +45,23 @@ async function v2(directory: string) {
           PLUGIN_VERSION: "test",
           MORPH_MODEL: "test",
         },
-        readFile: async () => {
-          reads++;
-          return { exists: false, text: "" };
-        },
-        writeFile: async (path) => {
-          writes.push(path);
+        openTarget: (targetPath, root) => {
+          const acquired = openConfinedTarget(targetPath, root);
+          if ("error" in acquired) return acquired;
+          const target = acquired.target;
+          return {
+            target: {
+              read: async () => {
+                reads++;
+                return target.read();
+              },
+              write: async (content) => {
+                writes.push(join(root, targetPath));
+                await target.write(content);
+              },
+              close: target.close,
+            },
+          };
         },
         callMorphApply: async () => {
           calls++;
