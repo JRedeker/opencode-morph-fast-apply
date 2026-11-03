@@ -157,7 +157,7 @@ async function morph(adapter: "V1" | "V2", seams: Seams = {}) {
   };
   let execute: (
     raw: unknown,
-  ) => Promise<Pick<MorphEditResult, "status" | "code">>;
+  ) => Promise<Pick<MorphEditResult, "status" | "code" | "text">>;
   if (adapter === "V1") {
     const hooks = await setupMorphEditV1(
       {
@@ -176,7 +176,10 @@ async function morph(adapter: "V1" | "V2", seams: Seams = {}) {
         } as Parameters<typeof tool.execute>[1],
       );
       if (typeof result === "string") throw new Error("Missing V1 metadata");
-      return result.metadata as Pick<MorphEditResult, "status" | "code">;
+      return {
+        ...(result.metadata as Pick<MorphEditResult, "status" | "code">),
+        text: String(result.output),
+      };
     };
   } else {
     const tools: Array<{
@@ -547,6 +550,73 @@ for (const adapter of ["V1", "V2"] as const) {
         "success",
       );
       expect(existsSync(join(outside, "gen", "new"))).toBe(false);
+    });
+  });
+
+  describe(`${adapter}: new file, concurrent destination creation at publication`, () => {
+    test("a destination created after the diagnostic check is never silently overwritten", async () => {
+      const destination = join(root, "src", "new.ts");
+      const concurrent = "concurrent writer content\n";
+      const write = fs.writeFileSync;
+      let injected = false;
+      // Deterministic schedule: the concurrent creation lands between the
+      // destination's diagnostic lstat and the publication primitive.
+      const spy = spyOn(fs, "writeFileSync").mockImplementation(
+        (target, data, options) => {
+          const result = write(target, data, options);
+          if (
+            !injected &&
+            typeof target === "number" &&
+            fs.readlinkSync(`/proc/self/fd/${target}`).includes("/.morph-")
+          ) {
+            injected = true;
+            write(destination, concurrent);
+          }
+          return result;
+        },
+      );
+      try {
+        const { edit } = await morph(adapter);
+        const result = await edit("src/new.ts", CREATED);
+        expect(injected).toBe(true);
+        expect(result.code).toBe("write_failed");
+        expect(result.text).toContain("Target changed during the edit");
+        expect(read(destination)).toBe(concurrent);
+        expect(readdirSync(join(root, "src")).sort()).toEqual([
+          "file.ts",
+          "new.ts",
+        ]);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
+  describe(`${adapter}: new file, staging removal failure after publication`, () => {
+    test("a failed staging unlink reports published residue, not a lost write", async () => {
+      const destination = join(root, "src", "new.ts");
+      const unlink = fs.unlinkSync;
+      const spy = spyOn(fs, "unlinkSync").mockImplementation((pathname) => {
+        if (String(pathname).includes("/.morph-"))
+          throw new Error("EPERM: injected staging removal failure");
+        return unlink(pathname);
+      });
+      try {
+        const { edit } = await morph(adapter);
+        const result = await edit("src/new.ts", CREATED);
+        expect(result.code).toBe("write_failed");
+        expect(result.text).toContain(
+          "Target published, but removing its staging name failed",
+        );
+        expect(read(destination)).toBe(CREATED);
+        expect(
+          readdirSync(join(root, "src")).filter((name) =>
+            name.startsWith(".morph-"),
+          ),
+        ).toHaveLength(1);
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 

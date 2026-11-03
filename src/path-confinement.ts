@@ -5,6 +5,7 @@ import {
   fchmodSync,
   fstatSync,
   lstatSync,
+  linkSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -328,8 +329,10 @@ export function openConfinedTarget(
             bigint: true,
             throwIfNoEntry: false,
           });
-          // Conflict detection is diagnostic only. rename never follows the
-          // destination leaf, even if another process changes it after this.
+          // Conflict detection is diagnostic only. Neither publication
+          // primitive follows the destination leaf, even if another process
+          // changes it after this; new targets additionally refuse any
+          // destination the link finds already present.
           if (
             original
               ? !current ||
@@ -380,7 +383,34 @@ export function openConfinedTarget(
             requireReplacementMetadata();
             // A fresh inode avoids modifying any hard-link alias of the
             // original. Both names resolve through the held parent object.
-            renameSync(temporary, destination);
+            if (original) {
+              renameSync(temporary, destination);
+            } else {
+              // A target absent at acquisition publishes as an atomic
+              // create-if-absent link: rename would silently replace a
+              // destination another process created after the diagnostic
+              // check.
+              try {
+                linkSync(temporary, destination);
+              } catch (err) {
+                if (errorCode(err) === "EEXIST")
+                  throw new Error("Target changed during the edit");
+                throw err;
+              }
+              // The destination now holds the merged content; only the
+              // staging name remains. Failing to remove it would leave a
+              // hard-link alias, so name the residue instead of reporting
+              // a write that did not happen.
+              try {
+                unlinkSync(temporary);
+              } catch (err) {
+                throw new Error(
+                  `Target published, but removing its staging name failed: ${
+                    err instanceof Error ? err.message : String(err)
+                  }`,
+                );
+              }
+            }
             published = true;
           } catch (err) {
             failure = err;
