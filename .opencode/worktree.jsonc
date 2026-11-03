@@ -3,15 +3,15 @@
 
   // Worktree plugin configuration
   // Documentation: https://github.com/kdcokenny/ocx
-
-  // Worktree session mode:
-  // - "warp" (default): register the ADV worktree as an OpenCode workspace
-  //   and warp this session into it. Requires OPENCODE_EXPERIMENTAL_WORKSPACES=true.
-  // - "terminal": stay in this session and use workdir= per tool (legacy inline behavior).
-  // - "spawn": open a new terminal with a forked OpenCode session (legacy non-inline behavior).
-  // "mode": "warp",
-
-  // Deprecated: "inline": true maps to "mode": "terminal"; false maps to "mode": "spawn".
+  //
+  // This file configures syncing and lifecycle hooks for git worktrees.
+  // Worktree creation, placement and removal belong to the host worktree
+  // tooling documented above, not to this repository's plugin.
+  //
+  // There is no worktree routing for morph_edit here. The tool accepts only
+  // target_filepath, instructions and code_edit, rejects workdir and taskId,
+  // and cannot select a root outside the invoking session. Start a session
+  // in a worktree to edit within it.
 
   "sync": {
     // Files to copy from main worktree to new worktrees
