@@ -550,6 +550,46 @@ for (const adapter of ["V1", "V2"] as const) {
     });
   });
 
+  describe(`${adapter}: new file, concurrent destination creation at publication`, () => {
+    test("a destination created after the diagnostic check is never silently overwritten", async () => {
+      const destination = join(root, "src", "new.ts");
+      const concurrent = "concurrent writer content\n";
+      const write = fs.writeFileSync;
+      let injected = false;
+      // Deterministic schedule: the concurrent creation lands between the
+      // destination's diagnostic lstat and the publication primitive.
+      const spy = spyOn(fs, "writeFileSync").mockImplementation(
+        (target, data, options) => {
+          const result = write(target, data, options);
+          if (
+            !injected &&
+            typeof target === "number" &&
+            fs
+              .readlinkSync(`/proc/self/fd/${target}`)
+              .includes("/.morph-")
+          ) {
+            injected = true;
+            write(destination, concurrent);
+          }
+          return result;
+        },
+      );
+      try {
+        const { edit } = await morph(adapter);
+        const result = await edit("src/new.ts", CREATED);
+        expect(injected).toBe(true);
+        expect(result.code).toBe("write_failed");
+        expect(read(destination)).toBe(concurrent);
+        expect(readdirSync(join(root, "src")).sort()).toEqual([
+          "file.ts",
+          "new.ts",
+        ]);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
   describe(`${adapter}: acquired objects and aliases`, () => {
     test("a parent moved outside still receives edits, not an unrelated outside file", async () => {
       const moved = join(outside, "moved");
