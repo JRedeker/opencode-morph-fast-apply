@@ -592,6 +592,34 @@ for (const adapter of ["V1", "V2"] as const) {
     });
   });
 
+  describe(`${adapter}: new file, staging removal failure after publication`, () => {
+    test("a failed staging unlink reports published residue, not a lost write", async () => {
+      const destination = join(root, "src", "new.ts");
+      const unlink = fs.unlinkSync;
+      const spy = spyOn(fs, "unlinkSync").mockImplementation((pathname) => {
+        if (String(pathname).includes("/.morph-"))
+          throw new Error("EPERM: injected staging removal failure");
+        return unlink(pathname);
+      });
+      try {
+        const { edit } = await morph(adapter);
+        const result = await edit("src/new.ts", CREATED);
+        expect(result.code).toBe("write_failed");
+        expect(result.text).toContain(
+          "Target published, but removing its staging name failed",
+        );
+        expect(read(destination)).toBe(CREATED);
+        expect(
+          readdirSync(join(root, "src")).filter((name) =>
+            name.startsWith(".morph-"),
+          ),
+        ).toHaveLength(1);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
   describe(`${adapter}: acquired objects and aliases`, () => {
     test("a parent moved outside still receives edits, not an unrelated outside file", async () => {
       const moved = join(outside, "moved");
