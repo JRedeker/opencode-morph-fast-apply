@@ -564,9 +564,7 @@ for (const adapter of ["V1", "V2"] as const) {
           if (
             !injected &&
             typeof target === "number" &&
-            fs
-              .readlinkSync(`/proc/self/fd/${target}`)
-              .includes("/.morph-")
+            fs.readlinkSync(`/proc/self/fd/${target}`).includes("/.morph-")
           ) {
             injected = true;
             write(destination, concurrent);

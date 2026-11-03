@@ -49,8 +49,13 @@ of new files and directories through an acquired directory. Replacing a former
 pathname with an outside symlink must not redirect I/O to its referent.
 
 The tool publishes content as a fresh file in the acquired parent directory;
-it must not overwrite the original inode's hard-link aliases. Publication
-requires a writable parent and write permission on an existing target.
+it must not overwrite the original inode's hard-link aliases. Publication of a
+target absent at acquisition is an atomic create-if-absent link of the staged
+file into the acquired parent: a destination any process created after
+acquisition refuses the edit, leaves the concurrent entry untouched, and
+removes the staged file. Replacing an existing target keeps its diagnostic
+identity check followed by rename. Publication requires a writable parent and
+write permission on an existing target.
 Existing files require descriptor-based access-metadata inspection; unavailable
 inspection, inspection errors, or visible extended attributes, including ACLs,
 refuse the edit before content is read. Changed source access metadata,
@@ -60,8 +65,10 @@ owner/group, but replace inode identity and drop special mode bits. New files
 retain normal kernel-applied creation permissions and default ACLs.
 
 Inspection cannot detect attributes the kernel hides from the caller. The tool
-does not serialize concurrent content or metadata changes or guarantee crash
-durability. Privileged mount or metadata changes and hostile code in the plugin
+does not serialize concurrent content or metadata changes on an existing
+target, or guarantee crash durability; staging-name substitution can affect
+publication contents and no content-integrity guarantee is claimed for it.
+Privileged mount or metadata changes and hostile code in the plugin
 process are outside this boundary.
 
 The tool returns a readable result for accepted edits and a specific reason for

@@ -5,6 +5,7 @@ import {
   fchmodSync,
   fstatSync,
   lstatSync,
+  linkSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -328,8 +329,10 @@ export function openConfinedTarget(
             bigint: true,
             throwIfNoEntry: false,
           });
-          // Conflict detection is diagnostic only. rename never follows the
-          // destination leaf, even if another process changes it after this.
+          // Conflict detection is diagnostic only. Neither publication
+          // primitive follows the destination leaf, even if another process
+          // changes it after this; new targets additionally refuse any
+          // destination the link finds already present.
           if (
             original
               ? !current ||
@@ -380,7 +383,23 @@ export function openConfinedTarget(
             requireReplacementMetadata();
             // A fresh inode avoids modifying any hard-link alias of the
             // original. Both names resolve through the held parent object.
-            renameSync(temporary, destination);
+            if (original) {
+              renameSync(temporary, destination);
+            } else {
+              // A target absent at acquisition publishes as an atomic
+              // create-if-absent link: rename would silently replace a
+              // destination another process created after the diagnostic
+              // check. The staging name then goes away; both names share
+              // one inode until it does.
+              try {
+                linkSync(temporary, destination);
+              } catch (err) {
+                if (errorCode(err) === "EEXIST")
+                  throw new Error("Target changed during the edit");
+                throw err;
+              }
+              unlinkSync(temporary);
+            }
             published = true;
           } catch (err) {
             failure = err;
