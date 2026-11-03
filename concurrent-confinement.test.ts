@@ -157,7 +157,7 @@ async function morph(adapter: "V1" | "V2", seams: Seams = {}) {
   };
   let execute: (
     raw: unknown,
-  ) => Promise<Pick<MorphEditResult, "status" | "code">>;
+  ) => Promise<Pick<MorphEditResult, "status" | "code" | "text">>;
   if (adapter === "V1") {
     const hooks = await setupMorphEditV1(
       {
@@ -176,7 +176,10 @@ async function morph(adapter: "V1" | "V2", seams: Seams = {}) {
         } as Parameters<typeof tool.execute>[1],
       );
       if (typeof result === "string") throw new Error("Missing V1 metadata");
-      return result.metadata as Pick<MorphEditResult, "status" | "code">;
+      return {
+        ...(result.metadata as Pick<MorphEditResult, "status" | "code">),
+        text: String(result.output),
+      };
     };
   } else {
     const tools: Array<{
@@ -577,6 +580,7 @@ for (const adapter of ["V1", "V2"] as const) {
         const result = await edit("src/new.ts", CREATED);
         expect(injected).toBe(true);
         expect(result.code).toBe("write_failed");
+        expect(result.text).toContain("Target changed during the edit");
         expect(read(destination)).toBe(concurrent);
         expect(readdirSync(join(root, "src")).sort()).toEqual([
           "file.ts",

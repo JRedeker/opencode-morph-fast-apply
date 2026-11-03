@@ -389,8 +389,7 @@ export function openConfinedTarget(
               // A target absent at acquisition publishes as an atomic
               // create-if-absent link: rename would silently replace a
               // destination another process created after the diagnostic
-              // check. The staging name then goes away; both names share
-              // one inode until it does.
+              // check.
               try {
                 linkSync(temporary, destination);
               } catch (err) {
@@ -398,7 +397,19 @@ export function openConfinedTarget(
                   throw new Error("Target changed during the edit");
                 throw err;
               }
-              unlinkSync(temporary);
+              // The destination now holds the merged content; only the
+              // staging name remains. Failing to remove it would leave a
+              // hard-link alias, so name the residue instead of reporting
+              // a write that did not happen.
+              try {
+                unlinkSync(temporary);
+              } catch (err) {
+                throw new Error(
+                  `Target published, but removing its staging name failed: ${
+                    err instanceof Error ? err.message : String(err)
+                  }`,
+                );
+              }
             }
             published = true;
           } catch (err) {
