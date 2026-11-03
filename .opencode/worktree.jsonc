@@ -4,7 +4,7 @@
   // Worktree plugin configuration
   // Documentation: https://github.com/kdcokenny/ocx
   //
-  // This file only configures syncing and lifecycle hooks for git worktrees.
+  // This file configures syncing and lifecycle hooks for git worktrees.
   // Worktree creation, placement and removal belong to the host worktree
   // tooling documented above, not to this repository's plugin.
   //
