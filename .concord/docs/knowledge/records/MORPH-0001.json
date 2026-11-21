@@ -2,7 +2,7 @@
   "authority": {
     "tier": "derived"
   },
-  "date": "2026-11-03T00:00:00Z",
+  "date": "2026-11-21T00:00:00Z",
   "evidence": [
     "README.md",
     "impl.ts",
@@ -22,9 +22,9 @@
     "project_ids": [],
     "tag_ids": []
   },
-  "sha256": "sha256:2c1fcf2a79b0b98caa70f611208dfd10354f2a131df22ded6cee00a250a43c08",
+  "sha256": "sha256:6e04669220878b011eb72c5a7da0d17c7f1a53821ff5050d970d4c0bc84e0b6f",
   "status": "accepted",
-  "summary": "The tool acquires object-bound editing authority beneath the session root, refuses symlinks and unsupported confinement, publishes new targets through an atomic create-if-absent link that refuses a concurrently created destination, replaces existing targets without modifying hard-link aliases, rejects root-selection arguments, and preserves read-only and merge-safety guards.",
+  "summary": "The tool acquires object-bound editing authority beneath the session root, refuses symlinks and unsupported confinement, publishes new targets through an atomic create-if-absent link that refuses a concurrently created destination, replaces existing targets without modifying hard-link aliases, rejects root-selection arguments, preserves read-only and merge-safety guards, and registers a direct (non-Code-Mode) tool on V2.",
   "tags": [
     "editing",
     "safety",
