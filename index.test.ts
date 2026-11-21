@@ -2367,6 +2367,7 @@ describe("dual-entry plugin registration", () => {
   interface FakeRegisteredTool {
     name: string;
     description: string;
+    options?: Record<string, unknown>;
     input: Record<string, unknown>;
     output: Record<string, unknown>;
     execute: (
@@ -2546,6 +2547,7 @@ describe("dual-entry plugin registration", () => {
 
     const registered = added[0];
     expect(registered.name).toBe("morph_edit");
+    expect(registered.options).toEqual({ codemode: false });
     expect(registered.description).toContain("existing code");
     expect(registered.input.type).toBe("object");
     expect(registered.input.required).toEqual([

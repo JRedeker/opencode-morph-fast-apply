@@ -23,6 +23,8 @@ The tool blocks read-only agents unless the operator explicitly allows them.
 Before writing a merged result, it refuses placeholder-marker leakage,
 catastrophic truncation, and the loss of imported identifiers. A refused edit
 does not write a file. These boundaries apply to both V1 and V2 registrations.
+V2 registers `morph_edit` as a direct tool with Code Mode disabled and no
+namespace, so agents call it by name as on V1.
 
 ## Arguments and root refusal
 

@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@opencode-ai/plugin": "latest",
-    "@opencode/plugin": "^2.0.14",
+    "@opencode/plugin": "2.3.2",
     "diff": "^8.0.2"
   },
   "devDependencies": {
