@@ -14,7 +14,7 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 - **Pre-flight validation** - prevents accidental file deletions when markers are missing
 - **Unified diff output** with context for easy review
 - **Custom TUI display** - branded titles like `Morph: src/file.ts +15/-3 (450ms)`
-- **OpenCode V2 native** - registers through the V2 plugin API; edits are confined to the session's directory per invocation
+- **OpenCode V2 native** - registers `morph_edit` as a direct tool, not inside Code Mode; edits are confined to the session's directory per invocation
 - **Graceful fallback** - suggests native `edit` tool on API failure
 
 > **Note:** This is an OpenCode plugin that wraps Morph's Fast Apply API. For the official Morph MCP server (which includes WarpGrep search), see [@morphllm/morphmcp](https://www.npmjs.com/package/@morphllm/morphmcp). This plugin uses `morph_edit` as the tool name to avoid conflicts if you have both installed.
@@ -25,7 +25,7 @@ OpenCode plugin for [Morph Fast Apply](https://morphllm.com) - 10x faster code e
 
 | OpenCode version      | Support | Notes                                                                                                                                           |
 | --------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| V2 (2.x)              | Yes     | Loads through the V2 plugin API (`setup`). Edits are confined to the session's directory, resolved per invocation.                              |
+| V2 (2.x)              | Yes     | Registers `morph_edit` as a direct tool, not inside Code Mode. Built against and host-tested on 2.3.2 only. Edits use the session directory.    |
 | V1 1.18.29+           | Yes     | Loads through the V1 `default.server` adapter with the same `morph_edit` behavior.                                                              |
 | V1 older than 1.18.29 | **No**  | These loaders do not read the dual-entry default export, so the plugin silently does not load. Upgrade OpenCode or pin an older plugin release. |
 
@@ -315,6 +315,25 @@ For the full release history, see [CHANGELOG.md](CHANGELOG.md).
 Contributions welcome! This plugin could potentially be integrated into OpenCode core.
 
 This project uses Bun. The `bun.lock` lockfile is tracked in git; `pnpm-lock.yaml` and `package-lock.json` are ignored.
+
+### Qualifying on OpenCode 2.x
+
+`scripts/v2-host-probe/run.sh` proves the plugin against a real OpenCode 2.3.2 host binary. The binary runs only inside a bubblewrap sandbox: tmpfs over every home directory and `/run`, no network beyond the namespace loopback, and dummy API keys, so the probe never touches your real config, credentials, or Morph account.
+
+```bash
+scripts/v2-host-probe/run.sh [path-to-opencode-2.3.2-binary] [plugin-dir]
+```
+
+Both arguments are optional: without a binary the probe installs the Linux glibc package `@opencode/cli-linux-<arch>@2.3.2` (x64 or arm64) into a temp directory with bun, without running package scripts, and without a plugin directory it tests this repository's root (run `bun install` first). Requires `bwrap`, `bun`, and `jq` on the host.
+
+The probe loads the plugin from a local path through the V2 `plugins` config key, drives one scripted model session against a fake provider and a fake Morph Apply endpoint on loopback, and prints one PASS/FAIL line per check:
+
+- **a** — the plugin loads on 2.3.2 and registers `morph_edit`;
+- **b** — `morph_edit` is offered to the model as a direct, top-level tool rather than only inside the Code Mode `execute` tool;
+- **c** — one fast-apply edit reaches the Morph Apply endpoint and the target file holds the expected merge;
+- **d** — an edit targeting `../outside.txt` outside the session root is refused and the outside file stays unchanged.
+
+The exit status is non-zero when any check fails. Run the probe against a tree without `options: { codemode: false }` in `impl.ts` to confirm it catches the regression: check (a) still passes through the Code Mode catalog, while (b), (c) and (d) fail because the host offers no direct `morph_edit` tool.
 
 ## License
 

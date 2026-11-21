@@ -508,10 +508,10 @@ export interface MorphEditSetupOptions {
 }
 
 /**
- * OpenCode V2 adapter: registers exactly one morph_edit tool through the V2
- * plugin API and attaches branded metadata in the execute.after completed
- * hook. Shares MORPH_EDIT_DESCRIPTION, the execution law (executeMorphEdit),
- * and the title formatting with the V1 adapter.
+ * OpenCode V2 adapter: registers exactly one direct (non-Code-Mode) morph_edit
+ * tool through the V2 plugin API and attaches branded metadata in the
+ * execute.after completed hook. Shares MORPH_EDIT_DESCRIPTION, the execution
+ * law (executeMorphEdit), and the title formatting with the V1 adapter.
  */
 export async function setupMorphEditV2(
   ctx: PluginV2.Context,
@@ -529,6 +529,7 @@ export async function setupMorphEditV2(
   await ctx.tool.transform((editor) => {
     editor.add({
       name: "morph_edit",
+      options: { codemode: false },
       description: MORPH_EDIT_DESCRIPTION,
       input: {
         type: "object",
