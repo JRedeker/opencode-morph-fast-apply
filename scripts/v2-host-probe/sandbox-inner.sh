@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs INSIDE the bwrap sandbox built by run.sh; all paths are sandbox paths.
-# Starts the loopback fake servers, then drives the 2.3.2 host with one
+# Starts the loopback fake servers, then drives the 2.4.1 host with one
 # non-interactive `opencode run`. Everything the checks need is written under
 # /home/probe (the lab home directory).
 set -uo pipefail

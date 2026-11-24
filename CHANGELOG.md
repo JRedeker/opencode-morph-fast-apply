@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **V2 SDK**: Builds against `@opencode/plugin` 2.3.2.
+- **V2 SDK**: Builds against `@opencode/plugin` 2.4.1 and qualifies against the OpenCode 2.4.1 host.
 - **Object-bound authority**: An acquired directory remains authorized after another process moves it outside the root, including for new file and directory creation.
 - **Fail-closed compatibility**: Editing requires Linux procfs and refuses every root/target symlink, nonregular target and multiply linked file. Existing-file replacement also requires x64/arm64 glibc metadata inspection, refuses visible extended attributes/ACLs and unsafe replacement access metadata, and requires a writable parent and target. Successful publication replaces inode identity, preserves ordinary permissions and owner/group, and drops special mode bits. See the README safety guards for inspection limits.
 
