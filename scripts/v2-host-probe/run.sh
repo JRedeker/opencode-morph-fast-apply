@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-# Qualifying probe for OpenCode 2.3.2.
+# Qualifying probe for OpenCode 2.4.1.
 #
-# Proves, against the real 2.3.2 host binary, that a plugin directory:
+# Proves, against the real 2.4.1 host binary, that a plugin directory:
 #   a. loads from a local path through the V2 plural `plugins` config key;
 #   b. offers morph_edit to the model as a direct (top-level) tool rather than
 #      only inside the Code Mode `execute` tool;
 #   c. completes one fast-apply edit through the Morph Apply endpoint;
 #   d. refuses an edit whose target lies outside the session root.
 #
-# The 2.3.2 binary is only ever executed inside bubblewrap with tmpfs over
+# The 2.4.1 binary is only ever executed inside bubblewrap with tmpfs over
 # every host home directory and /run, --unshare-net, and a --clearenv
 # environment. No real credential, config, socket, or network path is
 # reachable from inside the sandbox: both the provider endpoint and the Morph
 # endpoint are loopback fake servers started inside the sandbox network
 # namespace, and the API keys below are dummies.
 #
-# Usage: run.sh [path-to-opencode-2.3.2-binary] [plugin-directory]
+# Usage: run.sh [path-to-opencode-2.4.1-binary] [plugin-directory]
 #
-#   path    Native opencode 2.3.2 executable (for example
+#   path    Native opencode 2.4.1 executable (for example
 #           node_modules/@opencode/cli-linux-x64/bin/opencode). When omitted,
-#           the glibc @opencode/cli-linux-<arch>@2.3.2 package is installed
+#           the glibc @opencode/cli-linux-<arch>@2.4.1 package is installed
 #           into a temp directory with bun, without running package scripts.
 #   plugin  Plugin directory to bind read-only into the sandbox. Defaults to
 #           this repository's root; run `bun install` there first.
@@ -63,7 +63,7 @@ if [[ -z "$BUN" && -x "$HOME/.bun/bin/bun" ]]; then BUN="$HOME/.bun/bin/bun"; fi
 BIN_ARG="${1:-}"
 PLUGIN_DIR="${2:-$REPO_ROOT}"
 
-# --- Resolve the 2.3.2 binary -------------------------------------------------
+# --- Resolve the 2.4.1 binary -------------------------------------------------
 
 if [[ -n "$BIN_ARG" ]]; then
   [[ -f "$BIN_ARG" && -x "$BIN_ARG" ]] || die "binary is not an executable file: $BIN_ARG"
@@ -74,7 +74,7 @@ else
     aarch64 | arm64) ARCH=arm64 ;;
     *) die "no @opencode/cli platform package for $(uname -m); pass a binary path" ;;
   esac
-  PLATFORM_PACKAGE="@opencode/cli-linux-$ARCH@2.3.2"
+  PLATFORM_PACKAGE="@opencode/cli-linux-$ARCH@2.4.1"
   echo "no binary given; installing $PLATFORM_PACKAGE into a temp dir with bun"
   BIN_TMP="$(mktemp -d)"
   # The own package.json stops bun from adopting a parent project, and
@@ -124,7 +124,7 @@ EOF
 printf 'const greeting = "hello";\n\nfunction ping() {\n  return greeting;\n}\n' > "$LAB/home/session/target.ts"
 printf 'do not touch\n' > "$LAB/home/outside.txt"
 
-# Every execution of the 2.3.2 binary and the fake servers happens through
+# Every execution of the 2.4.1 binary and the fake servers happens through
 # this array: read-only root, empty tmpfs over every host home directory and
 # /run (which holds per-user agent, keyring and bus sockets), the lab home
 # bound in their place, no network besides the namespace loopback, and a
@@ -154,7 +154,7 @@ BWRAP=(
 
 VERSION="$("${BWRAP[@]}" /home/probe/host/opencode.exe --version)" || die "could not run the binary inside bwrap"
 echo "host binary: $VERSION ($BIN)"
-[[ "$VERSION" == *"v2.3.2" ]] || die "this probe targets opencode v2.3.2, got: $VERSION"
+[[ "$VERSION" == *"v2.4.1" ]] || die "this probe targets opencode v2.4.1, got: $VERSION"
 echo "plugin dir:  $PLUGIN_ABS"
 
 echo "running probe session inside bwrap (network namespace loopback only)"

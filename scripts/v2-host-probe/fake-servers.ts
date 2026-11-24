@@ -5,7 +5,7 @@
 // One process, two listeners, both on 127.0.0.1:
 //
 //   :8787  fake OpenAI provider speaking the Responses API (`/v1/responses`),
-//          which is what the 2.3.2 built-in `openai` provider uses when its
+//          which is what the 2.4.1 built-in `openai` provider uses when its
 //          baseURL is overlaid through config. Records every request body and
 //          scripts a fixed conversation:
 //          turn 1 -> morph_edit function call (success case)
